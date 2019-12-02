@@ -1,0 +1,22 @@
+{
+  "agencies": {
+    "mbta": {
+      "data_sets": {
+        "2018-10-13": {
+          "start_date": "2018-10-13",
+          "end_date": "2018-10-19",
+          "route_types_to_solve": [0, 1]
+        }
+      }
+    },
+    "pittsburgh_port_authority": {
+      "data_sets": {
+        "2018-08-08": {
+          "start_date": "2018-08-08",
+          "end_date": "2018-08-14",
+          "route_types_to_solve": [0, 1, 2, 3, 4, 5, 6, 7]
+        }
+      }
+    }
+  }
+}
