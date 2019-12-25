@@ -6,13 +6,13 @@ def load_configuration():
 
 if __name__ == "__main__":
     import json
-    import os
     import gtfs_parsing.analyses.analyses as gtfs_analyses
+    from gtfs_traversal import read_data
 
     analyses = gtfs_analyses.determine_analysis_parameters(load_configuration())
-
-    data_location = os.path.join(os.path.dirname(os.path.abspath(__file__)), "data")
-
     analysis = analyses[0]
 
-    data = gtfs_analyses.parse(analysis, data_location)
+    data = read_data.read_data(analysis, "data")
+
+    for element in data:
+        print(len(element))
