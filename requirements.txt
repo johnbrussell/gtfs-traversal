@@ -4,4 +4,4 @@
 #
 #    pip-compile --no-index --output-file=requirements.txt requirements.in requirements.testing.in
 #
-gtfs-parser==0.2.0
+gtfs-parser==0.2.1
