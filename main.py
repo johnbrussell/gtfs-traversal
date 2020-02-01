@@ -375,26 +375,33 @@ if __name__ == "__main__":
     # print(unique_stops_to_solve)
     # quit()
 
-    expansion_queue = ExpansionQueue(unique_routes_to_solve, unique_stops_to_solve, TRANSFER_ROUTE, WALK_ROUTE)
-    expansion_queue.add([(k, v) for k, v in progress_dictionary.items()], None)
+    # expansion_queue = ExpansionQueue(unique_routes_to_solve, unique_stops_to_solve, TRANSFER_ROUTE, WALK_ROUTE)
+    # expansion_queue.add([k, v for k, v in progress_dictionary.items()])
+
+    initial_expansion_list = sorted([k for k in progress_dictionary.keys()],
+                                    key=lambda x: progress_dictionary[x].start_time, reverse=True)
     best_duration = None
     take_from_top = False
     new_nodes = []
     expansions = 0
-    max_expand = 100000
-    # while len(initial_expansion_list) > 0:
-    while expansion_queue.len() > 0:
+    max_expand = 1
+    while len(initial_expansion_list) > 0:
+    # while expansion_queue.len() > 0:
     # for _ in range(30000):
         if expansions >= max_expand:
             break
         expansions += 1
         if expansions % 500000 == 0:
-            # expansions = 0
-            print("e", expansion_queue.len())
+            expansions = 0
+            print("e", len(initial_expansion_list))
             print("p", len(progress_dictionary))
         # print(expansion_queue)  # Prints voluminously
-        # print(expansion_queue.len())
-        expandee = expansion_queue.pop()
+        # print(len(expansion_queue))
+        if take_from_top:
+            # print("taking from top")
+            expandee = initial_expansion_list.pop(0)
+        else:
+            expandee = initial_expansion_list.pop()
         # if expandee.location in ['WP0011']:
         #     nexpandee = expandee
         #     print(expandee.location)
@@ -437,6 +444,12 @@ if __name__ == "__main__":
         # print(progress_dictionary[expandee])
         # print(new_nodes)
         # print(len(new_nodes))
+        # print(best_progress.start_time + best_progress.duration + timedelta(hours=1), end_date_midnight)
+        if len(new_nodes) > 0:
+            best_progress = new_nodes[len(new_nodes) - 1][1]
+            take_from_top = best_progress.start_time + best_progress.duration + timedelta(hours=1) > end_date_midnight
+        else:
+            take_from_top = False
 
         # if len(new_nodes) > 20:
         #     print(len(new_nodes))
@@ -449,7 +462,8 @@ if __name__ == "__main__":
         # TODO remove nodes whose progress exceeds the best duration from expansion queue and progress dict
         # TODO priority queues: solution queue, system queue, transfer queue, walk queue
 
-        expansion_queue.add_faster([n[0] for n in new_nodes])
+        new_locations = [l for l, p in new_nodes]
+        initial_expansion_list += new_locations
 
         # if len(new_nodes) > 20:
         #     print(len(new_nodes))
@@ -466,10 +480,10 @@ if __name__ == "__main__":
 #  they're at exactly the same latitude/longitude, or if they have the same stop ID
 #  A minimum of five decimal places of precision is required for lat/long to really mean anything in the context of bus stops
 
-    print(expansion_queue.len())
+    print(len(initial_expansion_list))
     print(len(progress_dictionary))
     print(best_duration)
-    nxt = expansion_queue.pop()
+    nxt = initial_expansion_list.pop()
     print(nxt)
     print(progress_dictionary[nxt])
     # for k, v in sorted(sdfk.items(), key=lambda x: x[0]):
