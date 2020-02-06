@@ -116,7 +116,8 @@ def get_new_nodes(location_status, progress, stop_routes, trips_data, routes_to_
     if next_stop_no in trip_data.tripStops.keys():
         # print("continue")
         return [transfer_data] + get_next_stop_data(location_status, progress, trip_data, routes_to_solve,
-                                                    progress.arrival_trip, next_stop_no, location_status.arrival_route)
+                                                    progress.arrival_trip, progress.trip_stop_no,
+                                                    location_status.arrival_route)
 
     # print("end of route")
     return [transfer_data]
@@ -170,7 +171,7 @@ def first_trip_after(earliest_departure_time, trips_data, analysis_data, routes_
     solution_trip_id = None
     solution_departure_time = datetime.strptime(analysis_data.end_date, '%Y-%m-%d') + timedelta(days=1)
     stop_id_nos = [sor for sor, sid in trips_data[routes_data[rid].tripIds[0]].tripStops.items() if
-                   sid.stopId == stop_id]
+                   sid.stopId == stop_id and str(int(sor) + 1) in trips_data[routes_data[rid].tripIds[0]].tripStops]
     rstop_id_no = None
     for stop_id_no in stop_id_nos:
         for tid in routes_data[rid].tripIds:
@@ -186,15 +187,18 @@ def first_trip_after(earliest_departure_time, trips_data, analysis_data, routes_
 
 def add_new_nodes_to_progress_dict(progress_dict, new_nodes_list, best_solution_duration):
     # print(new_nodes_list[0])
-    new_nodes_list = sorted(new_nodes_list, key=lambda x: x[1].duration, reverse=True)
-    for node in new_nodes_list:
+    # new_nodes_list = sorted(new_nodes_list, key=lambda x: x[1].duration)
+    nodes_to_add = [n for n in new_nodes_list if (n[0] not in progress_dict or
+                    progress_dict[n[0]].duration > n[1].duration) and
+                    (best_solution_duration is None or n[1].duration < best_solution_duration)]
+    for node in nodes_to_add:
         # print(node)
         # print(len(node))
         # print(len(progress_dictionary))
         progress_dict, best_solution_duration = add_new_node_to_progress_dict(progress_dict, node,
                                                                               best_solution_duration)
     # print(len(progress_dictionary))
-    return progress_dict, best_solution_duration
+    return progress_dict, best_solution_duration, nodes_to_add
 
 
 def add_new_node_to_progress_dict(progress_dict, new_node, best_solution_duration):
@@ -311,6 +315,16 @@ if __name__ == "__main__":
             unique_stops_to_solve.add(stop.stopId)
     # print(unique_stops_to_solve)
 
+    stops_at_ends_of_solution_routes = set()
+    for r in unique_routes_to_solve:
+        trip_id = route_trips[r].tripIds[0]
+        trip_stops = trip_schedules[trip_id].tripStops
+        # print([v.stopId for v in trip_stops.values()])
+        stops_at_ends_of_solution_routes.add(trip_stops['1'].stopId)
+        stops_at_ends_of_solution_routes.add(trip_stops[str(len(trip_stops))].stopId)
+    #     print(r, trip_stops['1'].stopId, trip_stops[str(len(trip_stops))].stopId, len(route_trips[r].tripIds))
+    # print(stops_at_ends_of_solution_routes)
+
     all_stop_locations = data.stopLocations
     all_stop_locations = {s: l for s, l in all_stop_locations.items() if s in location_routes.keys()}
     stop_locations_to_solve = {s: l for s, l in all_stop_locations.items() if s in unique_stops_to_solve}
@@ -344,10 +358,10 @@ if __name__ == "__main__":
             for stop_location in stop_locations:
                 best_departure_time, best_trip_id, _ = first_trip_after(start_time, trip_schedules, analysis,
                                                                         route_trips, route, stop)
-                location_info = LocationStatusInfo(location=stop, arrival_route=route,
+                location_info = LocationStatusInfo(location=stop, arrival_route=TRANSFER_ROUTE,
                                                    unvisited=initial_unsolved_string)
                 progress_info = ProgressInfo(start_time=best_departure_time, duration=timedelta(seconds=0), parent=None,
-                                             arrival_trip=best_trip_id, trip_stop_no=stop_location, expanded=False,
+                                             arrival_trip=TRANSFER_ROUTE, trip_stop_no=TRANSFER_ROUTE, expanded=False,
                                              eliminated=False)
                 progress_dictionary[location_info] = progress_info
                 # if stop == 'X70025':
@@ -375,33 +389,42 @@ if __name__ == "__main__":
     # print(unique_stops_to_solve)
     # quit()
 
-    # expansion_queue = ExpansionQueue(unique_routes_to_solve, unique_stops_to_solve, TRANSFER_ROUTE, WALK_ROUTE)
-    # expansion_queue.add([k, v for k, v in progress_dictionary.items()])
+    expansion_queue = ExpansionQueue(unique_routes_to_solve, unique_stops_to_solve, TRANSFER_ROUTE, WALK_ROUTE,
+                                     stops_at_ends_of_solution_routes)
+    expansion_queue.add_even_faster(progress_dictionary.keys(), progress_dictionary.values(), None)
 
-    initial_expansion_list = sorted([k for k in progress_dictionary.keys()],
-                                    key=lambda x: progress_dictionary[x].start_time, reverse=True)
+    # initial_expansion_list = sorted([k for k in progress_dictionary.keys()],
+    #                                 key=lambda x: progress_dictionary[x].start_time, reverse=True)
     best_duration = None
     take_from_top = False
     new_nodes = []
     expansions = 0
-    max_expand = 1
-    while len(initial_expansion_list) > 0:
-    # while expansion_queue.len() > 0:
+    max_expand = 100000
+    # while len(initial_expansion_list) > 0:
+    while expansion_queue.len() > 0:
     # for _ in range(30000):
-        if expansions >= max_expand:
-            break
-        expansions += 1
-        if expansions % 500000 == 0:
+    #     if expansions >= max_expand:
+    #         break
+        if expansions % 50000 == 0:
             expansions = 0
-            print("e", len(initial_expansion_list))
+            # print("e", len(initial_expansion_list))
+            print('e', expansion_queue.len_detail())
             print("p", len(progress_dictionary))
+        expansions += 1
         # print(expansion_queue)  # Prints voluminously
         # print(len(expansion_queue))
-        if take_from_top:
-            # print("taking from top")
-            expandee = initial_expansion_list.pop(0)
-        else:
-            expandee = initial_expansion_list.pop()
+        # if take_from_top:
+        #     # print("taking from top")
+        #     expandee = initial_expansion_list.pop(0)
+        # else:
+        #     expandee = initial_expansion_list.pop()
+        expandee = expansion_queue.pop()
+        # ex = expandee
+        # exs = list()
+        # while ex is not None:
+        #     exs.append(ex.location)
+        #     ex = progress_dictionary[ex].parent
+        # print(', '.join(reversed(exs)), expandee.arrival_route)
         # if expandee.location in ['WP0011']:
         #     nexpandee = expandee
         #     print(expandee.location)
@@ -434,7 +457,8 @@ if __name__ == "__main__":
         # if best_duration is not None:
         #     print(best_duration)
         #     print(len(progress_dictionary))
-        # progress_dictionary[expandee] = ProgressInfo(start_time=expandee_progress.start_time, duration=expandee_progress.)
+        # progress_dictionary[expandee] = ProgressInfo(start_time=expandee_progress.start_time,
+        # duration=expandee_progress.)
         progress_dictionary[expandee] = progress_dictionary[expandee]._replace(expanded=True)
 
         new_nodes = get_new_nodes(expandee, progress_dictionary[expandee], location_routes, trip_schedules,
@@ -445,25 +469,27 @@ if __name__ == "__main__":
         # print(new_nodes)
         # print(len(new_nodes))
         # print(best_progress.start_time + best_progress.duration + timedelta(hours=1), end_date_midnight)
-        if len(new_nodes) > 0:
-            best_progress = new_nodes[len(new_nodes) - 1][1]
-            take_from_top = best_progress.start_time + best_progress.duration + timedelta(hours=1) > end_date_midnight
-        else:
-            take_from_top = False
+        # if len(new_nodes) == 1:
+        #     print(new_nodes)
+        if len(new_nodes) == 0:
+            continue
 
         # if len(new_nodes) > 20:
         #     print(len(new_nodes))
         #     print(len(progress_dictionary))
         #     print(len(expansion_queue))
 
-        progress_dictionary, best_duration = add_new_nodes_to_progress_dict(progress_dictionary, new_nodes,
-                                                                            best_duration)
+        progress_dictionary, best_duration, new_nodes = add_new_nodes_to_progress_dict(progress_dictionary, new_nodes,
+                                                                                       best_duration)
         # TODO also return which nodes were added to the dict (why?)
         # TODO remove nodes whose progress exceeds the best duration from expansion queue and progress dict
         # TODO priority queues: solution queue, system queue, transfer queue, walk queue
 
-        new_locations = [l for l, p in new_nodes]
-        initial_expansion_list += new_locations
+        if len(new_nodes) == 0:
+            continue
+        new_locations, new_progresses = tuple(zip(*new_nodes)) #[l for l, p in new_nodes]
+        # initial_expansion_list += new_locations
+        expansion_queue.add_even_faster(new_locations, new_progresses, expandee_progress)
 
         # if len(new_nodes) > 20:
         #     print(len(new_nodes))
@@ -480,10 +506,12 @@ if __name__ == "__main__":
 #  they're at exactly the same latitude/longitude, or if they have the same stop ID
 #  A minimum of five decimal places of precision is required for lat/long to really mean anything in the context of bus stops
 
-    print(len(initial_expansion_list))
+    # print(len(initial_expansion_list))
+    print(expansion_queue.len_detail())
     print(len(progress_dictionary))
     print(best_duration)
-    nxt = initial_expansion_list.pop()
+    # nxt = initial_expansion_list.pop()
+    nxt = expansion_queue.pop()
     print(nxt)
     print(progress_dictionary[nxt])
     # for k, v in sorted(sdfk.items(), key=lambda x: x[0]):
