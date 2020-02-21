@@ -12,6 +12,8 @@ TRANSFER_DURATION_SECONDS = 60
 WALK_ROUTE = 'walk between stations'
 WALK_SPEED_MPH = 4.5
 MAX_WALK_NODES = 2
+MAX_EXPANSION_QUEUE = 2500000
+MAX_PROGRESS_DICT = 3000000
 EarthLocation = namedtuple('EarthLocation', ['lat', 'long'])
 LocationStatusInfo = namedtuple('LocationStatusInfo', ['location', 'arrival_route', 'unvisited'])
 ProgressInfo = namedtuple('ProgressInfo', ['start_time', 'duration', 'arrival_trip', 'trip_stop_no',
@@ -331,6 +333,9 @@ def eliminate_node_from_progress_dict(progress_dict, eliminated_key):
 
 def prune(progress_dict, exp_queue, new_prog_dur):
     # return progress_dict, exp_queue
+    if len(progress_dict) <= min(MAX_PROGRESS_DICT, MAX_EXPANSION_QUEUE):
+        return progress_dict, exp_queue
+
     parents = set([va.parent for va in progress_dict.values()])
     bad_keys = set([k for k, va in progress_dict.items() if
                     (new_prog_dur is not None and
@@ -338,6 +343,10 @@ def prune(progress_dict, exp_queue, new_prog_dur):
                     va.eliminated or
                     (va.expanded and k not in parents)])
     exp_queue.remove_keys(bad_keys)
+
+    if len(progress_dict) <= MAX_PROGRESS_DICT:
+        return progress_dict, exp_queue
+
     for key in bad_keys:
         del progress_dict[key]
     # for queue in exp_queue._order:
@@ -379,15 +388,12 @@ def node_too_slow(node, best_timee):
 
 
 def is_node_eliminated(progress_dict, key):
-    if key is None:
-        return False
-    if key not in progress_dict or progress_dict[key].eliminated:
-        return True
-    if is_parent_replaced(progress_dict, key):
-        return True
-    parent = progress_dict[key].parent
-    return is_node_eliminated(progress_dict, parent)
-    # return progress_dict[key].eliminated
+    while key is not None:
+        if key not in progress_dict or progress_dict[key].eliminated:
+            return True
+        if is_parent_replaced(progress_dict, key):
+            return True
+        key = progress_dict[key].parent
 
 
 def is_parent_replaced(progress_dict, key):
@@ -472,17 +478,18 @@ def find_solution(begin_time, stops_to_solve, routes_by_stop, routes_to_solve, k
                 progress_dict[loc_info] = prog_info
 
     exp_queue = ExpansionQueue(routes_to_solve, stops_to_solve, TRANSFER_ROUTE, WALK_ROUTE,
-                               stops_at_ends_of_solution_routes)
-    exp_queue.add_with_depth(progress_dict.keys(), progress_dict.values(), known_best_time is not None)
+                               stops_at_ends_of_solution_routes, MAX_EXPANSION_QUEUE, transfer_stops)
+    exp_queue.add_with_depth(progress_dict.keys(), progress_dict.values())
 
     expansionss = 1
     best_nn_time = None
     while exp_queue.len() > 0:
-        if expansionss % 5000 == 0:
-            if expansionss % 5000 == 0:
+        if expansionss % 10000 == 0:
+            if expansionss % 50000 == 0:
                 expansionss = 0
                 print('e', exp_queue.len_detail())
                 print("p", len(progress_dict))
+                print('l', len(progress_dict) + exp_queue.len())
             progress_dict, exp_queue = prune(progress_dict, exp_queue, known_best_time)
             if exp_queue.len() == 0:
                 break
@@ -516,7 +523,7 @@ def find_solution(begin_time, stops_to_solve, routes_by_stop, routes_to_solve, k
             continue
 
         new_locs, new_progs = tuple(zip(*new_nodess))
-        exp_queue.add_with_depth(new_locs, new_progs, known_best_time is not None)
+        exp_queue.add_with_depth(new_locs, new_progs)
 
     return known_best_time, progress_dict, best_dtime
 
@@ -595,6 +602,7 @@ if __name__ == "__main__":
     end_date_midnight = datetime.strptime(analysis.end_date, '%Y-%m-%d') + timedelta(days=1)
     # print(start_time)
 
+    stop_stops = {}
     minimum_stop_times = {}
     for stop in unique_stops_to_solve:
         routes_at_initial_stop = location_routes[stop]
@@ -623,8 +631,13 @@ if __name__ == "__main__":
                         minimum_stop_times[next_stop_name] = timedelta(hours=24)
                     if stop not in minimum_stop_times:
                         minimum_stop_times[stop] = timedelta(hours=24)
+                    if stop not in stop_stops:
+                        stop_stops[stop] = set()
+                    stop_stops[stop].add(next_stop_name)
                     minimum_stop_times[next_stop_name] = min(minimum_stop_times[next_stop_name], new_dur / 2)
                     minimum_stop_times[stop] = min(minimum_stop_times[stop], new_dur / 2)
+
+    transfer_stops = [s for s, ss in stop_stops.items() if len(ss) >= 3]
 
     # print(minimum_stop_times)
     total_minimum_time = timedelta(0)
