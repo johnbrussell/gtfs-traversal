@@ -184,6 +184,7 @@ def get_walking_data(location_status, progress, locations_to_solve, locations_to
                                                     current_location.long, locations_to_solve[lsi.location].long) for
                                   lsi in solution_location_status_infos]
     max_walking_duration = max(solution_walking_durations)
+    # print(max_walking_duration)
     other_walking_durations = [walk_time_seconds(current_location.lat, locations_to_not_solve[lsi.location].lat,
                                                  current_location.long, locations_to_not_solve[lsi.location].long) for
                                lsi in other_location_status_infos]
@@ -212,6 +213,7 @@ def get_walking_data(location_status, progress, locations_to_solve, locations_to
         if wts <= max_walking_duration and
         progress.start_time + progress.duration + timedelta(seconds=wts) < analysis_end
     ]
+    # print([r[0].location for r in to_return if r[0] in solution_location_status_infos])
     # print('return', to_return[0])
     return to_return
 
@@ -240,15 +242,21 @@ def add_new_nodes_to_progress_dict(progress_dict, new_nodes_list, best_solution_
     # print(new_nodes_list[0])
     # new_nodes_list = sorted(new_nodes_list, key=lambda x: x[1].duration)
     nodes_to_add = [n for n in new_nodes_list if (n[0] not in progress_dict or
-                    progress_dict[n[0]].duration > n[1].duration) and
-                    (best_solution_duration is None or n[1].duration < best_solution_duration)]
+                    progress_dict[n[0]].duration > n[1].duration or
+                    progress_dict[n[0]].start_route != n[1].start_route) and
+                    (best_solution_duration is None or
+                     n[1].duration + n[1].minimum_remaining_time < best_solution_duration) and
+                    n[0].unvisited != initial_unsolved_string]
     # initial_len = len(nodes_to_add)
-    solution_nodes = [n for n in nodes_to_add if n[0].unvisited == STOP_JOIN_STRING]
-    temp_best_solution = min([n[1].duration for n in solution_nodes]) if len(solution_nodes) > 0 else \
-        best_solution_duration
+    # solution_nodes = [n for n in nodes_to_add if n[0].unvisited == STOP_JOIN_STRING]
+    # temp_best_solution = min([n[1].duration for n in solution_nodes]) if len(solution_nodes) > 0 else \
+    #     best_solution_duration
     # if len(solution_nodes) > 0:
     #     print([n[1].minimum_remaining_time for n in solution_nodes])
-    nodes_to_add = [n for n in nodes_to_add if not node_too_slow(n, temp_best_solution)]
+    # print("add")
+    # print(len(nodes_to_add))
+    # nodes_to_add = [n for n in nodes_to_add if not node_too_slow(n, temp_best_solution)]
+    # print(len(nodes_to_add))
 
     # final_len = len(nodes_to_add)
     # if final_len != initial_len:
@@ -339,7 +347,7 @@ def prune(progress_dict, exp_queue, new_prog_dur):
     parents = set([va.parent for va in progress_dict.values()])
     bad_keys = set([k for k, va in progress_dict.items() if
                     (new_prog_dur is not None and
-                    va.duration > new_prog_dur) or
+                    va.duration + va.minimum_remaining_time > new_prog_dur) or
                     va.eliminated or
                     (va.expanded and k not in parents)])
     exp_queue.remove_keys(bad_keys)
@@ -354,37 +362,6 @@ def prune(progress_dict, exp_queue, new_prog_dur):
     #         if key not in progress_dict:
     #             print(key)
     return progress_dict, exp_queue
-
-
-def node_too_slow(node, best_timee):
-    loc, progress = node
-    if best_timee is not None and progress.duration + progress.minimum_remaining_time > best_timee:
-        # print("implied minimum duration", progress.duration + progress.minimum_remaining_time, best_time)
-        return True
-    # if unnecessary_time is not None and progress.non_necessary_time > unnecessary_time:
-    #     print("non necessary", progress.non_necessary_time, unnecessary_time)
-    #     return True
-    if loc.unvisited == initial_unsolved_string:
-        return True
-    return False
-    # if loc.arrival_route != TRANSFER_ROUTE or best_time is None:
-    #     return False
-    # candidate_keys = [k for k, va in progress_dict.items() if
-    #                   k.arrival_route == loc.arrival_route and
-    #                   k.location == loc.location and va.duration < progress.duration and
-    #                   va.start_location == progress.start_location and
-    #                   va.start_route == progress.start_route and
-    #                   len(k.unvisited) < len(loc.unvisited)]
-    # if len(candidate_keys) == 0:
-    #     return False
-    # loc_locations = set(loc.unvisited.split(STOP_JOIN_STRING))
-    # location_difference = any(
-    #     loc_locations >= set(k.unvisited.split(STOP_JOIN_STRING))
-    #     for k in candidate_keys
-    # )
-    # if location_difference:
-    #     print('visited more locations in less time')
-    # return location_difference
 
 
 def is_node_eliminated(progress_dict, key):
@@ -403,7 +380,7 @@ def is_parent_replaced(progress_dict, key):
     if parent is None:
         return False
     if parent not in progress_dict:
-        return False
+        return True
     if key.arrival_route == TRANSFER_ROUTE:
         if progress_dict[key].duration - progress_dict[parent].duration > \
                 timedelta(seconds=TRANSFER_DURATION_SECONDS):
@@ -478,18 +455,22 @@ def find_solution(begin_time, stops_to_solve, routes_by_stop, routes_to_solve, k
                 progress_dict[loc_info] = prog_info
 
     exp_queue = ExpansionQueue(routes_to_solve, stops_to_solve, TRANSFER_ROUTE, WALK_ROUTE,
-                               stops_at_ends_of_solution_routes, MAX_EXPANSION_QUEUE, transfer_stops)
-    exp_queue.add_with_depth(progress_dict.keys(), progress_dict.values())
+                               stops_at_ends_of_solution_routes, MAX_EXPANSION_QUEUE, transfer_stops,
+                               route_stops)
+    if len(progress_dict) > 0:
+        exp_queue.add_with_depth(progress_dict.keys(), progress_dict.values(), known_best_time)
 
+    # max_expand = 10
     expansionss = 1
     best_nn_time = None
     while exp_queue.len() > 0:
+        # if expansionss > max_expand:
+        #     quit()
         if expansionss % 10000 == 0:
-            if expansionss % 50000 == 0:
+            if expansionss % 10000 == 0:
                 expansionss = 0
                 print('e', exp_queue.len_detail())
                 print("p", len(progress_dict))
-                print('l', len(progress_dict) + exp_queue.len())
             progress_dict, exp_queue = prune(progress_dict, exp_queue, known_best_time)
             if exp_queue.len() == 0:
                 break
@@ -519,11 +500,18 @@ def find_solution(begin_time, stops_to_solve, routes_by_stop, routes_to_solve, k
         if known_best_time is not None:
             best_nn_time = known_best_time - total_minimum_time
 
+        # print(len(new_nodess))
+        # print(len([n for n in new_nodess if n[0].location in unique_stops_to_solve]))
+
         if len(new_nodess) == 0:
             continue
 
+        # print(len(new_nodess), exp_queue.len())
+        # print(new_nodess)
         new_locs, new_progs = tuple(zip(*new_nodess))
-        exp_queue.add_with_depth(new_locs, new_progs)
+        exp_queue.remove_keys(new_locs)
+        exp_queue.add_with_depth(new_locs, new_progs, None)
+        # print(exp_queue.len())
 
     return known_best_time, progress_dict, best_dtime
 
@@ -604,11 +592,15 @@ if __name__ == "__main__":
 
     stop_stops = {}
     minimum_stop_times = {}
+    route_stops = {}
     for stop in unique_stops_to_solve:
         routes_at_initial_stop = location_routes[stop]
         for route in routes_at_initial_stop:
             if route not in unique_routes_to_solve:
                 continue
+            if route not in route_stops:
+                route_stops[route] = set()
+            route_stops[route].add(stop)
             stop_locations = [sor for sor, sid in trip_schedules[route_trips[route].tripIds[0]].tripStops.items() if
                               sid.stopId == stop]
             for stop_location in stop_locations:
