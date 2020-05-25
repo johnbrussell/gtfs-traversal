@@ -1,15 +1,8 @@
-def load_configuration():
-    with open("configuration.json") as config_file:
-        config = json.load(config_file)
-    return config
-
-
 if __name__ == "__main__":
     from datetime import datetime, timedelta
-    import json
 
     import gtfs_parsing.analyses.analyses as gtfs_analyses
-    from gtfs_traversal import read_data
+    from gtfs_traversal.read_data import *
     from gtfs_traversal.solver import Solver
 
     STOP_JOIN_STRING = '~~'
@@ -24,7 +17,7 @@ if __name__ == "__main__":
     analyses = gtfs_analyses.determine_analysis_parameters(load_configuration())
     analysis = analyses[1]
 
-    data = read_data.read_data(analysis, "data")
+    data = read_data(analysis, "data")
 
     location_routes = {}
     trip_schedules = data.tripSchedules
