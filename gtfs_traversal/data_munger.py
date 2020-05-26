@@ -8,7 +8,6 @@ class DataMunger:
                  transfer_duration_seconds, transfer_route, walk_route, walk_speed_mph):
         self.analysis = analysis
         self.data = data
-        self._location_routes = self._get_location_routes()
         self.max_expansion_queue = max_expansion_queue
         self.max_progress_dict = max_progress_dict
         self.start_time = start_time
@@ -17,6 +16,8 @@ class DataMunger:
         self.transfer_route = transfer_route
         self.walk_route = walk_route
         self.walk_speed_mph = walk_speed_mph
+
+        self._location_routes = None
 
     def get_all_stop_locations(self):
         all_stop_locations = self.data.stopLocations
@@ -28,9 +29,9 @@ class DataMunger:
                self.stop_join_string
 
     def get_location_routes(self):
-        return self._location_routes
+        if self._location_routes is not None:
+            return self._location_routes
 
-    def _get_location_routes(self):
         location_routes = {}
         for route_id, info in self.get_route_trips().items():
             trip_id = info.tripIds[0]
@@ -39,6 +40,8 @@ class DataMunger:
                 if stop_info.stopId not in location_routes:
                     location_routes[stop_info.stopId] = set()
                 location_routes[stop_info.stopId].add(route_id)
+
+        self._location_routes = location_routes
         return location_routes
 
     def get_minimum_stop_times_route_stops_and_stop_stops(self):
