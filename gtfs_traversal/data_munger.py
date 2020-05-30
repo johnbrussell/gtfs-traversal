@@ -45,27 +45,16 @@ class DataMunger:
         return location_routes
 
     def get_minimum_stop_times_route_stops_and_stop_stops(self):
-        solver = Solver(
-            analysis=self.analysis,
-            initial_unsolved_string=self.get_initial_unsolved_string(),
-            location_routes=self.get_location_routes(),
-            max_expansion_queue=self.max_expansion_queue,
-            max_progress_dict=self.max_progress_dict,
-            minimum_stop_times={},
-            off_course_stop_locations=self.get_off_course_stop_locations(),
-            route_stops={},
-            route_trips=self.get_route_trips(),
-            stop_join_string=self.stop_join_string,
-            stop_locations_to_solve=self.get_stop_locations_to_solve(),
-            stops_at_ends_of_solution_routes=self.get_stops_at_ends_of_solution_routes(),
-            total_minimum_time=0,
-            transfer_duration_seconds=self.transfer_duration_seconds,
-            transfer_route=self.transfer_route,
-            transfer_stops=[],
-            trip_schedules=self.get_trip_schedules(),
-            walk_route=self.walk_route,
-            walk_speed_mph=self.walk_speed_mph
-        )
+        solver = Solver(analysis=self.analysis, initial_unsolved_string=self.get_initial_unsolved_string(),
+                        location_routes=self.get_location_routes(), max_expansion_queue=self.max_expansion_queue,
+                        max_progress_dict=self.max_progress_dict, minimum_stop_times={},
+                        off_course_stop_locations=self.get_off_course_stop_locations(), route_stops={},
+                        route_trips=self.get_route_trips(), stop_join_string=self.stop_join_string,
+                        stop_locations_to_solve=self.get_stop_locations_to_solve(),
+                        stops_at_ends_of_solution_routes=self.get_stops_at_ends_of_solution_routes(),
+                        total_minimum_time=0, transfer_duration_seconds=self.transfer_duration_seconds,
+                        transfer_route=self.transfer_route, transfer_stops=[], trip_schedules=self.get_trip_schedules(),
+                        walk_route=self.walk_route, walk_speed_mph=self.walk_speed_mph)
 
         stop_stops = {}
         minimum_stop_times = {}

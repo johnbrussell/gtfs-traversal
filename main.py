@@ -51,15 +51,15 @@ if __name__ == "__main__":
     unique_routes_to_solve = data_munger.get_unique_routes_to_solve()
     unique_stops_to_solve = data_munger.get_unique_stops_to_solve()
 
-    solver = Solver(WALK_SPEED_MPH, STOP_JOIN_STRING, analysis=analysis, total_minimum_time=total_minimum_time,
-                    initial_unsolved_string=initial_unsolved_string, location_routes=location_routes,
-                    transfer_duration_seconds=TRANSFER_DURATION_SECONDS, walk_route=WALK_ROUTE,
-                    trip_schedules=trip_schedules, transfer_stops=transfer_stops, max_progress_dict=MAX_PROGRESS_DICT,
-                    max_expansion_queue=MAX_EXPANSION_QUEUE, transfer_route=TRANSFER_ROUTE,
+    solver = Solver(analysis=analysis, initial_unsolved_string=initial_unsolved_string, location_routes=location_routes,
+                    max_expansion_queue=MAX_EXPANSION_QUEUE, max_progress_dict=MAX_PROGRESS_DICT,
+                    minimum_stop_times=minimum_stop_times, off_course_stop_locations=off_course_stop_locations,
+                    route_stops=route_stops, route_trips=route_trips, stop_join_string=STOP_JOIN_STRING,
+                    stop_locations_to_solve=stop_locations_to_solve,
                     stops_at_ends_of_solution_routes=stops_at_ends_of_solution_routes,
-                    stop_locations_to_solve=stop_locations_to_solve, route_stops=route_stops,
-                    off_course_stop_locations=off_course_stop_locations, route_trips=route_trips,
-                    minimum_stop_times=minimum_stop_times)
+                    total_minimum_time=total_minimum_time, transfer_duration_seconds=TRANSFER_DURATION_SECONDS,
+                    transfer_route=TRANSFER_ROUTE, transfer_stops=transfer_stops, trip_schedules=trip_schedules,
+                    walk_route=WALK_ROUTE, walk_speed_mph=WALK_SPEED_MPH)
 
     # end_date_midnight
     best_time = None
