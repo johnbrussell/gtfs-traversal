@@ -39,7 +39,7 @@ if __name__ == "__main__":
     )
 
     initial_unsolved_string = data_munger.get_initial_unsolved_string()
-    location_routes = data_munger.get_location_routes()
+    location_routes = data_munger.get_routes_by_stop()
     minimum_stop_times, route_stops, _ = data_munger.get_minimum_stop_times_route_stops_and_stop_stops()
     off_course_stop_locations = data_munger.get_off_course_stop_locations()
     route_trips = data_munger.get_route_trips()

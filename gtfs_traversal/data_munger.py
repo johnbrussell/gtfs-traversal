@@ -21,14 +21,14 @@ class DataMunger:
 
     def get_all_stop_locations(self):
         all_stop_locations = self.data.stopLocations
-        return {s: l for s, l in all_stop_locations.items() if s in self.get_location_routes().keys()}
+        return {s: l for s, l in all_stop_locations.items() if s in self.get_routes_by_stop().keys()}
 
     def get_initial_unsolved_string(self):
         return self.stop_join_string + \
                self.stop_join_string.join(self.get_unique_stops_to_solve()) + \
                self.stop_join_string
 
-    def get_location_routes(self):
+    def get_routes_by_stop(self):
         if self._location_routes is not None:
             return self._location_routes
 
@@ -46,7 +46,7 @@ class DataMunger:
 
     def get_minimum_stop_times_route_stops_and_stop_stops(self):
         solver = Solver(analysis=self.analysis, initial_unsolved_string=self.get_initial_unsolved_string(),
-                        location_routes=self.get_location_routes(), max_expansion_queue=self.max_expansion_queue,
+                        location_routes=self.get_routes_by_stop(), max_expansion_queue=self.max_expansion_queue,
                         max_progress_dict=self.max_progress_dict, minimum_stop_times={},
                         off_course_stop_locations=self.get_off_course_stop_locations(), route_stops={},
                         route_trips=self.get_route_trips(), stop_join_string=self.stop_join_string,
@@ -60,7 +60,7 @@ class DataMunger:
         minimum_stop_times = {}
         route_stops = {}
         for stop in self.get_unique_stops_to_solve():
-            routes_at_initial_stop = self.get_location_routes()[stop]
+            routes_at_initial_stop = self.get_routes_by_stop()[stop]
             for route in routes_at_initial_stop:
                 if route not in self.get_unique_routes_to_solve():
                     continue
