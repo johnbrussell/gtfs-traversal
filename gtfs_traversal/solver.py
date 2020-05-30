@@ -76,11 +76,11 @@ class Solver:
                 ((self.MINIMUM_STOP_TIMES[
                       current_stop_id] if uneliminated_current_stop_name in location_status.unvisited else
                   timedelta(0)) + (self.MINIMUM_STOP_TIMES[next_stop_id] if uneliminated_next_stop_name in
-                                                                       location_status.unvisited else timedelta(
-                    0)) if new_route_id in
-                           routes_to_solve else timedelta(0))
+                                   location_status.unvisited else timedelta(
+                    0)) if new_route_id in routes_to_solve else timedelta(0))
             # decrease_in_minimum_remaining_time = progress.minimum_remaining_time - new_minimum_remaining_time
-            # new_non_necessary_time = progress.non_necessary_time + change_in_duration - decrease_in_minimum_remaining_time
+            # new_non_necessary_time = progress.non_necessary_time + change_in_duration -
+            # decrease_in_minimum_remaining_time
             # if best_duration is None:
             #     print(progress.start_time + new_duration)
             # if next_stop_id in stop_locations_to_solve:
