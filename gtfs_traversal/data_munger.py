@@ -28,22 +28,6 @@ class DataMunger:
                self.stop_join_string.join(self.get_unique_stops_to_solve()) + \
                self.stop_join_string
 
-    def get_routes_by_stop(self):
-        if self._location_routes is not None:
-            return self._location_routes
-
-        location_routes = {}
-        for route_id, info in self.get_route_trips().items():
-            trip_id = info.tripIds[0]
-            stops = self.get_trip_schedules()[trip_id].tripStops
-            for stop, stop_info in stops.items():
-                if stop_info.stopId not in location_routes:
-                    location_routes[stop_info.stopId] = set()
-                location_routes[stop_info.stopId].add(route_id)
-
-        self._location_routes = location_routes
-        return location_routes
-
     def get_minimum_stop_times_route_stops_and_stop_stops(self):
         solver = Solver(analysis=self.analysis, initial_unsolved_string=self.get_initial_unsolved_string(),
                         location_routes=self.get_routes_by_stop(), max_expansion_queue=self.max_expansion_queue,
@@ -108,6 +92,22 @@ class DataMunger:
 
     def get_route_types_to_solve(self):
         return [str(r) for r in self.analysis.route_types]
+
+    def get_routes_by_stop(self):
+        if self._location_routes is not None:
+            return self._location_routes
+
+        location_routes = {}
+        for route_id, info in self.get_route_trips().items():
+            trip_id = info.tripIds[0]
+            stops = self.get_trip_schedules()[trip_id].tripStops
+            for stop, stop_info in stops.items():
+                if stop_info.stopId not in location_routes:
+                    location_routes[stop_info.stopId] = set()
+                location_routes[stop_info.stopId].add(route_id)
+
+        self._location_routes = location_routes
+        return location_routes
 
     def get_stop_locations_to_solve(self):
         return {s: l for s, l in self.get_all_stop_locations().items() if s in self.get_unique_stops_to_solve()}
