@@ -36,6 +36,14 @@ class TestDataMunger(unittest.TestCase):
         expected = [1, 2]
         self.assertEqual(subject.get_unique_routes_to_solve(), expected)
 
+    def test_get_unique_stops_to_solve(self):
+        analysis = MockAnalysis(route_types_to_solve=[1, 2])
+        subject = DataMunger(analysis=analysis, data=MockData(), max_expansion_queue=None, max_progress_dict=None,
+                             start_time=None, stop_join_string=None, transfer_duration_seconds=None,
+                             transfer_route=None, walk_route=None, walk_speed_mph=None)
+        expected = {'Alewife', 'Wonderland', 'Heath Street', 'Lechmere', 'Bowdoin'}
+        self.assertSetEqual(expected, subject.get_unique_stops_to_solve())
+
 
 class MockData:
     def __init__(self):
@@ -86,5 +94,5 @@ class MockStopDeparture:
 
 
 class MockAnalysis:
-    def __init__(self):
-        self.route_types = [2]
+    def __init__(self, route_types_to_solve=None):
+        self.route_types = [2] if route_types_to_solve is None else route_types_to_solve
