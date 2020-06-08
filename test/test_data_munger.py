@@ -28,6 +28,14 @@ class TestDataMunger(unittest.TestCase):
         subject._location_routes = expected
         self.assertEqual(expected, subject.get_routes_by_stop())
 
+    def test_get_unique_routes_to_solve(self):
+        analysis = MockAnalysis()
+        subject = DataMunger(analysis=analysis, data=MockData(), max_expansion_queue=None, max_progress_dict=None,
+                             start_time=None, stop_join_string=None, transfer_duration_seconds=None,
+                             transfer_route=None, walk_route=None, walk_speed_mph=None)
+        expected = [1, 2]
+        self.assertEqual(subject.get_unique_routes_to_solve(), expected)
+
 
 class MockData:
     def __init__(self):
@@ -58,7 +66,7 @@ class MockUniqueRouteInfo:
 class MockRouteInfo:
     def __init__(self, route_number):
         self.routeId = f'{route_number}'
-        self.routeType = '2'
+        self.routeType = 1 if route_number == 'Blue' else 2
 
 
 class MockTripInfo:
@@ -75,3 +83,8 @@ class MockStopDeparture:
     def __init__(self, stop_id):
         self.stopId = stop_id
         self.departureTime = None
+
+
+class MockAnalysis:
+    def __init__(self):
+        self.route_types = [2]
