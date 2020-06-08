@@ -135,7 +135,7 @@ class DataMunger:
 
     def get_unique_routes_to_solve(self):
         return [route_id for route_id, route in self.data.uniqueRouteTrips.items() if
-                route.routeInfo.routeType in self.get_route_types_to_solve()]
+                str(route.routeInfo.routeType) in self.get_route_types_to_solve()]
 
     def get_unique_stops_to_solve(self):
         unique_stops_to_solve = set()
