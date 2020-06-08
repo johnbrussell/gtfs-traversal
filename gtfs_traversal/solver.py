@@ -5,11 +5,10 @@ from datetime import datetime, timedelta
 
 
 class Solver:
-    def __init__(self, walk_speed_mph, stop_join_string, minimum_stop_times, transfer_route,
-                 walk_route, transfer_duration_seconds, max_progress_dict, max_expansion_queue,
-                 initial_unsolved_string, trip_schedules, route_trips, stops_at_ends_of_solution_routes,
-                 location_routes, total_minimum_time, transfer_stops, route_stops, analysis,
-                 stop_locations_to_solve, off_course_stop_locations):
+    def __init__(self, analysis, initial_unsolved_string, location_routes, max_expansion_queue, max_progress_dict,
+                 minimum_stop_times, off_course_stop_locations, route_stops, route_trips, stop_join_string,
+                 stop_locations_to_solve, stops_at_ends_of_solution_routes, total_minimum_time,
+                 transfer_duration_seconds, transfer_route, transfer_stops, trip_schedules, walk_route, walk_speed_mph):
         self.WALK_SPEED_MPH = walk_speed_mph
         self.STOP_JOIN_STRING = stop_join_string
         self.MINIMUM_STOP_TIMES = minimum_stop_times
@@ -76,11 +75,11 @@ class Solver:
                 ((self.MINIMUM_STOP_TIMES[
                       current_stop_id] if uneliminated_current_stop_name in location_status.unvisited else
                   timedelta(0)) + (self.MINIMUM_STOP_TIMES[next_stop_id] if uneliminated_next_stop_name in
-                                                                       location_status.unvisited else timedelta(
-                    0)) if new_route_id in
-                           routes_to_solve else timedelta(0))
+                                   location_status.unvisited else timedelta(
+                    0)) if new_route_id in routes_to_solve else timedelta(0))
             # decrease_in_minimum_remaining_time = progress.minimum_remaining_time - new_minimum_remaining_time
-            # new_non_necessary_time = progress.non_necessary_time + change_in_duration - decrease_in_minimum_remaining_time
+            # new_non_necessary_time = progress.non_necessary_time + change_in_duration -
+            # decrease_in_minimum_remaining_time
             # if best_duration is None:
             #     print(progress.start_time + new_duration)
             # if next_stop_id in stop_locations_to_solve:
