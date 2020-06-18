@@ -18,6 +18,8 @@ class DataMunger:
         self.walk_speed_mph = walk_speed_mph
 
         self._location_routes = None
+        self._unique_routes_to_solve = None
+        self._unique_stops_to_solve = None
 
     def get_all_stop_locations(self):
         all_stop_locations = self.data.stopLocations
@@ -134,14 +136,24 @@ class DataMunger:
         return self.data.tripSchedules
 
     def get_unique_routes_to_solve(self):
-        return [route_id for route_id, route in self.data.uniqueRouteTrips.items() if
-                str(route.routeInfo.routeType) in self.get_route_types_to_solve()]
+        if self._unique_routes_to_solve is not None:
+            return self._unique_routes_to_solve
+
+        self._unique_routes_to_solve = [route_id for route_id, route in self.data.uniqueRouteTrips.items() if
+                                        str(route.routeInfo.routeType) in self.get_route_types_to_solve()]
+
+        return self._unique_routes_to_solve
 
     def get_unique_stops_to_solve(self):
+        if self._unique_stops_to_solve is not None:
+            return self._unique_stops_to_solve
+
         unique_stops_to_solve = set()
         for r in self.get_unique_routes_to_solve():
             trip_id = self.get_route_trips()[r].tripIds[0]
             trip_stops = self.get_trip_schedules()[trip_id].tripStops
             for stop in trip_stops.values():
                 unique_stops_to_solve.add(stop.stopId)
+
+        self._unique_stops_to_solve = unique_stops_to_solve
         return unique_stops_to_solve
