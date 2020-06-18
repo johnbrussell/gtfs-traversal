@@ -2,6 +2,7 @@ if __name__ == "__main__":
     from datetime import datetime, timedelta
 
     import gtfs_parsing.analyses.analyses as gtfs_analyses
+    from gtfs_parsing.data_structures.data_structures import gtfsSchedules
     from gtfs_traversal.data_munger import DataMunger
     from gtfs_traversal.read_data import *
     from gtfs_traversal.solver import Solver
@@ -24,6 +25,22 @@ if __name__ == "__main__":
     start_time = start_date_midnight + timedelta(seconds=0)
     # must analyze all start times in completely separate trees because trip durations change throughout the day
     end_date_midnight = datetime.strptime(analysis.end_date, '%Y-%m-%d') + timedelta(days=1)
+
+    def remove_trips_that_do_not_operate_within_analysis_timeframe(raw_data):
+        all_trips = set()
+        for day, trips in raw_data.dateTrips.items():
+            all_trips = all_trips.union(trips)
+
+        new_data = gtfsSchedules(
+            tripSchedules={trip_id: trip_info for trip_id, trip_info in raw_data.tripSchedules.items() if
+                           trip_id in all_trips},
+            dateTrips=raw_data.dateTrips,
+            uniqueRouteTrips=raw_data.uniqueRouteTrips,
+            stopLocations=raw_data.stopLocations,
+        )
+        return new_data
+
+    data = remove_trips_that_do_not_operate_within_analysis_timeframe(data)
 
     data_munger = DataMunger(
         analysis=analysis,
