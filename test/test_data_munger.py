@@ -44,6 +44,14 @@ class TestDataMunger(unittest.TestCase):
         expected = {'Alewife', 'Wonderland', 'Heath Street', 'Lechmere', 'Bowdoin'}
         self.assertSetEqual(expected, subject.get_unique_stops_to_solve())
 
+    def test_get_unique_stops_to_solve_memoizes(self):
+        subject = DataMunger(analysis=None, data=None, max_expansion_queue=None, max_progress_dict=None,
+                             start_time=None, stop_join_string=None, transfer_duration_seconds=None,
+                             transfer_route=None, walk_route=None, walk_speed_mph=None)
+        expected = 'some result'
+        subject._unique_stops_to_solve = expected
+        self.assertEqual(expected, subject.get_unique_stops_to_solve())
+
 
 class MockData:
     def __init__(self):
