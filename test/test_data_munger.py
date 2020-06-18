@@ -3,30 +3,34 @@ from gtfs_traversal.data_munger import DataMunger
 
 
 class TestDataMunger(unittest.TestCase):
-    def test_get_routes_by_stop_munges_correctly_and_does_not_return_none(self):
-        subject = DataMunger(analysis=None, data=MockData(), max_expansion_queue=None, max_progress_dict=None,
-                             start_time=None, stop_join_string=None, transfer_duration_seconds=None,
-                             transfer_route=None, walk_route=None, walk_speed_mph=None)
-        self.assertEqual(subject._location_routes, None)
+    def test_get_routes_by_stop(self):
+        def test_munges_correctly():
+            subject = DataMunger(analysis=None, data=MockData(), max_expansion_queue=None, max_progress_dict=None,
+                                 start_time=None, stop_join_string=None, transfer_duration_seconds=None,
+                                 transfer_route=None, walk_route=None, walk_speed_mph=None)
+            self.assertEqual(subject._location_routes, None)
 
-        expected = {
-            'Alewife': {1},
-            'Wonderland': {1, 3},
-            'Heath Street': {2},
-            'Lechmere': {2},
-            'Bowdoin': {3},
-        }
-        actual = subject.get_routes_by_stop()
+            expected = {
+                'Alewife': {1},
+                'Wonderland': {1, 3},
+                'Heath Street': {2},
+                'Lechmere': {2},
+                'Bowdoin': {3},
+            }
+            actual = subject.get_routes_by_stop()
 
-        self.assertEqual(expected, actual)
+            self.assertEqual(expected, actual)
 
-    def test_get_routes_by_stop_memoizes(self):
-        subject = DataMunger(analysis=None, data=None, max_expansion_queue=None, max_progress_dict=None,
-                             start_time=None, stop_join_string=None, transfer_duration_seconds=None,
-                             transfer_route=None, walk_route=None, walk_speed_mph=None)
-        expected = 'some result'
-        subject._location_routes = expected
-        self.assertEqual(expected, subject.get_routes_by_stop())
+        def test_memoizes():
+            subject = DataMunger(analysis=None, data=None, max_expansion_queue=None, max_progress_dict=None,
+                                 start_time=None, stop_join_string=None, transfer_duration_seconds=None,
+                                 transfer_route=None, walk_route=None, walk_speed_mph=None)
+            expected = 'some result'
+            subject._location_routes = expected
+            self.assertEqual(expected, subject.get_routes_by_stop())
+
+        test_memoizes()
+        test_munges_correctly()
 
     def test_get_unique_routes_to_solve(self):
         analysis = MockAnalysis()
@@ -37,20 +41,25 @@ class TestDataMunger(unittest.TestCase):
         self.assertEqual(subject.get_unique_routes_to_solve(), expected)
 
     def test_get_unique_stops_to_solve(self):
-        analysis = MockAnalysis(route_types_to_solve=[1, 2])
-        subject = DataMunger(analysis=analysis, data=MockData(), max_expansion_queue=None, max_progress_dict=None,
-                             start_time=None, stop_join_string=None, transfer_duration_seconds=None,
-                             transfer_route=None, walk_route=None, walk_speed_mph=None)
-        expected = {'Alewife', 'Wonderland', 'Heath Street', 'Lechmere', 'Bowdoin'}
-        self.assertSetEqual(expected, subject.get_unique_stops_to_solve())
+        def test_returns_correct_result():
+            analysis = MockAnalysis(route_types_to_solve=[1, 2])
+            subject = DataMunger(analysis=analysis, data=MockData(), max_expansion_queue=None, max_progress_dict=None,
+                                 start_time=None, stop_join_string=None, transfer_duration_seconds=None,
+                                 transfer_route=None, walk_route=None, walk_speed_mph=None)
+            self.assertEqual(subject._location_routes, None)
+            expected = {'Alewife', 'Wonderland', 'Heath Street', 'Lechmere', 'Bowdoin'}
+            self.assertSetEqual(expected, subject.get_unique_stops_to_solve())
 
-    def test_get_unique_stops_to_solve_memoizes(self):
-        subject = DataMunger(analysis=None, data=None, max_expansion_queue=None, max_progress_dict=None,
-                             start_time=None, stop_join_string=None, transfer_duration_seconds=None,
-                             transfer_route=None, walk_route=None, walk_speed_mph=None)
-        expected = 'some result'
-        subject._unique_stops_to_solve = expected
-        self.assertEqual(expected, subject.get_unique_stops_to_solve())
+        def test_memoizes():
+            subject = DataMunger(analysis=None, data=None, max_expansion_queue=None, max_progress_dict=None,
+                                 start_time=None, stop_join_string=None, transfer_duration_seconds=None,
+                                 transfer_route=None, walk_route=None, walk_speed_mph=None)
+            expected = 'some result'
+            subject._unique_stops_to_solve = expected
+            self.assertEqual(expected, subject.get_unique_stops_to_solve())
+
+        test_memoizes()
+        test_returns_correct_result()
 
 
 class MockData:
