@@ -33,12 +33,24 @@ class TestDataMunger(unittest.TestCase):
         test_munges_correctly()
 
     def test_get_unique_routes_to_solve(self):
-        analysis = MockAnalysis()
-        subject = DataMunger(analysis=analysis, data=MockData(), max_expansion_queue=None, max_progress_dict=None,
-                             start_time=None, stop_join_string=None, transfer_duration_seconds=None,
-                             transfer_route=None, walk_route=None, walk_speed_mph=None)
-        expected = [1, 2]
-        self.assertEqual(subject.get_unique_routes_to_solve(), expected)
+        def test_returns_correct_result():
+            analysis = MockAnalysis()
+            subject = DataMunger(analysis=analysis, data=MockData(), max_expansion_queue=None, max_progress_dict=None,
+                                 start_time=None, stop_join_string=None, transfer_duration_seconds=None,
+                                 transfer_route=None, walk_route=None, walk_speed_mph=None)
+            expected = [1, 2]
+            self.assertEqual(subject.get_unique_routes_to_solve(), expected)
+
+        def test_memoizes():
+            subject = DataMunger(analysis=None, data=None, max_expansion_queue=None, max_progress_dict=None,
+                                 start_time=None, stop_join_string=None, transfer_duration_seconds=None,
+                                 transfer_route=None, walk_route=None, walk_speed_mph=None)
+            expected = 'some result'
+            subject._unique_routes_to_solve = expected
+            self.assertEqual(expected, subject.get_unique_routes_to_solve())
+
+        test_memoizes()
+        test_returns_correct_result()
 
     def test_get_unique_stops_to_solve(self):
         def test_returns_correct_result():
