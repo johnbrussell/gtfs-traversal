@@ -2,7 +2,7 @@ if __name__ == "__main__":
     from datetime import datetime, timedelta
 
     import gtfs_parsing.analyses.analyses as gtfs_analyses
-    from gtfs_parsing.data_structures.data_structures import gtfsSchedules
+    from gtfs_parsing.data_structures.data_structures import gtfsSchedules, uniqueRouteInfo
     from gtfs_traversal.data_munger import DataMunger
     from gtfs_traversal.read_data import *
     from gtfs_traversal.solver import Solver
@@ -35,7 +35,10 @@ if __name__ == "__main__":
             tripSchedules={trip_id: trip_info for trip_id, trip_info in raw_data.tripSchedules.items() if
                            trip_id in all_trips},
             dateTrips=raw_data.dateTrips,
-            uniqueRouteTrips=raw_data.uniqueRouteTrips,
+            uniqueRouteTrips={route_id: uniqueRouteInfo(tripIds=[t for t in route_info.tripIds if t in all_trips],
+                                                        routeInfo=route_info.routeInfo)
+                              for route_id, route_info in raw_data.uniqueRouteTrips.items()
+                              if any(t in all_trips for t in route_info.tripIds)},
             stopLocations=raw_data.stopLocations,
         )
         return new_data
