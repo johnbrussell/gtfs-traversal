@@ -10,7 +10,7 @@ class Solver:
                  stop_join_string, transfer_duration_seconds, transfer_route, walk_route, walk_speed_mph):
         self.WALK_SPEED_MPH = walk_speed_mph
         self.STOP_JOIN_STRING = stop_join_string
-        self.MINIMUM_STOP_TIMES = minimum_stop_times
+        self.minimum_stop_times = None
         self.TRANSFER_ROUTE = transfer_route
         self.WALK_ROUTE = walk_route
         self.TRANSFER_DURATION_SECONDS = transfer_duration_seconds
@@ -64,6 +64,13 @@ class Solver:
     def eliminate_stop_from_string(self, name, uneliminated):
         return uneliminated.replace(f'{self.STOP_JOIN_STRING}{name}{self.STOP_JOIN_STRING}', self.STOP_JOIN_STRING)
 
+    def get_minimum_stop_times(self):
+        if self.minimum_stop_times is not None:
+            return self.minimum_stop_times
+
+        self.minimum_stop_times, _, _ = self.data_munger.get_minimum_stop_times_route_stops_and_stop_stops()
+        return self.minimum_stop_times
+
     def get_next_stop_data(self, location_status, progress, trip_data, routes_to_solve, new_trip_id, trip_stop_no,
                            new_route_id):
         next_stop_no = str(int(trip_stop_no) + 1)
@@ -84,9 +91,9 @@ class Solver:
             uneliminated_next_stop_name = f'{self.STOP_JOIN_STRING}{next_stop_id}{self.STOP_JOIN_STRING}'
             new_minimum_remaining_time = \
                 progress.minimum_remaining_time - \
-                ((self.MINIMUM_STOP_TIMES[
+                ((self.get_minimum_stop_times()[
                       current_stop_id] if uneliminated_current_stop_name in location_status.unvisited else
-                  timedelta(0)) + (self.MINIMUM_STOP_TIMES[next_stop_id] if uneliminated_next_stop_name in
+                  timedelta(0)) + (self.get_minimum_stop_times()[next_stop_id] if uneliminated_next_stop_name in
                                    location_status.unvisited else timedelta(
                     0)) if new_route_id in routes_to_solve else timedelta(0))
             # decrease_in_minimum_remaining_time = progress.minimum_remaining_time - new_minimum_remaining_time
