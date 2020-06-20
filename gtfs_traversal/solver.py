@@ -223,7 +223,8 @@ class Solver:
         # print('return', to_return[0])
         return to_return
 
-    def first_trip_after(self, earliest_departure_timee, trips_data, analysis_data, routes_data, rid, stop_id):
+    @staticmethod
+    def first_trip_after(earliest_departure_timee, trips_data, analysis_data, routes_data, rid, stop_id):
         date_at_midnight = datetime(year=earliest_departure_timee.year, month=earliest_departure_timee.month,
                                     day=earliest_departure_timee.day)
         solution_trip_id = None
