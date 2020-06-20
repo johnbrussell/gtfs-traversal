@@ -134,7 +134,7 @@ class DataMunger:
         return stops_at_ends_of_solution_routes
 
     def get_stops_for_route(self, route_id):
-        return self.get_trip_schedules()[self.get_route_trips()[route_id].tripIds[0]].tripStops
+        return self.get_trip_schedules()[self.get_trips_for_route(route_id)[0]].tripStops
 
     def get_total_minimum_time(self):
         total_minimum_time = timedelta(0)
@@ -147,6 +147,9 @@ class DataMunger:
 
     def get_trip_schedules(self):
         return self.data.tripSchedules
+
+    def get_trips_for_route(self, route_id):
+        return self.get_route_trips()[route_id].tripIds
 
     def get_unique_routes_to_solve(self):
         if self._unique_routes_to_solve is not None:
