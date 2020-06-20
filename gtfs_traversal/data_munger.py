@@ -20,6 +20,8 @@ class DataMunger:
         self._unique_stops_to_solve = None
 
     def first_trip_after(self, earliest_departure_time, end_date, route_id, origin_stop_id):
+        # Currently, this function does not work on routes that visit one stop multiple times in a trip.  To fix,
+        #  can pass the origin_stop_number to the function, instead of origin_stop_id
         trips_data = self.get_trip_schedules()
         date_at_midnight = datetime(year=earliest_departure_time.year, month=earliest_departure_time.month,
                                     day=earliest_departure_time.day)
