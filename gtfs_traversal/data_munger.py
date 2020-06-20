@@ -19,23 +19,25 @@ class DataMunger:
         self._unique_routes_to_solve = None
         self._unique_stops_to_solve = None
 
-    @staticmethod
-    def first_trip_after(earliest_departure_timee, trips_data, analysis_data, routes_data, rid, stop_id):
-        date_at_midnight = datetime(year=earliest_departure_timee.year, month=earliest_departure_timee.month,
-                                    day=earliest_departure_timee.day)
+    def first_trip_after(self, earliest_departure_time, end_date, route_id, stop_id):
+        routes_data = self.get_route_trips()
+        trips_data = self.get_trip_schedules()
+        date_at_midnight = datetime(year=earliest_departure_time.year, month=earliest_departure_time.month,
+                                    day=earliest_departure_time.day)
         solution_trip_id = None
-        solution_departure_time = datetime.strptime(analysis_data.end_date, '%Y-%m-%d') + timedelta(days=1)
-        stop_id_nos = [sor for sor, sid in trips_data[routes_data[rid].tripIds[0]].tripStops.items() if
-                       sid.stopId == stop_id and str(int(sor) + 1) in trips_data[routes_data[rid].tripIds[0]].tripStops]
+        solution_departure_time = datetime.strptime(end_date, '%Y-%m-%d') + timedelta(days=1)
+        stop_id_nos = [sor for sor, sid in trips_data[routes_data[route_id].tripIds[0]].tripStops.items() if
+                       sid.stopId == stop_id and str(int(sor) + 1) in
+                       trips_data[routes_data[route_id].tripIds[0]].tripStops]
         rstop_id_no = None
         for stop_id_no in stop_id_nos:
-            for tid in routes_data[rid].tripIds:
-                # print(trips_data[tid])
-                hours, minutes, seconds = trips_data[tid].tripStops[stop_id_no].departureTime.split(':')
+            for trip_id in routes_data[route_id].tripIds:
+                # print(trips_data[trip_id])
+                hours, minutes, seconds = trips_data[trip_id].tripStops[stop_id_no].departureTime.split(':')
                 time = date_at_midnight + timedelta(hours=float(hours), minutes=float(minutes), seconds=float(seconds))
-                if earliest_departure_timee <= time < solution_departure_time:
+                if earliest_departure_time <= time < solution_departure_time:
                     solution_departure_time = time
-                    solution_trip_id = tid
+                    solution_trip_id = trip_id
                     rstop_id_no = stop_id_no
         return solution_departure_time, solution_trip_id, rstop_id_no
 
@@ -65,7 +67,7 @@ class DataMunger:
                                   sid.stopId == stop]
                 for _ in stop_locations:
                     best_departure_time, best_trip_id, best_stop_id = self.first_trip_after(
-                        self.start_time, self.get_trip_schedules(), self.analysis, self.get_route_trips(), route, stop)
+                        self.start_time, self.analysis.end_date, route, stop)
                     if best_trip_id is None:
                         continue
                     next_stop = str(int(best_stop_id) + 1)
