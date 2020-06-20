@@ -25,7 +25,7 @@ class Solver:
         self.transfer_stops = None
         self.route_stops = None
         self.ANALYSIS = analysis
-        self.STOP_LOCATIONS_TO_SOLVE = stop_locations_to_solve
+        self.stop_locations_to_solve = None
         self.OFF_COURSE_STOP_LOCATIONS = off_course_stop_locations
 
         self.data_munger = DataMunger(
@@ -195,6 +195,12 @@ class Solver:
 
         self.route_trips = self.data_munger.get_route_trips()
         return self.route_trips
+
+    def get_stop_locations_to_solve(self):
+        if self.stop_locations_to_solve is None:
+            self.stop_locations_to_solve = self.data_munger.get_stop_locations_to_solve()
+
+        return self.stop_locations_to_solve
 
     def get_stops_at_ends_of_solution_routes(self):
         if self.stops_at_ends_of_solution_routes is None:
@@ -530,7 +536,7 @@ class Solver:
 
             new_nodess = self.get_new_nodes(expandeee, progress_dict[expandeee], self.LOCATION_ROUTES,
                                             self.get_trip_schedules(), routes_to_solve, self.ANALYSIS,
-                                            self.get_route_trips(), self.STOP_LOCATIONS_TO_SOLVE,
+                                            self.get_route_trips(), self.get_stop_locations_to_solve(),
                                             self.OFF_COURSE_STOP_LOCATIONS)
 
             if len(new_nodess) == 0:
