@@ -19,7 +19,7 @@ class Solver:
         self.initial_unsolved_string = None
         self.trip_schedules = None
         self.route_trips = None
-        self.STOPS_AT_ENDS_OF_SOLUTION_ROUTES = stops_at_ends_of_solution_routes
+        self.stops_at_ends_of_solution_routes = None
         self.LOCATION_ROUTES = location_routes
         self.TOTAL_MINIMUM_TIME = total_minimum_time
         self.TRANSFER_STOPS = transfer_stops
@@ -189,6 +189,12 @@ class Solver:
 
         self.route_trips = self.data_munger.get_route_trips()
         return self.route_trips
+
+    def get_stops_at_ends_of_solution_routes(self):
+        if self.stops_at_ends_of_solution_routes is None:
+            self.stops_at_ends_of_solution_routes = self.data_munger.get_stops_at_ends_of_solution_routes()
+
+        return self.stops_at_ends_of_solution_routes
 
     def get_trip_schedules(self):
         if self.trip_schedules is not None:
@@ -473,8 +479,8 @@ class Solver:
                     progress_dict[loc_info] = prog_info
 
         exp_queue = ExpansionQueue(routes_to_solve, stops_to_solve, self.TRANSFER_ROUTE, self.WALK_ROUTE,
-                                   self.STOPS_AT_ENDS_OF_SOLUTION_ROUTES, self.MAX_EXPANSION_QUEUE, self.TRANSFER_STOPS,
-                                   self.ROUTE_STOPS)
+                                   self.get_stops_at_ends_of_solution_routes(), self.MAX_EXPANSION_QUEUE,
+                                   self.TRANSFER_STOPS, self.ROUTE_STOPS)
         if len(progress_dict) > 0:
             exp_queue.add_with_depth(progress_dict.keys(), progress_dict.values(), known_best_time)
 
