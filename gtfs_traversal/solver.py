@@ -26,7 +26,7 @@ class Solver:
         self.route_stops = None
         self.ANALYSIS = analysis
         self.stop_locations_to_solve = None
-        self.OFF_COURSE_STOP_LOCATIONS = off_course_stop_locations
+        self.off_course_stop_locations = None
 
         self.data_munger = DataMunger(
             analysis=analysis,
@@ -182,6 +182,12 @@ class Solver:
 
         # print("end of route")
         return [transfer_data]
+
+    def get_off_course_stop_locations(self):
+        if self.off_course_stop_locations is None:
+            self.off_course_stop_locations = self.data_munger.get_off_course_stop_locations()
+
+        return self.off_course_stop_locations
 
     def get_route_stops(self):
         if self.route_stops is None:
@@ -537,7 +543,7 @@ class Solver:
             new_nodess = self.get_new_nodes(expandeee, progress_dict[expandeee], self.LOCATION_ROUTES,
                                             self.get_trip_schedules(), routes_to_solve, self.ANALYSIS,
                                             self.get_route_trips(), self.get_stop_locations_to_solve(),
-                                            self.OFF_COURSE_STOP_LOCATIONS)
+                                            self.get_off_course_stop_locations())
 
             if len(new_nodess) == 0:
                 continue
