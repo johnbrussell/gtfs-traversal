@@ -1,7 +1,5 @@
 from datetime import datetime, timedelta
 
-from gtfs_traversal.solver import Solver
-
 
 class DataMunger:
     def __init__(self, analysis, data, max_expansion_queue, max_progress_dict, start_time, stop_join_string,
@@ -21,6 +19,26 @@ class DataMunger:
         self._unique_routes_to_solve = None
         self._unique_stops_to_solve = None
 
+    @staticmethod
+    def first_trip_after(earliest_departure_timee, trips_data, analysis_data, routes_data, rid, stop_id):
+        date_at_midnight = datetime(year=earliest_departure_timee.year, month=earliest_departure_timee.month,
+                                    day=earliest_departure_timee.day)
+        solution_trip_id = None
+        solution_departure_time = datetime.strptime(analysis_data.end_date, '%Y-%m-%d') + timedelta(days=1)
+        stop_id_nos = [sor for sor, sid in trips_data[routes_data[rid].tripIds[0]].tripStops.items() if
+                       sid.stopId == stop_id and str(int(sor) + 1) in trips_data[routes_data[rid].tripIds[0]].tripStops]
+        rstop_id_no = None
+        for stop_id_no in stop_id_nos:
+            for tid in routes_data[rid].tripIds:
+                # print(trips_data[tid])
+                hours, minutes, seconds = trips_data[tid].tripStops[stop_id_no].departureTime.split(':')
+                time = date_at_midnight + timedelta(hours=float(hours), minutes=float(minutes), seconds=float(seconds))
+                if earliest_departure_timee <= time < solution_departure_time:
+                    solution_departure_time = time
+                    solution_trip_id = tid
+                    rstop_id_no = stop_id_no
+        return solution_departure_time, solution_trip_id, rstop_id_no
+
     def get_all_stop_locations(self):
         all_stop_locations = self.data.stopLocations
         return {s: l for s, l in all_stop_locations.items() if s in self.get_routes_by_stop().keys()}
@@ -31,17 +49,6 @@ class DataMunger:
                self.stop_join_string
 
     def get_minimum_stop_times_route_stops_and_stop_stops(self):
-        solver = Solver(analysis=self.analysis, initial_unsolved_string=self.get_initial_unsolved_string(),
-                        location_routes=self.get_routes_by_stop(), max_expansion_queue=self.max_expansion_queue,
-                        max_progress_dict=self.max_progress_dict, minimum_stop_times={},
-                        off_course_stop_locations=self.get_off_course_stop_locations(), route_stops={},
-                        route_trips=self.get_route_trips(), stop_join_string=self.stop_join_string,
-                        stop_locations_to_solve=self.get_stop_locations_to_solve(),
-                        stops_at_ends_of_solution_routes=self.get_stops_at_ends_of_solution_routes(),
-                        total_minimum_time=0, transfer_duration_seconds=self.transfer_duration_seconds,
-                        transfer_route=self.transfer_route, transfer_stops=[], trip_schedules=self.get_trip_schedules(),
-                        walk_route=self.walk_route, walk_speed_mph=self.walk_speed_mph)
-
         stop_stops = {}
         minimum_stop_times = {}
         route_stops = {}
@@ -57,7 +64,7 @@ class DataMunger:
                     self.get_route_trips()[route].tripIds[0]].tripStops.items() if
                                   sid.stopId == stop]
                 for _ in stop_locations:
-                    best_departure_time, best_trip_id, best_stop_id = solver.first_trip_after(
+                    best_departure_time, best_trip_id, best_stop_id = self.first_trip_after(
                         self.start_time, self.get_trip_schedules(), self.analysis, self.get_route_trips(), route, stop)
                     if best_trip_id is None:
                         continue
