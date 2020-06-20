@@ -26,9 +26,9 @@ class DataMunger:
                                     day=earliest_departure_time.day)
         solution_trip_id = None
         solution_departure_time = datetime.strptime(end_date, '%Y-%m-%d') + timedelta(days=1)
-        stop_id_nos = [sor for sor, sid in trips_data[routes_data[route_id].tripIds[0]].tripStops.items() if
+        stop_id_nos = [sor for sor, sid in self.get_stops_for_route(route_id).items() if
                        sid.stopId == stop_id and str(int(sor) + 1) in
-                       trips_data[routes_data[route_id].tripIds[0]].tripStops]
+                       self.get_stops_for_route(route_id)]
         rstop_id_no = None
         for stop_id_no in stop_id_nos:
             for trip_id in routes_data[route_id].tripIds:
@@ -131,6 +131,9 @@ class DataMunger:
             stops_at_ends_of_solution_routes.add(trip_stops['1'].stopId)
             stops_at_ends_of_solution_routes.add(trip_stops[str(len(trip_stops))].stopId)
         return stops_at_ends_of_solution_routes
+
+    def get_stops_for_route(self, route_id):
+        return self.get_trip_schedules()[self.get_route_trips()[route_id].tripIds[0]].tripStops
 
     def get_total_minimum_time(self):
         total_minimum_time = timedelta(0)
