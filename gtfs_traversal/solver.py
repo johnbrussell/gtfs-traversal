@@ -318,7 +318,8 @@ class Solver:
         progress_dict[new_location] = new_progress
         return progress_dict, new_duration, exp_queue
 
-    def eliminate_nodes_from_progress_dict(self, progress_dict, eliminated_keys):
+    @staticmethod
+    def eliminate_nodes_from_progress_dict(progress_dict, eliminated_keys):
         # if len(eliminated_keys) == 0:
         #     return progress_dict
         for k in eliminated_keys:
@@ -326,7 +327,8 @@ class Solver:
             # progress_dict = eliminate_node_from_progress_dict(progress_dict, k)
         return progress_dict
 
-    def eliminate_node_from_progress_dict(self, progress_dict, eliminated_key):
+    @staticmethod
+    def eliminate_node_from_progress_dict(progress_dict, eliminated_key):
         # print("eliminating")
         # print(eliminated_key)
         # print(progress_dict[eliminated_key])
