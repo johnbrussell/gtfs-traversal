@@ -21,7 +21,7 @@ class Solver:
         self.route_trips = None
         self.stops_at_ends_of_solution_routes = None
         self.LOCATION_ROUTES = location_routes
-        self.TOTAL_MINIMUM_TIME = total_minimum_time
+        self.total_minimum_time = None
         self.TRANSFER_STOPS = transfer_stops
         self.ROUTE_STOPS = route_stops
         self.ANALYSIS = analysis
@@ -195,6 +195,12 @@ class Solver:
             self.stops_at_ends_of_solution_routes = self.data_munger.get_stops_at_ends_of_solution_routes()
 
         return self.stops_at_ends_of_solution_routes
+
+    def get_total_minimum_time(self):
+        if self.total_minimum_time is None:
+            self.total_minimum_time = self.data_munger.get_total_minimum_time()
+
+        return self.total_minimum_time
 
     def get_trip_schedules(self):
         if self.trip_schedules is not None:
@@ -474,7 +480,7 @@ class Solver:
                     prog_info = ProgressInfo(start_time=best_deptime, duration=timedelta(seconds=0), parent=None,
                                              arrival_trip=best_trip, trip_stop_no=best_stop,
                                              start_location=sto, start_route=route,
-                                             minimum_remaining_time=self.TOTAL_MINIMUM_TIME, depth=0,
+                                             minimum_remaining_time=self.get_total_minimum_time(), depth=0,
                                              expanded=False, eliminated=False)
                     progress_dict[loc_info] = prog_info
 
@@ -522,7 +528,7 @@ class Solver:
                 self.add_new_nodes_to_progress_dict(progress_dict, new_nodess, known_best_time, exp_queue,
                                                best_nn_time)
             if known_best_time is not None:
-                best_nn_time = known_best_time - self.TOTAL_MINIMUM_TIME
+                best_nn_time = known_best_time - self.get_total_minimum_time()
 
             # print(len(new_nodess))
             # print(len([n for n in new_nodess if n[0].location in unique_stops_to_solve]))
