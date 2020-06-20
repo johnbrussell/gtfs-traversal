@@ -122,10 +122,9 @@ class Solver:
             # [n[0] for n in next_trips]:
             #     print('found')
             for route in new_routes:
-                next_departure_time, next_trip_id, stop_no = self.first_trip_after(progress.start_time + progress.duration,
-                                                                              trips_data, analysis_data,
-                                                                              route_trip_data,
-                                                                              route, location_status.location)
+                next_departure_time, next_trip_id, stop_no = self.data_munger.first_trip_after(
+                    progress.start_time + progress.duration, trips_data, analysis_data, route_trip_data, route,
+                    location_status.location)
                 if next_trip_id is None:
                     continue
                 # print("transfer")
@@ -236,26 +235,6 @@ class Solver:
         # print([r[0].location for r in to_return if r[0] in solution_location_status_infos])
         # print('return', to_return[0])
         return to_return
-
-    @staticmethod
-    def first_trip_after(earliest_departure_timee, trips_data, analysis_data, routes_data, rid, stop_id):
-        date_at_midnight = datetime(year=earliest_departure_timee.year, month=earliest_departure_timee.month,
-                                    day=earliest_departure_timee.day)
-        solution_trip_id = None
-        solution_departure_time = datetime.strptime(analysis_data.end_date, '%Y-%m-%d') + timedelta(days=1)
-        stop_id_nos = [sor for sor, sid in trips_data[routes_data[rid].tripIds[0]].tripStops.items() if
-                       sid.stopId == stop_id and str(int(sor) + 1) in trips_data[routes_data[rid].tripIds[0]].tripStops]
-        rstop_id_no = None
-        for stop_id_no in stop_id_nos:
-            for tid in routes_data[rid].tripIds:
-                # print(trips_data[tid])
-                hours, minutes, seconds = trips_data[tid].tripStops[stop_id_no].departureTime.split(':')
-                time = date_at_midnight + timedelta(hours=float(hours), minutes=float(minutes), seconds=float(seconds))
-                if earliest_departure_timee <= time < solution_departure_time:
-                    solution_departure_time = time
-                    solution_trip_id = tid
-                    rstop_id_no = stop_id_no
-        return solution_departure_time, solution_trip_id, rstop_id_no
 
     def add_new_nodes_to_progress_dict(self, progress_dict, new_nodes_list, best_solution_duration, exp_queue,
                                        unnecessary_time):
@@ -450,8 +429,8 @@ class Solver:
                 stop_locs = [sor for sor, sid in self.TRIP_SCHEDULES[self.ROUTE_TRIPS[route].tripIds[0]].tripStops.items() if
                              sid.stopId == sto]
                 for stop_loc in stop_locs:
-                    best_deptime, best_trip, best_stop = self.first_trip_after(begin_time, self.TRIP_SCHEDULES, self.ANALYSIS,
-                                                                               self.ROUTE_TRIPS, route, sto)
+                    best_deptime, best_trip, best_stop = self.data_munger.first_trip_after(
+                        begin_time, self.TRIP_SCHEDULES, self.ANALYSIS, self.ROUTE_TRIPS, route, sto)
                     if best_trip is None:
                         continue
                     if best_dtime is None:
