@@ -75,10 +75,11 @@ if __name__ == "__main__":
     unique_routes_to_solve = data_munger.get_unique_routes_to_solve()
     unique_stops_to_solve = data_munger.get_unique_stops_to_solve()
 
-    solver = Solver(analysis=analysis, initial_unsolved_string=initial_unsolved_string, location_routes=location_routes,
-                    max_expansion_queue=MAX_EXPANSION_QUEUE, max_progress_dict=MAX_PROGRESS_DICT,
-                    minimum_stop_times=minimum_stop_times, off_course_stop_locations=off_course_stop_locations,
-                    route_stops=route_stops, route_trips=route_trips, stop_join_string=STOP_JOIN_STRING,
+    solver = Solver(analysis=analysis, data=data, initial_unsolved_string=initial_unsolved_string,
+                    location_routes=location_routes, max_expansion_queue=MAX_EXPANSION_QUEUE,
+                    max_progress_dict=MAX_PROGRESS_DICT, minimum_stop_times=minimum_stop_times,
+                    off_course_stop_locations=off_course_stop_locations, route_stops=route_stops,
+                    route_trips=route_trips, start_time=start_time, stop_join_string=STOP_JOIN_STRING,
                     stop_locations_to_solve=stop_locations_to_solve,
                     stops_at_ends_of_solution_routes=stops_at_ends_of_solution_routes,
                     total_minimum_time=total_minimum_time, transfer_duration_seconds=TRANSFER_DURATION_SECONDS,

@@ -1,3 +1,4 @@
+from gtfs_traversal.data_munger import DataMunger
 from gtfs_traversal.expansion_queue import ExpansionQueue
 from gtfs_traversal.data_structures import *
 import math
@@ -5,8 +6,8 @@ from datetime import datetime, timedelta
 
 
 class Solver:
-    def __init__(self, analysis, initial_unsolved_string, location_routes, max_expansion_queue, max_progress_dict,
-                 minimum_stop_times, off_course_stop_locations, route_stops, route_trips, stop_join_string,
+    def __init__(self, analysis, data, initial_unsolved_string, location_routes, max_expansion_queue, max_progress_dict,
+                 minimum_stop_times, off_course_stop_locations, route_stops, route_trips, start_time, stop_join_string,
                  stop_locations_to_solve, stops_at_ends_of_solution_routes, total_minimum_time,
                  transfer_duration_seconds, transfer_route, transfer_stops, trip_schedules, walk_route, walk_speed_mph):
         self.WALK_SPEED_MPH = walk_speed_mph
@@ -28,6 +29,19 @@ class Solver:
         self.ANALYSIS = analysis
         self.STOP_LOCATIONS_TO_SOLVE = stop_locations_to_solve
         self.OFF_COURSE_STOP_LOCATIONS = off_course_stop_locations
+
+        self.data_munger = DataMunger(
+            analysis=analysis,
+            data=data,
+            max_expansion_queue=max_expansion_queue,
+            max_progress_dict=max_progress_dict,
+            start_time=start_time,
+            stop_join_string=stop_join_string,
+            transfer_duration_seconds=transfer_duration_seconds,
+            transfer_route=transfer_route,
+            walk_route=walk_route,
+            walk_speed_mph=walk_speed_mph,
+        )
 
     def walk_time_seconds(self, lat1, lat2, long1, long2):
         origin_lat = self.to_radians_from_degrees(lat1)

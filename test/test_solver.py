@@ -6,12 +6,12 @@ from gtfs_traversal.solver import Solver
 class TestSolver(unittest.TestCase):
     def test_walk_time_seconds(self):
         def get_solver_with_speed(*, mph):
-            return Solver(analysis=None, initial_unsolved_string=None, location_routes=None, max_expansion_queue=None,
-                          max_progress_dict=None, minimum_stop_times=None, off_course_stop_locations=None,
-                          route_stops=None, route_trips=None, stop_join_string=None, stop_locations_to_solve=None,
-                          stops_at_ends_of_solution_routes=None, total_minimum_time=None,
-                          transfer_duration_seconds=None, transfer_route=None, transfer_stops=None, trip_schedules=None,
-                          walk_route=None, walk_speed_mph=mph)
+            return Solver(analysis=None, data=None, initial_unsolved_string=None, location_routes=None,
+                          max_expansion_queue=None, max_progress_dict=None, minimum_stop_times=None,
+                          off_course_stop_locations=None, route_stops=None, route_trips=None, start_time=None,
+                          stop_join_string=None, stop_locations_to_solve=None, stops_at_ends_of_solution_routes=None,
+                          total_minimum_time=None, transfer_duration_seconds=None, transfer_route=None,
+                          transfer_stops=None, trip_schedules=None, walk_route=None, walk_speed_mph=mph)
 
         def test_zero_time_at_any_speed_for_no_distance():
             self.assertEqual(get_solver_with_speed(mph=0.5).walk_time_seconds(2, 2, -40, -40), 0)
