@@ -23,12 +23,12 @@ class DataMunger:
         trips_data = self.get_trip_schedules()
         date_at_midnight = datetime(year=earliest_departure_time.year, month=earliest_departure_time.month,
                                     day=earliest_departure_time.day)
-        solution_trip_id = None
         solution_departure_time = datetime.strptime(end_date, '%Y-%m-%d') + timedelta(days=1)
         stops_on_route = self.get_stops_for_route(route_id)  # dict
         stop_id_nos = [stop_number for stop_number, stop_id in stops_on_route.items() if
                        stop_id.stopId == origin_stop_id and str(int(stop_number) + 1) in
                        stops_on_route]
+        solution_trip_id = None
         rstop_id_no = None
         for stop_id_no in stop_id_nos:
             for trip_id in self.get_trips_for_route(route_id):
