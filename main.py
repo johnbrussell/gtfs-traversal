@@ -62,29 +62,14 @@ if __name__ == "__main__":
         walk_speed_mph=WALK_SPEED_MPH
     )
 
-    initial_unsolved_string = data_munger.get_initial_unsolved_string()
     location_routes = data_munger.get_routes_by_stop()
-    minimum_stop_times, route_stops, _ = data_munger.get_minimum_stop_times_route_stops_and_stop_stops()
-    off_course_stop_locations = data_munger.get_off_course_stop_locations()
-    route_trips = data_munger.get_route_trips()
-    stop_locations_to_solve = data_munger.get_stop_locations_to_solve()
-    stops_at_ends_of_solution_routes = data_munger.get_stops_at_ends_of_solution_routes()
-    total_minimum_time = data_munger.get_total_minimum_time()
-    transfer_stops = data_munger.get_transfer_stops()
-    trip_schedules = data_munger.get_trip_schedules()
     unique_routes_to_solve = data_munger.get_unique_routes_to_solve()
     unique_stops_to_solve = data_munger.get_unique_stops_to_solve()
 
-    solver = Solver(analysis=analysis, data=data, initial_unsolved_string=initial_unsolved_string,
-                    location_routes=location_routes, max_expansion_queue=MAX_EXPANSION_QUEUE,
-                    max_progress_dict=MAX_PROGRESS_DICT, minimum_stop_times=minimum_stop_times,
-                    off_course_stop_locations=off_course_stop_locations, route_stops=route_stops,
-                    route_trips=route_trips, start_time=start_time, stop_join_string=STOP_JOIN_STRING,
-                    stop_locations_to_solve=stop_locations_to_solve,
-                    stops_at_ends_of_solution_routes=stops_at_ends_of_solution_routes,
-                    total_minimum_time=total_minimum_time, transfer_duration_seconds=TRANSFER_DURATION_SECONDS,
-                    transfer_route=TRANSFER_ROUTE, transfer_stops=transfer_stops, trip_schedules=trip_schedules,
-                    walk_route=WALK_ROUTE, walk_speed_mph=WALK_SPEED_MPH)
+    solver = Solver(analysis=analysis, data=data, location_routes=location_routes,
+                    max_expansion_queue=MAX_EXPANSION_QUEUE, max_progress_dict=MAX_PROGRESS_DICT, start_time=start_time,
+                    stop_join_string=STOP_JOIN_STRING, transfer_duration_seconds=TRANSFER_DURATION_SECONDS,
+                    transfer_route=TRANSFER_ROUTE, walk_route=WALK_ROUTE, walk_speed_mph=WALK_SPEED_MPH)
 
     # end_date_midnight
     best_time = None

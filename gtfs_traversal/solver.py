@@ -6,10 +6,8 @@ from datetime import datetime, timedelta
 
 
 class Solver:
-    def __init__(self, analysis, data, initial_unsolved_string, location_routes, max_expansion_queue, max_progress_dict,
-                 minimum_stop_times, off_course_stop_locations, route_stops, route_trips, start_time, stop_join_string,
-                 stop_locations_to_solve, stops_at_ends_of_solution_routes, total_minimum_time,
-                 transfer_duration_seconds, transfer_route, transfer_stops, trip_schedules, walk_route, walk_speed_mph):
+    def __init__(self, analysis, data, location_routes, max_expansion_queue, max_progress_dict, start_time,
+                 stop_join_string, transfer_duration_seconds, transfer_route, walk_route, walk_speed_mph):
         self.WALK_SPEED_MPH = walk_speed_mph
         self.STOP_JOIN_STRING = stop_join_string
         self.MINIMUM_STOP_TIMES = minimum_stop_times
