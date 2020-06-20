@@ -19,16 +19,17 @@ class DataMunger:
         self._unique_routes_to_solve = None
         self._unique_stops_to_solve = None
 
-    def first_trip_after(self, earliest_departure_time, end_date, route_id, stop_id):
+    def first_trip_after(self, earliest_departure_time, end_date, route_id, origin_stop_id):
         routes_data = self.get_route_trips()
         trips_data = self.get_trip_schedules()
         date_at_midnight = datetime(year=earliest_departure_time.year, month=earliest_departure_time.month,
                                     day=earliest_departure_time.day)
         solution_trip_id = None
         solution_departure_time = datetime.strptime(end_date, '%Y-%m-%d') + timedelta(days=1)
-        stop_id_nos = [sor for sor, sid in self.get_stops_for_route(route_id).items() if
-                       sid.stopId == stop_id and str(int(sor) + 1) in
-                       self.get_stops_for_route(route_id)]
+        stops_on_route = self.get_stops_for_route(route_id)  # dict
+        stop_id_nos = [stop_number for stop_number, stop_id in stops_on_route.items() if
+                       stop_id.stopId == origin_stop_id and str(int(stop_number) + 1) in
+                       stops_on_route]
         rstop_id_no = None
         for stop_id_no in stop_id_nos:
             for trip_id in routes_data[route_id].tripIds:
