@@ -16,7 +16,7 @@ class Solver:
         self.TRANSFER_DURATION_SECONDS = transfer_duration_seconds
         self.MAX_PROGRESS_DICT = max_progress_dict
         self.MAX_EXPANSION_QUEUE = max_expansion_queue
-        self.INITIAL_UNSOLVED_STRING = initial_unsolved_string
+        self.initial_unsolved_string = None
         self.TRIP_SCHEDULES = trip_schedules
         self.ROUTE_TRIPS = route_trips
         self.STOPS_AT_ENDS_OF_SOLUTION_ROUTES = stops_at_ends_of_solution_routes
@@ -63,6 +63,13 @@ class Solver:
 
     def eliminate_stop_from_string(self, name, uneliminated):
         return uneliminated.replace(f'{self.STOP_JOIN_STRING}{name}{self.STOP_JOIN_STRING}', self.STOP_JOIN_STRING)
+
+    def get_initial_unsolved_string(self):
+        if self.initial_unsolved_string is not None:
+            return self.initial_unsolved_string
+
+        self.initial_unsolved_string = self.data_munger.get_initial_unsolved_string()
+        return self.initial_unsolved_string
 
     def get_minimum_stop_times(self):
         if self.minimum_stop_times is not None:
@@ -250,7 +257,7 @@ class Solver:
                                                       progress_dict[n[0]].start_route != n[1].start_route) and
                         (best_solution_duration is None or
                          n[1].duration + n[1].minimum_remaining_time < best_solution_duration) and
-                        n[0].unvisited != self.INITIAL_UNSOLVED_STRING]
+                        n[0].unvisited != self.get_initial_unsolved_string()]
         # initial_len = len(nodes_to_add)
         # solution_nodes = [n for n in nodes_to_add if n[0].unvisited == self.STOP_JOIN_STRING]
         # temp_best_solution = min([n[1].duration for n in solution_nodes]) if len(solution_nodes) > 0 else \
@@ -443,7 +450,7 @@ class Solver:
                     if best_deptime < best_dtime:
                         best_dtime = best_deptime
                     loc_info = LocationStatusInfo(location=sto, arrival_route=route,
-                                                  unvisited=self.INITIAL_UNSOLVED_STRING)
+                                                  unvisited=self.get_initial_unsolved_string())
                     prog_info = ProgressInfo(start_time=best_deptime, duration=timedelta(seconds=0), parent=None,
                                              arrival_trip=best_trip, trip_stop_no=best_stop,
                                              start_location=sto, start_route=route,
