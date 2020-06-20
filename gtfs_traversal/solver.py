@@ -17,7 +17,7 @@ class Solver:
         self.MAX_PROGRESS_DICT = max_progress_dict
         self.MAX_EXPANSION_QUEUE = max_expansion_queue
         self.initial_unsolved_string = None
-        self.TRIP_SCHEDULES = trip_schedules
+        self.trip_schedules = None
         self.ROUTE_TRIPS = route_trips
         self.STOPS_AT_ENDS_OF_SOLUTION_ROUTES = stops_at_ends_of_solution_routes
         self.LOCATION_ROUTES = location_routes
@@ -182,6 +182,13 @@ class Solver:
 
         # print("end of route")
         return [transfer_data]
+
+    def get_trip_schedules(self):
+        if self.trip_schedules is not None:
+            return self.trip_schedules
+
+        self.trip_schedules = self.data_munger.get_trip_schedules()
+        return self.trip_schedules
 
     def get_walking_data(self, location_status, progress, locations_to_solve, locations_to_not_solve, analysis_data):
         if location_status.location in locations_to_solve.keys():
@@ -438,11 +445,11 @@ class Solver:
             for route in routes_at_stop:
                 if route not in routes_to_solve:
                     continue
-                stop_locs = [sor for sor, sid in self.TRIP_SCHEDULES[self.ROUTE_TRIPS[route].tripIds[0]].tripStops.items() if
+                stop_locs = [sor for sor, sid in self.get_trip_schedules()[self.ROUTE_TRIPS[route].tripIds[0]].tripStops.items() if
                              sid.stopId == sto]
                 for stop_loc in stop_locs:
                     best_deptime, best_trip, best_stop = self.data_munger.first_trip_after(
-                        begin_time, self.TRIP_SCHEDULES, self.ANALYSIS, self.ROUTE_TRIPS, route, sto)
+                        begin_time, self.get_trip_schedules(), self.ANALYSIS, self.ROUTE_TRIPS, route, sto)
                     if best_trip is None:
                         continue
                     if best_dtime is None:
@@ -490,9 +497,9 @@ class Solver:
 
             progress_dict[expandeee] = progress_dict[expandeee]._replace(expanded=True)
 
-            new_nodess = self.get_new_nodes(expandeee, progress_dict[expandeee], self.LOCATION_ROUTES, self.TRIP_SCHEDULES,
-                                            routes_to_solve, self.ANALYSIS, self.ROUTE_TRIPS, self.STOP_LOCATIONS_TO_SOLVE,
-                                            self.OFF_COURSE_STOP_LOCATIONS)
+            new_nodess = self.get_new_nodes(expandeee, progress_dict[expandeee], self.LOCATION_ROUTES,
+                                            self.get_trip_schedules(), routes_to_solve, self.ANALYSIS, self.ROUTE_TRIPS,
+                                            self.STOP_LOCATIONS_TO_SOLVE, self.OFF_COURSE_STOP_LOCATIONS)
 
             if len(new_nodess) == 0:
                 continue
