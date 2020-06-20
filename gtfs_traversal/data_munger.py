@@ -27,21 +27,25 @@ class DataMunger:
                                     day=earliest_departure_time.day)
         solution_departure_time = datetime.strptime(end_date, '%Y-%m-%d') + timedelta(days=1)
         stops_on_route = self.get_stops_for_route(route_id)  # dict
-        stop_id_nos = [stop_number for stop_number, stop_id in stops_on_route.items() if
-                       stop_id.stopId == origin_stop_id and str(int(stop_number) + 1) in
-                       stops_on_route]
+        origin_stop_number = None
+        for stop_number, stop_id in stops_on_route.items():
+            if stop_id.stopId == origin_stop_id:
+                origin_stop_number = stop_number
+                break
+
+        if origin_stop_number is None or str(int(origin_stop_number) + 1) not in stops_on_route:
+            # No departure from stop
+            return None, None, None
+
         solution_trip_id = None
-        rstop_id_no = None
-        for stop_id_no in stop_id_nos:
-            for trip_id in self.get_trips_for_route(route_id):
-                # print(trips_data[trip_id])
-                hours, minutes, seconds = trips_data[trip_id].tripStops[stop_id_no].departureTime.split(':')
-                time = date_at_midnight + timedelta(hours=float(hours), minutes=float(minutes), seconds=float(seconds))
-                if earliest_departure_time <= time < solution_departure_time:
-                    solution_departure_time = time
-                    solution_trip_id = trip_id
-                    rstop_id_no = stop_id_no
-        return solution_departure_time, solution_trip_id, rstop_id_no
+        for trip_id in self.get_trips_for_route(route_id):
+            # print(trips_data[trip_id])
+            hours, minutes, seconds = trips_data[trip_id].tripStops[origin_stop_number].departureTime.split(':')
+            time = date_at_midnight + timedelta(hours=float(hours), minutes=float(minutes), seconds=float(seconds))
+            if earliest_departure_time <= time < solution_departure_time:
+                solution_departure_time = time
+                solution_trip_id = trip_id
+        return solution_departure_time, solution_trip_id, origin_stop_number
 
     def get_all_stop_locations(self):
         all_stop_locations = self.data.stopLocations
