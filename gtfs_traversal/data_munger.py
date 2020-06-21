@@ -15,11 +15,12 @@ class DataMunger:
         self.walk_route = walk_route
         self.walk_speed_mph = walk_speed_mph
 
+        self._buffered_analysis_end_time = None
         self._location_routes = None
         self._unique_routes_to_solve = None
         self._unique_stops_to_solve = None
 
-    def first_trip_after(self, earliest_departure_time, end_date, route_id, origin_stop_id):
+    def first_trip_after(self, earliest_departure_time, route_id, origin_stop_id):
         # hmmm, what is earliest_departure_time, and what if it's after midnight toward the end of the service day?
 
         # Currently, this function does not work on routes that visit one stop multiple times in a trip.  To fix,
@@ -29,7 +30,7 @@ class DataMunger:
                                     day=earliest_departure_time.day)
 
         # GTFS uses days longer than 24 hours, so need to add a buffer to the end date to allow 25+ hour trips
-        latest_departure_time = datetime.strptime(end_date, '%Y-%m-%d') + timedelta(days=1)
+        latest_departure_time = self.get_buffered_analysis_end_time()
 
         stops_on_route = self.get_stops_for_route(route_id)  # dict
         origin_stop_number = self.get_stop_number_from_stop_id(origin_stop_id, route_id)
@@ -51,6 +52,12 @@ class DataMunger:
     def get_all_stop_locations(self):
         all_stop_locations = self.data.stopLocations
         return {s: l for s, l in all_stop_locations.items() if s in self.get_routes_by_stop().keys()}
+
+    def get_buffered_analysis_end_time(self):
+        if self._buffered_analysis_end_time is None:
+            self._buffered_analysis_end_time = datetime.strptime(self.analysis.end_date, '%Y-%m-%d') + timedelta(days=1)
+
+        return self._buffered_analysis_end_time
 
     def get_initial_unsolved_string(self):
         return self.stop_join_string + \
@@ -74,7 +81,7 @@ class DataMunger:
                                   sid.stopId == stop]
                 for _ in stop_locations:
                     best_departure_time, best_trip_id, best_stop_id = self.first_trip_after(
-                        self.start_time, self.analysis.end_date, route, stop)
+                        self.start_time, route, stop)
                     if best_trip_id is None:
                         continue
                     next_stop = str(int(best_stop_id) + 1)
