@@ -27,8 +27,10 @@ class DataMunger:
         trips_data = self.get_trip_schedules()
         date_at_midnight = datetime(year=earliest_departure_time.year, month=earliest_departure_time.month,
                                     day=earliest_departure_time.day)
+
         # GTFS uses days longer than 24 hours, so need to add a buffer to the end date to allow 25+ hour trips
         latest_departure_time = datetime.strptime(end_date, '%Y-%m-%d') + timedelta(days=1)
+
         stops_on_route = self.get_stops_for_route(route_id)  # dict
         origin_stop_number = self.get_stop_number_from_stop_id(origin_stop_id, route_id)
 
@@ -39,7 +41,7 @@ class DataMunger:
         solution_trip_id = None
         for trip_id in self.get_trips_for_route(route_id):
             # print(trips_data[trip_id])
-            hours, minutes, seconds = trips_data[trip_id].tripStops[origin_stop_number].departureTime.split(':')
+            hours, minutes, seconds = self.get_stops_for_trip(trip_id)[origin_stop_number].departureTime.split(':')
             time = date_at_midnight + timedelta(hours=float(hours), minutes=float(minutes), seconds=float(seconds))
             if earliest_departure_time <= time <= latest_departure_time:
                 latest_departure_time = time
@@ -146,7 +148,10 @@ class DataMunger:
         return stops_at_ends_of_solution_routes
 
     def get_stops_for_route(self, route_id):
-        return self.get_trip_schedules()[self.get_trips_for_route(route_id)[0]].tripStops
+        return self.get_stops_for_trip(self.get_trips_for_route(route_id)[0])
+
+    def get_stops_for_trip(self, trip_id):
+        return self.get_trip_schedules()[trip_id].tripStops
 
     def get_total_minimum_time(self):
         total_minimum_time = timedelta(0)
