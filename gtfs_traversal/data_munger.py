@@ -25,7 +25,6 @@ class DataMunger:
 
         # Currently, this function does not work on routes that visit one stop multiple times in a trip.  To fix,
         #  can pass the origin_stop_number to the function, instead of origin_stop_id
-        trips_data = self.get_trip_schedules()
         date_at_midnight = datetime(year=earliest_departure_time.year, month=earliest_departure_time.month,
                                     day=earliest_departure_time.day)
 
@@ -41,7 +40,6 @@ class DataMunger:
 
         solution_trip_id = None
         for trip_id in self.get_trips_for_route(route_id):
-            # print(trips_data[trip_id])
             hours, minutes, seconds = self.get_stops_for_trip(trip_id)[origin_stop_number].departureTime.split(':')
             time = date_at_midnight + timedelta(hours=float(hours), minutes=float(minutes), seconds=float(seconds))
             if earliest_departure_time <= time < latest_departure_time:
