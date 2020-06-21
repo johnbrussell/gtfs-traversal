@@ -43,7 +43,7 @@ class DataMunger:
             # print(trips_data[trip_id])
             hours, minutes, seconds = self.get_stops_for_trip(trip_id)[origin_stop_number].departureTime.split(':')
             time = date_at_midnight + timedelta(hours=float(hours), minutes=float(minutes), seconds=float(seconds))
-            if earliest_departure_time <= time <= latest_departure_time:
+            if earliest_departure_time <= time < latest_departure_time:
                 latest_departure_time = time
                 solution_trip_id = trip_id
         return latest_departure_time, solution_trip_id, origin_stop_number
