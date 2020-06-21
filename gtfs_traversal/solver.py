@@ -135,7 +135,7 @@ class Solver:
             #     print('found')
             for route in new_routes:
                 next_departure_time, next_trip_id, stop_no = self.data_munger.first_trip_after(
-                    progress.start_time + progress.duration, analysis_data.end_date, route, location_status.location)
+                    progress.start_time + progress.duration, route, location_status.location)
                 if next_trip_id is None:
                     continue
                 # print("transfer")
@@ -491,7 +491,7 @@ class Solver:
                              sid.stopId == sto]
                 for stop_loc in stop_locs:
                     best_deptime, best_trip, best_stop = self.data_munger.first_trip_after(
-                        begin_time, self.ANALYSIS.end_date, route, sto)
+                        begin_time, route, sto)
                     if best_trip is None:
                         continue
                     if best_dtime is None:
