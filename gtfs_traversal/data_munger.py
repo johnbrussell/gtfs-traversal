@@ -34,8 +34,10 @@ class DataMunger:
                 origin_stop_number = stop_number
                 break
 
-        if origin_stop_number is None or str(int(origin_stop_number) + 1) not in stops_on_route:
-            # No departure from stop
+        assert origin_stop_number is not None, "route_id and origin_stop_id mismatch"
+
+        # handle case where the origin stop is the last stop on the route
+        if str(int(origin_stop_number) + 1) not in stops_on_route:
             return None, None, None
 
         solution_trip_id = None
