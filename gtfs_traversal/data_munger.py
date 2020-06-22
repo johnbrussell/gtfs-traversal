@@ -52,7 +52,7 @@ class DataMunger:
 
     def get_all_stop_locations(self):
         all_stop_locations = self.data.stopLocations
-        return {s: l for s, l in all_stop_locations.items() if s in self.get_routes_by_stop().keys()}
+        return {s: l for s, l in all_stop_locations.items()}
 
     def get_buffered_analysis_end_time(self):
         if self._buffered_analysis_end_time is None:
