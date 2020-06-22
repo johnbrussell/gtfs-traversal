@@ -20,7 +20,7 @@ class DataMunger:
         self._unique_routes_to_solve = None
         self._unique_stops_to_solve = None
 
-    def first_trip_after(self, earliest_departure_time, route_id, origin_stop_id):
+    def first_trip_after(self, earliest_departure_time, route_number, origin_stop_id):
         # hmmm, what is earliest_departure_time, and what if it's after midnight toward the end of the service day?
 
         # Currently, this function does not work on routes that visit one stop multiple times in a trip.  To fix,
@@ -31,20 +31,23 @@ class DataMunger:
         # GTFS uses days longer than 24 hours, so need to add a buffer to the end date to allow 25+ hour trips
         latest_departure_time = self.get_buffered_analysis_end_time()
 
-        stops_on_route = self.get_stops_for_route(route_id)  # dict
-        origin_stop_number = self.get_stop_number_from_stop_id(origin_stop_id, route_id)
+        stops_on_route = self.get_stops_for_route(route_number)  # dict
+        origin_stop_number = self.get_stop_number_from_stop_id(origin_stop_id, route_number)
 
         # handle case where the origin stop is the last stop on the route
         if str(int(origin_stop_number) + 1) not in stops_on_route:
             return None, None, None
 
         solution_trip_id = None
-        for trip_id in self.get_trips_for_route(route_id):
+        for trip_id in self.get_trips_for_route(route_number):
             hours, minutes, seconds = self.get_stops_for_trip(trip_id)[origin_stop_number].departureTime.split(':')
             time = date_at_midnight + timedelta(hours=float(hours), minutes=float(minutes), seconds=float(seconds))
             if earliest_departure_time <= time < latest_departure_time:
                 latest_departure_time = time
                 solution_trip_id = trip_id
+
+        if solution_trip_id is None:
+            return None, None, None
         return latest_departure_time, solution_trip_id, origin_stop_number
 
     def get_all_stop_locations(self):
