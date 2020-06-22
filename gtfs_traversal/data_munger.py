@@ -45,6 +45,9 @@ class DataMunger:
             if earliest_departure_time <= time < latest_departure_time:
                 latest_departure_time = time
                 solution_trip_id = trip_id
+
+        if solution_trip_id is None:
+            return None, None, None
         return latest_departure_time, solution_trip_id, origin_stop_number
 
     def get_all_stop_locations(self):
