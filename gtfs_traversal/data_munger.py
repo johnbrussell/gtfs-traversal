@@ -70,7 +70,7 @@ class DataMunger:
         minimum_stop_times = {}
         route_stops = {}
         for stop in self.get_unique_stops_to_solve():
-            routes_at_initial_stop = self.get_routes_by_stop()[stop]
+            routes_at_initial_stop = self.get_routes_at_stop(stop)
             for route in routes_at_initial_stop:
                 if route not in self.get_unique_routes_to_solve():
                     continue
@@ -118,6 +118,9 @@ class DataMunger:
 
     def get_route_types_to_solve(self):
         return [str(r) for r in self.analysis.route_types]
+
+    def get_routes_at_stop(self, stop_id):
+        return self.get_routes_by_stop()[stop_id]
 
     def get_routes_by_stop(self):
         if self._location_routes is not None:
