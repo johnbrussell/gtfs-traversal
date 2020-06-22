@@ -50,7 +50,7 @@ class DataMunger:
             return None, None, None
         return latest_departure_time, solution_trip_id, origin_stop_number
 
-    def get_all_stop_locations(self):
+    def get_all_stop_coordinates(self):
         return self.data.stopLocations
 
     def get_buffered_analysis_end_time(self):
@@ -110,7 +110,7 @@ class DataMunger:
         return minimum_stop_times, route_stops, stop_stops
 
     def get_off_course_stop_locations(self):
-        return {s: l for s, l in self.get_all_stop_locations().items() if s not in self.get_unique_stops_to_solve()}
+        return {s: l for s, l in self.get_all_stop_coordinates().items() if s not in self.get_unique_stops_to_solve()}
 
     def get_route_trips(self):
         return self.data.uniqueRouteTrips
@@ -138,7 +138,7 @@ class DataMunger:
         return location_routes
 
     def get_stop_locations_to_solve(self):
-        return {s: l for s, l in self.get_all_stop_locations().items() if s in self.get_unique_stops_to_solve()}
+        return {s: l for s, l in self.get_all_stop_coordinates().items() if s in self.get_unique_stops_to_solve()}
 
     def get_stop_number_from_stop_id(self, stop_id, route_id):
         stops_on_route = self.get_stops_for_route(route_id)
