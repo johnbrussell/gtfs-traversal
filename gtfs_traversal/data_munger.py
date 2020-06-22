@@ -2,18 +2,11 @@ from datetime import datetime, timedelta
 
 
 class DataMunger:
-    def __init__(self, analysis, data, max_expansion_queue, max_progress_dict, start_time, stop_join_string,
-                 transfer_duration_seconds, transfer_route, walk_route, walk_speed_mph):
+    def __init__(self, analysis, data, start_time, stop_join_string):
         self.analysis = analysis
         self.data = data
-        self.max_expansion_queue = max_expansion_queue
-        self.max_progress_dict = max_progress_dict
         self.start_time = start_time
         self.stop_join_string = stop_join_string
-        self.transfer_duration_seconds = transfer_duration_seconds
-        self.transfer_route = transfer_route
-        self.walk_route = walk_route
-        self.walk_speed_mph = walk_speed_mph
 
         self._buffered_analysis_end_time = None
         self._location_routes = None
@@ -50,9 +43,8 @@ class DataMunger:
             return None, None, None
         return latest_departure_time, solution_trip_id, origin_stop_number
 
-    def get_all_stop_locations(self):
-        all_stop_locations = self.data.stopLocations
-        return {s: l for s, l in all_stop_locations.items() if s in self.get_routes_by_stop().keys()}
+    def get_all_stop_coordinates(self):
+        return self.data.stopLocations
 
     def get_buffered_analysis_end_time(self):
         if self._buffered_analysis_end_time is None:
@@ -70,7 +62,7 @@ class DataMunger:
         minimum_stop_times = {}
         route_stops = {}
         for stop in self.get_unique_stops_to_solve():
-            routes_at_initial_stop = self.get_routes_by_stop()[stop]
+            routes_at_initial_stop = self.get_routes_at_stop(stop)
             for route in routes_at_initial_stop:
                 if route not in self.get_unique_routes_to_solve():
                     continue
@@ -111,13 +103,16 @@ class DataMunger:
         return minimum_stop_times, route_stops, stop_stops
 
     def get_off_course_stop_locations(self):
-        return {s: l for s, l in self.get_all_stop_locations().items() if s not in self.get_unique_stops_to_solve()}
+        return {s: l for s, l in self.get_all_stop_coordinates().items() if s not in self.get_unique_stops_to_solve()}
 
     def get_route_trips(self):
         return self.data.uniqueRouteTrips
 
     def get_route_types_to_solve(self):
         return [str(r) for r in self.analysis.route_types]
+
+    def get_routes_at_stop(self, stop_id):
+        return self.get_routes_by_stop()[stop_id]
 
     def get_routes_by_stop(self):
         if self._location_routes is not None:
@@ -136,7 +131,7 @@ class DataMunger:
         return location_routes
 
     def get_stop_locations_to_solve(self):
-        return {s: l for s, l in self.get_all_stop_locations().items() if s in self.get_unique_stops_to_solve()}
+        return {s: l for s, l in self.get_all_stop_coordinates().items() if s in self.get_unique_stops_to_solve()}
 
     def get_stop_number_from_stop_id(self, stop_id, route_id):
         stops_on_route = self.get_stops_for_route(route_id)

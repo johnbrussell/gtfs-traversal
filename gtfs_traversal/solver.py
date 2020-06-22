@@ -8,7 +8,7 @@ from datetime import datetime, timedelta
 class Solver:
     def __init__(self, analysis, data, location_routes, max_expansion_queue, max_progress_dict, start_time,
                  stop_join_string, transfer_duration_seconds, transfer_route, walk_route, walk_speed_mph):
-        self.WALK_SPEED_MPH = walk_speed_mph
+        self.walk_speed_mph = walk_speed_mph
         self.STOP_JOIN_STRING = stop_join_string
         self.minimum_stop_times = None
         self.TRANSFER_ROUTE = transfer_route
@@ -31,14 +31,8 @@ class Solver:
         self.data_munger = DataMunger(
             analysis=analysis,
             data=data,
-            max_expansion_queue=max_expansion_queue,
-            max_progress_dict=max_progress_dict,
             start_time=start_time,
             stop_join_string=stop_join_string,
-            transfer_duration_seconds=transfer_duration_seconds,
-            transfer_route=transfer_route,
-            walk_route=walk_route,
-            walk_speed_mph=walk_speed_mph,
         )
 
     def walk_time_seconds(self, lat1, lat2, long1, long2):
@@ -55,7 +49,7 @@ class Solver:
         dest_lat = math.cos(dest_lat)
         haversine = delta_lat + origin_lat * dest_lat * delta_long
         haversine = 2 * 3959 * math.asin(math.sqrt(haversine))
-        return haversine * 3600 / self.WALK_SPEED_MPH
+        return haversine * 3600 / self.walk_speed_mph
 
     @staticmethod
     def to_radians_from_degrees(degrees):
