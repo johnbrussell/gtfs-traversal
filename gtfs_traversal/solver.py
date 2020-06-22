@@ -31,14 +31,8 @@ class Solver:
         self.data_munger = DataMunger(
             analysis=analysis,
             data=data,
-            max_expansion_queue=max_expansion_queue,
-            max_progress_dict=max_progress_dict,
             start_time=start_time,
             stop_join_string=stop_join_string,
-            transfer_duration_seconds=transfer_duration_seconds,
-            transfer_route=transfer_route,
-            walk_route=walk_route,
-            walk_speed_mph=walk_speed_mph,
         )
 
     def walk_time_seconds(self, lat1, lat2, long1, long2):

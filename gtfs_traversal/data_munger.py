@@ -2,18 +2,11 @@ from datetime import datetime, timedelta
 
 
 class DataMunger:
-    def __init__(self, analysis, data, max_expansion_queue, max_progress_dict, start_time, stop_join_string,
-                 transfer_duration_seconds, transfer_route, walk_route, walk_speed_mph):
+    def __init__(self, analysis, data, start_time, stop_join_string):
         self.analysis = analysis
         self.data = data
-        self.max_expansion_queue = max_expansion_queue
-        self.max_progress_dict = max_progress_dict
         self.start_time = start_time
         self.stop_join_string = stop_join_string
-        self.transfer_duration_seconds = transfer_duration_seconds
-        self.transfer_route = transfer_route
-        self.walk_route = walk_route
-        self.walk_speed_mph = walk_speed_mph
 
         self._buffered_analysis_end_time = None
         self._location_routes = None

@@ -10,15 +10,11 @@ DEFAULT_START_TIME = datetime.strptime(DEFAULT_START_DATE, '%Y-%m-%d')
 class TestDataMunger(unittest.TestCase):
     @staticmethod
     def get_blank_subject():
-        return DataMunger(analysis=None, data=None, max_expansion_queue=None, max_progress_dict=None,
-                          start_time=None, stop_join_string=None, transfer_duration_seconds=None,
-                          transfer_route=None, walk_route=None, walk_speed_mph=None)
+        return DataMunger(analysis=None, data=None, start_time=None, stop_join_string=None)
 
     @staticmethod
     def get_subject_with_mock_data(*, analysis=None):
-        return DataMunger(analysis=analysis, data=MockData(), max_expansion_queue=None, max_progress_dict=None,
-                          start_time=DEFAULT_START_TIME, stop_join_string=None, transfer_duration_seconds=None,
-                          transfer_route=None, walk_route=None, walk_speed_mph=None)
+        return DataMunger(analysis=analysis, data=MockData(), start_time=DEFAULT_START_TIME, stop_join_string=None)
 
     def test_first_trip_after(self):
         def test_returns_correct_trip():
