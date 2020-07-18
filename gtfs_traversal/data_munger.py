@@ -33,8 +33,8 @@ class DataMunger:
 
         solution_trip_id = None
         for trip_id in self.get_trips_for_route(route_number):
-            hours, minutes, seconds = self.get_stops_for_trip(trip_id)[origin_stop_number].departureTime.split(':')
-            time = date_at_midnight + timedelta(hours=float(hours), minutes=float(minutes), seconds=float(seconds))
+            raw_departure_time = self.get_stops_for_trip(trip_id)[origin_stop_number].departureTime
+            time = self.get_datetime_from_raw_string_time(date_at_midnight, raw_departure_time)
             if earliest_departure_time <= time < latest_departure_time:
                 latest_departure_time = time
                 solution_trip_id = trip_id
@@ -92,13 +92,12 @@ class DataMunger:
                             self.get_route_trips()[route].tripIds[0]].tripStops.keys():
                         next_stop_name = self.get_trip_schedules()[
                             self.get_route_trips()[route].tripIds[0]].tripStops[next_stop].stopId
-                        ho, mi, se = self.get_trip_schedules()[self.get_route_trips()[route].tripIds[0]].tripStops[
-                            next_stop].departureTime.split(':')
-                        trip_duration = int(se) + int(mi) * 60 + int(ho) * 60 * 60
+                        raw_time = self.get_trip_schedules()[self.get_route_trips()[route].tripIds[0]].tripStops[
+                            next_stop].departureTime
                         start_day_midnight = datetime(year=best_departure_time.year,
                                                      month=best_departure_time.month,
                                                      day=best_departure_time.day)
-                        next_time = start_day_midnight + timedelta(seconds=trip_duration)
+                        next_time = self.get_datetime_from_raw_string_time(start_day_midnight, raw_time)
                         new_dur = next_time - best_departure_time
                         if next_stop_name not in minimum_stop_times:
                             minimum_stop_times[next_stop_name] = timedelta(hours=24)
