@@ -52,6 +52,11 @@ class DataMunger:
 
         return self._buffered_analysis_end_time
 
+    @staticmethod
+    def get_datetime_from_raw_string_time(date_at_midnight, time_string):
+        hours, minutes, seconds = time_string.split(':')
+        return date_at_midnight + timedelta(hours=float(hours), minutes=float(minutes), seconds=float(seconds))
+
     def get_initial_unsolved_string(self):
         return self.stop_join_string + \
                self.stop_join_string.join(self.get_unique_stops_to_solve()) + \
