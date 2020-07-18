@@ -63,7 +63,7 @@ class DataMunger:
                self.stop_join_string.join(self.get_unique_stops_to_solve()) + \
                self.stop_join_string
 
-    def get_minimum_stop_times_route_stops_and_stop_stops(self):
+    def get_minimum_stop_times_and_stop_stops(self):
         stop_stops = {}
         minimum_stop_times = {}
         # stop_stops is a dictionary where keys are stops on the solution set and values are sets of stops on the
@@ -181,12 +181,12 @@ class DataMunger:
 
     def get_total_minimum_time(self):
         total_minimum_time = timedelta(0)
-        for v in self.get_minimum_stop_times_route_stops_and_stop_stops()[0].values():
+        for v in self.get_minimum_stop_times_and_stop_stops()[0].values():
             total_minimum_time += v
         return total_minimum_time
 
     def get_transfer_stops(self):
-        return [s for s, ss in self.get_minimum_stop_times_route_stops_and_stop_stops()[1].items() if len(ss) >= 3]
+        return [s for s, ss in self.get_minimum_stop_times_and_stop_stops()[1].items() if len(ss) >= 3]
 
     def get_trip_schedules(self):
         return self.data.tripSchedules
