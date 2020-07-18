@@ -90,10 +90,9 @@ class DataMunger:
                 next_stop = str(int(best_stop_id) + 1)
                 if next_stop not in self.get_stops_for_route(route).keys():
                     continue
-                next_stop_name = self.get_trip_schedules()[
-                    self.get_route_trips()[route].tripIds[0]].tripStops[next_stop].stopId
-                raw_time = self.get_trip_schedules()[self.get_route_trips()[route].tripIds[0]].tripStops[
-                    next_stop].departureTime
+                stops_on_route = self.get_stops_for_route(route)
+                next_stop_name = stops_on_route[next_stop].stopId
+                raw_time = stops_on_route[next_stop].departureTime
                 start_day_midnight = datetime(year=best_departure_time.year,
                                               month=best_departure_time.month,
                                               day=best_departure_time.day)
