@@ -95,8 +95,8 @@ class DataMunger:
                         raw_time = self.get_trip_schedules()[self.get_route_trips()[route].tripIds[0]].tripStops[
                             next_stop].departureTime
                         start_day_midnight = datetime(year=best_departure_time.year,
-                                                     month=best_departure_time.month,
-                                                     day=best_departure_time.day)
+                                                      month=best_departure_time.month,
+                                                      day=best_departure_time.day)
                         next_time = self.get_datetime_from_raw_string_time(start_day_midnight, raw_time)
                         new_dur = next_time - best_departure_time
                         if next_stop_name not in minimum_stop_times:
