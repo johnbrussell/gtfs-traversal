@@ -88,26 +88,26 @@ class DataMunger:
                 if best_trip_id is None:
                     continue
                 next_stop = str(int(best_stop_id) + 1)
-                if next_stop in self.get_trip_schedules()[
-                        self.get_route_trips()[route].tripIds[0]].tripStops.keys():
-                    next_stop_name = self.get_trip_schedules()[
-                        self.get_route_trips()[route].tripIds[0]].tripStops[next_stop].stopId
-                    raw_time = self.get_trip_schedules()[self.get_route_trips()[route].tripIds[0]].tripStops[
-                        next_stop].departureTime
-                    start_day_midnight = datetime(year=best_departure_time.year,
-                                                  month=best_departure_time.month,
-                                                  day=best_departure_time.day)
-                    next_time = self.get_datetime_from_raw_string_time(start_day_midnight, raw_time)
-                    new_dur = next_time - best_departure_time
-                    if next_stop_name not in minimum_stop_times:
-                        minimum_stop_times[next_stop_name] = timedelta(hours=24)
-                    if stop not in minimum_stop_times:
-                        minimum_stop_times[stop] = timedelta(hours=24)
-                    if stop not in stop_stops:
-                        stop_stops[stop] = set()
-                    stop_stops[stop].add(next_stop_name)
-                    minimum_stop_times[next_stop_name] = min(minimum_stop_times[next_stop_name], new_dur / 2)
-                    minimum_stop_times[stop] = min(minimum_stop_times[stop], new_dur / 2)
+                if next_stop not in self.get_stops_for_route(route).keys():
+                    continue
+                next_stop_name = self.get_trip_schedules()[
+                    self.get_route_trips()[route].tripIds[0]].tripStops[next_stop].stopId
+                raw_time = self.get_trip_schedules()[self.get_route_trips()[route].tripIds[0]].tripStops[
+                    next_stop].departureTime
+                start_day_midnight = datetime(year=best_departure_time.year,
+                                              month=best_departure_time.month,
+                                              day=best_departure_time.day)
+                next_time = self.get_datetime_from_raw_string_time(start_day_midnight, raw_time)
+                new_dur = next_time - best_departure_time
+                if next_stop_name not in minimum_stop_times:
+                    minimum_stop_times[next_stop_name] = timedelta(hours=24)
+                if stop not in minimum_stop_times:
+                    minimum_stop_times[stop] = timedelta(hours=24)
+                if stop not in stop_stops:
+                    stop_stops[stop] = set()
+                stop_stops[stop].add(next_stop_name)
+                minimum_stop_times[next_stop_name] = min(minimum_stop_times[next_stop_name], new_dur / 2)
+                minimum_stop_times[stop] = min(minimum_stop_times[stop], new_dur / 2)
 
         return minimum_stop_times, route_stops, stop_stops
 
