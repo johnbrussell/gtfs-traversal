@@ -66,7 +66,6 @@ class DataMunger:
     def get_minimum_stop_times_route_stops_and_stop_stops(self):
         stop_stops = {}
         minimum_stop_times = {}
-        route_stops = {}
         # stop_stops is a dictionary where keys are stops on the solution set and values are sets of stops on the
         #  solution set that are one stop away
         # minimum_stop_times is a dictionary where keys are stops and values are half of the minimum amount of time
@@ -77,9 +76,6 @@ class DataMunger:
             for route in routes_at_stop:
                 if route not in self.get_unique_routes_to_solve():
                     continue
-                if route not in route_stops:
-                    route_stops[route] = set()
-                route_stops[route].add(stop)
 
                 # Currently, this function does not support the situation where one trip visits the same stop
                 #  multiple times.
@@ -110,7 +106,7 @@ class DataMunger:
                                                          travel_time_to_next_stop / 2)
                 minimum_stop_times[stop] = min(minimum_stop_times[stop], travel_time_to_next_stop / 2)
 
-        return minimum_stop_times, route_stops, stop_stops
+        return minimum_stop_times, stop_stops
 
     def get_off_course_stop_locations(self):
         return {s: l for s, l in self.get_all_stop_coordinates().items() if s not in self.get_unique_stops_to_solve()}
@@ -190,7 +186,7 @@ class DataMunger:
         return total_minimum_time
 
     def get_transfer_stops(self):
-        return [s for s, ss in self.get_minimum_stop_times_route_stops_and_stop_stops()[2].items() if len(ss) >= 3]
+        return [s for s, ss in self.get_minimum_stop_times_route_stops_and_stop_stops()[1].items() if len(ss) >= 3]
 
     def get_trip_schedules(self):
         return self.data.tripSchedules

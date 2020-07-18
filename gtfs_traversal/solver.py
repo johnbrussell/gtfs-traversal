@@ -68,7 +68,7 @@ class Solver:
         if self.minimum_stop_times is not None:
             return self.minimum_stop_times
 
-        self.minimum_stop_times, _, _ = self.data_munger.get_minimum_stop_times_route_stops_and_stop_stops()
+        self.minimum_stop_times, _ = self.data_munger.get_minimum_stop_times_route_stops_and_stop_stops()
         return self.minimum_stop_times
 
     def get_next_stop_data(self, location_status, progress, trip_data, routes_to_solve, new_trip_id, trip_stop_no,
