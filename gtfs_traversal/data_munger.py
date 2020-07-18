@@ -90,10 +90,10 @@ class DataMunger:
                         ho, mi, se = self.get_trip_schedules()[self.get_route_trips()[route].tripIds[0]].tripStops[
                             next_stop].departureTime.split(':')
                         trip_duration = int(se) + int(mi) * 60 + int(ho) * 60 * 60
-                        start_day_mdnight = datetime(year=best_departure_time.year,
+                        start_day_midnight = datetime(year=best_departure_time.year,
                                                      month=best_departure_time.month,
                                                      day=best_departure_time.day)
-                        next_time = start_day_mdnight + timedelta(seconds=trip_duration)
+                        next_time = start_day_midnight + timedelta(seconds=trip_duration)
                         new_dur = next_time - best_departure_time
                         if next_stop_name not in minimum_stop_times:
                             minimum_stop_times[next_stop_name] = timedelta(hours=24)
