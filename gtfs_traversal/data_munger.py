@@ -72,8 +72,8 @@ class DataMunger:
         #  required to travel either to or from that stop from another solution stop
         # route_stops is a dictionary where the keys are routes and the values are sets of stops on that route
         for stop in self.get_unique_stops_to_solve():
-            routes_at_initial_stop = self.get_routes_at_stop(stop)
-            for route in routes_at_initial_stop:
+            routes_at_stop = self.get_routes_at_stop(stop)
+            for route in routes_at_stop:
                 if route not in self.get_unique_routes_to_solve():
                     continue
                 if route not in route_stops:
@@ -87,26 +87,27 @@ class DataMunger:
                     self.start_time, route, stop)
                 if best_trip_id is None:
                     continue
-                next_stop = str(int(best_stop_id) + 1)
-                if next_stop not in self.get_stops_for_route(route).keys():
+                next_stop_id = str(int(best_stop_id) + 1)
+                if next_stop_id not in self.get_stops_for_route(route).keys():
                     continue
                 stops_on_route = self.get_stops_for_route(route)
-                next_stop_name = stops_on_route[next_stop].stopId
-                raw_time = stops_on_route[next_stop].departureTime
+                next_stop = stops_on_route[next_stop_id].stopId
+                raw_time = stops_on_route[next_stop_id].departureTime
                 start_day_midnight = datetime(year=best_departure_time.year,
                                               month=best_departure_time.month,
                                               day=best_departure_time.day)
-                next_time = self.get_datetime_from_raw_string_time(start_day_midnight, raw_time)
-                new_dur = next_time - best_departure_time
-                if next_stop_name not in minimum_stop_times:
-                    minimum_stop_times[next_stop_name] = timedelta(hours=24)
+                arrival_time_at_next_stop = self.get_datetime_from_raw_string_time(start_day_midnight, raw_time)
+                travel_time_to_next_stop = arrival_time_at_next_stop - best_departure_time
+                if next_stop not in minimum_stop_times:
+                    minimum_stop_times[next_stop] = timedelta(hours=24)
                 if stop not in minimum_stop_times:
                     minimum_stop_times[stop] = timedelta(hours=24)
                 if stop not in stop_stops:
                     stop_stops[stop] = set()
-                stop_stops[stop].add(next_stop_name)
-                minimum_stop_times[next_stop_name] = min(minimum_stop_times[next_stop_name], new_dur / 2)
-                minimum_stop_times[stop] = min(minimum_stop_times[stop], new_dur / 2)
+                stop_stops[stop].add(next_stop)
+                minimum_stop_times[next_stop] = min(minimum_stop_times[next_stop],
+                                                         travel_time_to_next_stop / 2)
+                minimum_stop_times[stop] = min(minimum_stop_times[stop], travel_time_to_next_stop / 2)
 
         return minimum_stop_times, route_stops, stop_stops
 
