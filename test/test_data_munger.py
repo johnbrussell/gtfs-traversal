@@ -112,6 +112,24 @@ class TestDataMunger(unittest.TestCase):
         test_memoizes()
         test_munges_correctly()
 
+    def test_get_stops_by_route_in_solution_set(self):
+        def test_returns_correct_result():
+            subject = self.get_subject_with_mock_data(analysis=MockAnalysis(route_types_to_solve=[1, 2]))
+            expected = {
+                1: {'Alewife', 'Wonderland'},
+                2: {'Heath Street', 'Lechmere'},
+                3: {'Wonderland', 'Bowdoin'},
+            }
+            self.assertEqual(subject.get_stops_by_route_in_solution_set(), expected)
+
+        def test_memoizes():
+            subject = self.get_subject_with_mock_data()
+            subject._stops_by_route_in_solution_set = 'lolwut'
+            self.assertEqual(subject.get_stops_by_route_in_solution_set(), 'lolwut')
+
+        test_returns_correct_result()
+        test_memoizes()
+
     def test_get_unique_routes_to_solve(self):
         def test_returns_correct_result():
             analysis = MockAnalysis()

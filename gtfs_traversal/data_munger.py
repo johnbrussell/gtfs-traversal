@@ -10,6 +10,7 @@ class DataMunger:
 
         self._buffered_analysis_end_time = None
         self._location_routes = None
+        self._stops_by_route_in_solution_set = None
         self._unique_routes_to_solve = None
         self._unique_stops_to_solve = None
 
@@ -158,6 +159,23 @@ class DataMunger:
             stops_at_ends_of_solution_routes.add(trip_stops['1'].stopId)
             stops_at_ends_of_solution_routes.add(trip_stops[str(len(trip_stops))].stopId)
         return stops_at_ends_of_solution_routes
+
+    def get_stops_by_route_in_solution_set(self):
+        if self._stops_by_route_in_solution_set is not None:
+            return self._stops_by_route_in_solution_set
+
+        route_stops = {}
+
+        for stop in self.get_unique_stops_to_solve():
+            for route in self.get_routes_at_stop(stop):
+                if route not in self.get_unique_routes_to_solve():
+                    continue
+                if route not in route_stops:
+                    route_stops[route] = set()
+                route_stops[route].add(stop)
+
+        self._stops_by_route_in_solution_set = route_stops
+        return self._stops_by_route_in_solution_set
 
     def get_stops_for_route(self, route_id):
         return self.get_stops_for_trip(self.get_trips_for_route(route_id)[0])
