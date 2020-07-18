@@ -10,6 +10,7 @@ class DataMunger:
 
         self._buffered_analysis_end_time = None
         self._location_routes = None
+        self._stops_by_route_in_solution_set = None
         self._unique_routes_to_solve = None
         self._unique_stops_to_solve = None
 
@@ -33,8 +34,8 @@ class DataMunger:
 
         solution_trip_id = None
         for trip_id in self.get_trips_for_route(route_number):
-            hours, minutes, seconds = self.get_stops_for_trip(trip_id)[origin_stop_number].departureTime.split(':')
-            time = date_at_midnight + timedelta(hours=float(hours), minutes=float(minutes), seconds=float(seconds))
+            raw_departure_time = self.get_stops_for_trip(trip_id)[origin_stop_number].departureTime
+            time = self.get_datetime_from_raw_string_time(date_at_midnight, raw_departure_time)
             if earliest_departure_time <= time < latest_departure_time:
                 latest_departure_time = time
                 solution_trip_id = trip_id
@@ -52,55 +53,60 @@ class DataMunger:
 
         return self._buffered_analysis_end_time
 
+    @staticmethod
+    def get_datetime_from_raw_string_time(date_at_midnight, time_string):
+        hours, minutes, seconds = time_string.split(':')
+        return date_at_midnight + timedelta(hours=float(hours), minutes=float(minutes), seconds=float(seconds))
+
     def get_initial_unsolved_string(self):
         return self.stop_join_string + \
                self.stop_join_string.join(self.get_unique_stops_to_solve()) + \
                self.stop_join_string
 
-    def get_minimum_stop_times_route_stops_and_stop_stops(self):
+    def get_minimum_stop_times_and_stop_stops(self):
         stop_stops = {}
         minimum_stop_times = {}
-        route_stops = {}
+        # stop_stops is a dictionary where keys are stops on the solution set and values are sets of stops on the
+        #  solution set that are one stop away
+        # minimum_stop_times is a dictionary where keys are stops and values are half of the minimum amount of time
+        #  required to travel either to or from that stop from another solution stop
+        # route_stops is a dictionary where the keys are routes and the values are sets of stops on that route
         for stop in self.get_unique_stops_to_solve():
-            routes_at_initial_stop = self.get_routes_at_stop(stop)
-            for route in routes_at_initial_stop:
+            routes_at_stop = self.get_routes_at_stop(stop)
+            for route in routes_at_stop:
                 if route not in self.get_unique_routes_to_solve():
                     continue
-                if route not in route_stops:
-                    route_stops[route] = set()
-                route_stops[route].add(stop)
-                stop_locations = [sor for sor, sid in self.get_trip_schedules()[
-                    self.get_route_trips()[route].tripIds[0]].tripStops.items() if
-                                  sid.stopId == stop]
-                for _ in stop_locations:
-                    best_departure_time, best_trip_id, best_stop_id = self.first_trip_after(
-                        self.start_time, route, stop)
-                    if best_trip_id is None:
-                        continue
-                    next_stop = str(int(best_stop_id) + 1)
-                    if next_stop in self.get_trip_schedules()[
-                            self.get_route_trips()[route].tripIds[0]].tripStops.keys():
-                        next_stop_name = self.get_trip_schedules()[
-                            self.get_route_trips()[route].tripIds[0]].tripStops[next_stop].stopId
-                        ho, mi, se = self.get_trip_schedules()[self.get_route_trips()[route].tripIds[0]].tripStops[
-                            next_stop].departureTime.split(':')
-                        trip_duration = int(se) + int(mi) * 60 + int(ho) * 60 * 60
-                        start_day_mdnight = datetime(year=best_departure_time.year,
-                                                     month=best_departure_time.month,
-                                                     day=best_departure_time.day)
-                        next_time = start_day_mdnight + timedelta(seconds=trip_duration)
-                        new_dur = next_time - best_departure_time
-                        if next_stop_name not in minimum_stop_times:
-                            minimum_stop_times[next_stop_name] = timedelta(hours=24)
-                        if stop not in minimum_stop_times:
-                            minimum_stop_times[stop] = timedelta(hours=24)
-                        if stop not in stop_stops:
-                            stop_stops[stop] = set()
-                        stop_stops[stop].add(next_stop_name)
-                        minimum_stop_times[next_stop_name] = min(minimum_stop_times[next_stop_name], new_dur / 2)
-                        minimum_stop_times[stop] = min(minimum_stop_times[stop], new_dur / 2)
 
-        return minimum_stop_times, route_stops, stop_stops
+                # Currently, this function does not support the situation where one trip visits the same stop
+                #  multiple times.
+                # Currently, this function assumes that the first trip of the day along each route is the fastest.
+                best_departure_time, best_trip_id, best_stop_id = self.first_trip_after(
+                    self.start_time, route, stop)
+                if best_trip_id is None:
+                    continue
+                next_stop_id = str(int(best_stop_id) + 1)
+                if next_stop_id not in self.get_stops_for_route(route).keys():
+                    continue
+                stops_on_route = self.get_stops_for_route(route)
+                next_stop = stops_on_route[next_stop_id].stopId
+                raw_time = stops_on_route[next_stop_id].departureTime
+                start_day_midnight = datetime(year=best_departure_time.year,
+                                              month=best_departure_time.month,
+                                              day=best_departure_time.day)
+                arrival_time_at_next_stop = self.get_datetime_from_raw_string_time(start_day_midnight, raw_time)
+                travel_time_to_next_stop = arrival_time_at_next_stop - best_departure_time
+                if next_stop not in minimum_stop_times:
+                    minimum_stop_times[next_stop] = timedelta(hours=24)
+                if stop not in minimum_stop_times:
+                    minimum_stop_times[stop] = timedelta(hours=24)
+                if stop not in stop_stops:
+                    stop_stops[stop] = set()
+                stop_stops[stop].add(next_stop)
+                minimum_stop_times[next_stop] = min(minimum_stop_times[next_stop],
+                                                         travel_time_to_next_stop / 2)
+                minimum_stop_times[stop] = min(minimum_stop_times[stop], travel_time_to_next_stop / 2)
+
+        return minimum_stop_times, stop_stops
 
     def get_off_course_stop_locations(self):
         return {s: l for s, l in self.get_all_stop_coordinates().items() if s not in self.get_unique_stops_to_solve()}
@@ -150,6 +156,23 @@ class DataMunger:
             stops_at_ends_of_solution_routes.add(trip_stops[str(len(trip_stops))].stopId)
         return stops_at_ends_of_solution_routes
 
+    def get_stops_by_route_in_solution_set(self):
+        if self._stops_by_route_in_solution_set is not None:
+            return self._stops_by_route_in_solution_set
+
+        route_stops = {}
+
+        for stop in self.get_unique_stops_to_solve():
+            for route in self.get_routes_at_stop(stop):
+                if route not in self.get_unique_routes_to_solve():
+                    continue
+                if route not in route_stops:
+                    route_stops[route] = set()
+                route_stops[route].add(stop)
+
+        self._stops_by_route_in_solution_set = route_stops
+        return self._stops_by_route_in_solution_set
+
     def get_stops_for_route(self, route_id):
         return self.get_stops_for_trip(self.get_trips_for_route(route_id)[0])
 
@@ -158,12 +181,12 @@ class DataMunger:
 
     def get_total_minimum_time(self):
         total_minimum_time = timedelta(0)
-        for v in self.get_minimum_stop_times_route_stops_and_stop_stops()[0].values():
+        for v in self.get_minimum_stop_times_and_stop_stops()[0].values():
             total_minimum_time += v
         return total_minimum_time
 
     def get_transfer_stops(self):
-        return [s for s, ss in self.get_minimum_stop_times_route_stops_and_stop_stops()[2].items() if len(ss) >= 3]
+        return [s for s, ss in self.get_minimum_stop_times_and_stop_stops()[1].items() if len(ss) >= 3]
 
     def get_trip_schedules(self):
         return self.data.tripSchedules
