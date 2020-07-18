@@ -61,6 +61,11 @@ class DataMunger:
         stop_stops = {}
         minimum_stop_times = {}
         route_stops = {}
+        # stop_stops is a dictionary where keys are stops on the solution set and values are sets of stops on the
+        #  solution set that are one stop away
+        # minimum_stop_times is a dictionary where keys are stops and values are half of the minimum amount of time
+        #  required to travel either to or from that stop from another solution stop
+        # route_stops is a dictionary where the keys are routes and the values are sets of stops on that route
         for stop in self.get_unique_stops_to_solve():
             routes_at_initial_stop = self.get_routes_at_stop(stop)
             for route in routes_at_initial_stop:
