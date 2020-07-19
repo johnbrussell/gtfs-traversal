@@ -10,6 +10,7 @@ class DataMunger:
 
         self._buffered_analysis_end_time = None
         self._location_routes = None
+        self._minimum_stop_times = None
         self._stops_by_route_in_solution_set = None
         self._transfer_stops = None
         self._unique_routes_to_solve = None
@@ -65,6 +66,9 @@ class DataMunger:
                self.stop_join_string
 
     def get_minimum_stop_times(self):
+        if self._minimum_stop_times is not None:
+            return self._minimum_stop_times
+
         minimum_stop_times = {}
         # minimum_stop_times is a dictionary where keys are stops and values are half of the minimum amount of time
         #  required to travel either to or from that stop from another solution stop
@@ -99,7 +103,8 @@ class DataMunger:
                 minimum_stop_times[next_stop] = min(minimum_stop_times[next_stop], travel_time_to_next_stop / 2)
                 minimum_stop_times[stop] = min(minimum_stop_times[stop], travel_time_to_next_stop / 2)
 
-        return minimum_stop_times
+        self._minimum_stop_times = minimum_stop_times
+        return self._minimum_stop_times
 
     def get_off_course_stop_locations(self):
         return {s: l for s, l in self.get_all_stop_coordinates().items() if s not in self.get_unique_stops_to_solve()}
