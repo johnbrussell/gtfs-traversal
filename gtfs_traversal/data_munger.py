@@ -137,6 +137,10 @@ class DataMunger:
         self._location_routes = location_routes
         return location_routes
 
+    def get_solution_routes_at_stop(self, stop_id):
+        routes_at_stop = self.get_routes_at_stop(stop_id)
+        return {route for route in routes_at_stop if route in self.get_unique_routes_to_solve()}
+
     def get_stop_locations_to_solve(self):
         return {s: l for s, l in self.get_all_stop_coordinates().items() if s in self.get_unique_stops_to_solve()}
 
@@ -194,7 +198,7 @@ class DataMunger:
         # stop_stops is a dictionary where keys are stops on the solution set and values are sets of stops on the
         #  solution set that are one stop away
         for stop in self.get_unique_stops_to_solve():
-            routes_at_stop = self.get_routes_at_stop(stop)
+            routes_at_stop = self.get_solution_routes_at_stop(stop)
             for route in routes_at_stop:
                 if route not in self.get_unique_routes_to_solve():
                     continue

@@ -112,6 +112,12 @@ class TestDataMunger(unittest.TestCase):
         test_memoizes()
         test_munges_correctly()
 
+    def test_get_solution_routes_by_stop(self):
+        subject = self.get_subject_with_mock_data(analysis=MockAnalysis())
+        self.assertSetEqual({1}, subject.get_solution_routes_at_stop('Wonderland'))
+        self.assertSetEqual({2}, subject.get_solution_routes_at_stop('Heath Street'))
+        self.assertSetEqual(set(), subject.get_solution_routes_at_stop('Bowdoin'))
+
     def test_get_stops_by_route_in_solution_set(self):
         def test_returns_correct_result():
             subject = self.get_subject_with_mock_data(analysis=MockAnalysis(route_types_to_solve=[1, 2]))
