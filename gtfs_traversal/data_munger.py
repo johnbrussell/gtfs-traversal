@@ -194,32 +194,69 @@ class DataMunger:
         if self._transfer_stops is not None:
             return self._transfer_stops
 
-        stop_stops = {}
-        # stop_stops is a dictionary where keys are stops on the solution set and values are sets of stops on the
-        #  solution set that are one stop away
+        transfer_stops = set()
+        adjacent_stops = {}
+        arrival_adjacent_stops = {}
+        endpoint_stops = set()
+
         for stop in self.get_unique_stops_to_solve():
             routes_at_stop = self.get_solution_routes_at_stop(stop)
+
             for route in routes_at_stop:
-                if route not in self.get_unique_routes_to_solve():
-                    continue
-
-                # Currently, this function does not support the situation where one trip visits the same stop
-                #  multiple times.
-                # Currently, this function assumes that the first trip of the day along each route is the fastest.
-                best_departure_time, best_trip_id, best_stop_id = self.first_trip_after(
+                best_departure_time, best_trip_id, best_stop_number = self.first_trip_after(
                     self.start_time, route, stop)
-                if best_trip_id is None:
-                    continue
-                next_stop_id = str(int(best_stop_id) + 1)
-                if next_stop_id not in self.get_stops_for_route(route).keys():
-                    continue
-                stops_on_route = self.get_stops_for_route(route)
-                next_stop = stops_on_route[next_stop_id].stopId
-                if stop not in stop_stops:
-                    stop_stops[stop] = set()
-                stop_stops[stop].add(next_stop)
 
-        self._transfer_stops = [s for s, ss in stop_stops.items() if len(ss) >= 3]
+                if best_trip_id is None or best_stop_number == '1':
+                    endpoint_stops.add(stop)
+
+                if best_trip_id is not None:
+                    next_stop_number = str(int(best_stop_number) + 1)
+                    stops_on_route = self.get_stops_for_route(route)
+                    next_stop = stops_on_route[next_stop_number].stopId
+                else:
+                    next_stop = None
+
+                if stop not in adjacent_stops:
+                    adjacent_stops[stop] = set()
+                if next_stop not in arrival_adjacent_stops and next_stop is not None:
+                    arrival_adjacent_stops[next_stop] = set()
+                if next_stop is not None:
+                    adjacent_stops[stop].add(next_stop)
+                    arrival_adjacent_stops[next_stop].add(stop)
+
+        for stop in self.get_unique_stops_to_solve():
+            if stop in adjacent_stops and len(adjacent_stops[stop]) >= 3:
+                transfer_stops.add(stop)
+            if stop in arrival_adjacent_stops and len(arrival_adjacent_stops[stop]) >= 3:
+                transfer_stops.add(stop)
+            if stop in adjacent_stops and len(adjacent_stops[stop]) >= 2 and stop in endpoint_stops:
+                transfer_stops.add(stop)
+            if stop in arrival_adjacent_stops and len(arrival_adjacent_stops[stop]) >= 2 and stop in endpoint_stops:
+                transfer_stops.add(stop)
+            if stop not in adjacent_stops:
+                pass
+            elif any(adjacent_stop not in arrival_adjacent_stops
+                     for adjacent_stop in adjacent_stops[stop]) and len(self.get_routes_at_stop(stop)) >= 2:
+                transfer_stops.add(stop)
+            elif stop not in arrival_adjacent_stops:
+                pass
+            elif any(adjacent_stop not in arrival_adjacent_stops[stop]
+                     for adjacent_stop in adjacent_stops[stop]) and len(self.get_routes_at_stop(stop)) >= 2:
+                transfer_stops.add(stop)
+            if stop not in arrival_adjacent_stops:
+                pass
+            elif any(arrival_adjacent_stop not in adjacent_stops
+                     for arrival_adjacent_stop in arrival_adjacent_stops[stop]) and \
+                    len(self.get_routes_at_stop(stop)) >= 2:
+                transfer_stops.add(stop)
+            elif stop not in adjacent_stops:
+                pass
+            elif any(arrival_adjacent_stop not in adjacent_stops[stop]
+                     for arrival_adjacent_stop in arrival_adjacent_stops[stop]) and \
+                    len(self.get_routes_at_stop(stop)) >= 2:
+                transfer_stops.add(stop)
+
+        self._transfer_stops = transfer_stops
         return self._transfer_stops
 
     def get_trip_schedules(self):
