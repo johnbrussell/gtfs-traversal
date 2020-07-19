@@ -159,8 +159,6 @@ class TestDataMunger(unittest.TestCase):
             subject.data.add_route_and_trip(new_route, new_trip_schedules)
             subject.data.add_route_and_trip(new_reverse_route, new_reverse_trip_schedules)
 
-            print(subject.get_minimum_stop_times_and_stop_stops())
-
             expected = {'Wonderland', 'Bowdoin'}
             actual = set(subject.get_transfer_stops())
             self.assertSetEqual(expected, actual)
