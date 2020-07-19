@@ -190,7 +190,32 @@ class DataMunger:
         if self._transfer_stops is not None:
             return self._transfer_stops
 
-        self._transfer_stops = [s for s, ss in self.get_minimum_stop_times_and_stop_stops()[1].items() if len(ss) >= 3]
+        stop_stops = {}
+        # stop_stops is a dictionary where keys are stops on the solution set and values are sets of stops on the
+        #  solution set that are one stop away
+        for stop in self.get_unique_stops_to_solve():
+            routes_at_stop = self.get_routes_at_stop(stop)
+            for route in routes_at_stop:
+                if route not in self.get_unique_routes_to_solve():
+                    continue
+
+                # Currently, this function does not support the situation where one trip visits the same stop
+                #  multiple times.
+                # Currently, this function assumes that the first trip of the day along each route is the fastest.
+                best_departure_time, best_trip_id, best_stop_id = self.first_trip_after(
+                    self.start_time, route, stop)
+                if best_trip_id is None:
+                    continue
+                next_stop_id = str(int(best_stop_id) + 1)
+                if next_stop_id not in self.get_stops_for_route(route).keys():
+                    continue
+                stops_on_route = self.get_stops_for_route(route)
+                next_stop = stops_on_route[next_stop_id].stopId
+                if stop not in stop_stops:
+                    stop_stops[stop] = set()
+                stop_stops[stop].add(next_stop)
+
+        self._transfer_stops = [s for s, ss in stop_stops.items() if len(ss) >= 3]
         return self._transfer_stops
 
     def get_trip_schedules(self):
