@@ -64,14 +64,10 @@ class DataMunger:
                self.stop_join_string.join(self.get_unique_stops_to_solve()) + \
                self.stop_join_string
 
-    def get_minimum_stop_times_and_stop_stops(self):
-        stop_stops = {}
+    def get_minimum_stop_times(self):
         minimum_stop_times = {}
-        # stop_stops is a dictionary where keys are stops on the solution set and values are sets of stops on the
-        #  solution set that are one stop away
         # minimum_stop_times is a dictionary where keys are stops and values are half of the minimum amount of time
         #  required to travel either to or from that stop from another solution stop
-        # route_stops is a dictionary where the keys are routes and the values are sets of stops on that route
         for stop in self.get_unique_stops_to_solve():
             routes_at_stop = self.get_routes_at_stop(stop)
             for route in routes_at_stop:
@@ -100,14 +96,10 @@ class DataMunger:
                     minimum_stop_times[next_stop] = timedelta(hours=24)
                 if stop not in minimum_stop_times:
                     minimum_stop_times[stop] = timedelta(hours=24)
-                if stop not in stop_stops:
-                    stop_stops[stop] = set()
-                stop_stops[stop].add(next_stop)
-                minimum_stop_times[next_stop] = min(minimum_stop_times[next_stop],
-                                                         travel_time_to_next_stop / 2)
+                minimum_stop_times[next_stop] = min(minimum_stop_times[next_stop], travel_time_to_next_stop / 2)
                 minimum_stop_times[stop] = min(minimum_stop_times[stop], travel_time_to_next_stop / 2)
 
-        return minimum_stop_times, stop_stops
+        return minimum_stop_times
 
     def get_off_course_stop_locations(self):
         return {s: l for s, l in self.get_all_stop_coordinates().items() if s not in self.get_unique_stops_to_solve()}
@@ -186,7 +178,7 @@ class DataMunger:
 
     def get_total_minimum_time(self):
         total_minimum_time = timedelta(0)
-        for v in self.get_minimum_stop_times_and_stop_stops()[0].values():
+        for v in self.get_minimum_stop_times().values():
             total_minimum_time += v
         return total_minimum_time
 
