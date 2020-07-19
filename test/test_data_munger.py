@@ -130,6 +130,14 @@ class TestDataMunger(unittest.TestCase):
         test_returns_correct_result()
         test_memoizes()
 
+    def test_get_transfer_stops(self):
+        def test_memoizes():
+            subject = self.get_subject_with_mock_data()
+            subject._transfer_stops = 'some value'
+            self.assertEqual('some value', subject.get_transfer_stops())
+
+        test_memoizes()
+
     def test_get_unique_routes_to_solve(self):
         def test_returns_correct_result():
             analysis = MockAnalysis()

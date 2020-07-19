@@ -11,6 +11,7 @@ class DataMunger:
         self._buffered_analysis_end_time = None
         self._location_routes = None
         self._stops_by_route_in_solution_set = None
+        self._transfer_stops = None
         self._unique_routes_to_solve = None
         self._unique_stops_to_solve = None
 
@@ -186,7 +187,11 @@ class DataMunger:
         return total_minimum_time
 
     def get_transfer_stops(self):
-        return [s for s, ss in self.get_minimum_stop_times_and_stop_stops()[1].items() if len(ss) >= 3]
+        if self._transfer_stops is not None:
+            return self._transfer_stops
+
+        self._transfer_stops = [s for s, ss in self.get_minimum_stop_times_and_stop_stops()[1].items() if len(ss) >= 3]
+        return self._transfer_stops
 
     def get_trip_schedules(self):
         return self.data.tripSchedules
