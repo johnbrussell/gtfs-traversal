@@ -206,20 +206,19 @@ class DataMunger:
                 if best_trip_id is None or best_stop_number == '1':
                     endpoint_stops.add(stop)
 
-                if best_trip_id is not None:
-                    next_stop_number = str(int(best_stop_number) + 1)
-                    stops_on_route = self.get_stops_for_route(route)
-                    next_stop = stops_on_route[next_stop_number].stopId
-                else:
-                    next_stop = None
+                if best_trip_id is None:
+                    continue
+
+                next_stop_number = str(int(best_stop_number) + 1)
+                stops_on_route = self.get_stops_for_route(route)
+                next_stop = stops_on_route[next_stop_number].stopId
 
                 if stop not in adjacent_stops:
                     adjacent_stops[stop] = set()
-                if next_stop not in arrival_adjacent_stops and next_stop is not None:
+                if next_stop not in arrival_adjacent_stops:
                     arrival_adjacent_stops[next_stop] = set()
-                if next_stop is not None:
-                    adjacent_stops[stop].add(next_stop)
-                    arrival_adjacent_stops[next_stop].add(stop)
+                adjacent_stops[stop].add(next_stop)
+                arrival_adjacent_stops[next_stop].add(stop)
 
         for stop in self.get_unique_stops_to_solve():
             if stop in adjacent_stops and len(adjacent_stops[stop]) >= 3:
