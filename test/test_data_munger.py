@@ -260,7 +260,7 @@ class MockTripInfo:
         self.serviceId = '2'
 
     def add_third_stop(self, stop_3_id):
-        self.tripStops['3'] = MockStopDeparture(stop_3_id, int(self.tripStops['1'].departureTime.split(':')[1]) + 1)
+        self.tripStops['3'] = MockStopDeparture(stop_3_id, int(self.tripStops['2'].departureTime.split(':')[0]) + 1)
 
 
 class MockStopDeparture:
