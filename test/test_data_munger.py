@@ -87,6 +87,54 @@ class TestDataMunger(unittest.TestCase):
         test_handles_after_noon()
         test_handles_after_midnight()
 
+    def test_get_minimum_stop_times(self):
+        def test_calculates_correct_result():
+            subject = self.get_subject_with_mock_data(analysis=MockAnalysis())
+
+            new_route = 'A'
+            new_reverse_route = 'A2'
+            new_trip_schedules = {
+                'A-6AM': MockTripInfo('A', 'Back of the Hill', 'Bowdoin', 6),
+                'A-7AM': MockTripInfo('A', 'Back of the Hill', 'Bowdoin', 7),
+                'A-8AM': MockTripInfo('A', 'Back of the Hill', 'Bowdoin', 8),
+            }
+            new_reverse_trip_schedules = {
+                'A2-6AM': MockTripInfo('A2', 'Lynn', 'Bowdoin', 6),
+                'A2-7AM': MockTripInfo('A2', 'Lynn', 'Bowdoin', 7),
+                'A2-8AM': MockTripInfo('A2', 'Lynn', 'Bowdoin', 8),
+            }
+            for trip_id in new_trip_schedules.keys():
+                new_trip_schedules[trip_id].add_third_stop('Lynn')
+            for trip_id in new_reverse_trip_schedules.keys():
+                new_reverse_trip_schedules[trip_id].add_third_stop('Back of the Hill')
+            subject.data.add_route_and_trip(new_route, new_trip_schedules)
+            subject.data.add_route_and_trip(new_reverse_route, new_reverse_trip_schedules)
+
+            expected = {
+                'Alewife': timedelta(minutes=90),
+                'Wonderland': timedelta(minutes=90),
+                'Heath Street': timedelta(minutes=90),
+                'Lechmere': timedelta(minutes=90),
+                'Bowdoin': timedelta(minutes=30),
+                'Lynn': timedelta(minutes=30),
+                'Back of the Hill': timedelta(minutes=30)
+            }
+            actual = subject.get_minimum_stop_times()
+
+            for key, value in expected.items():
+                self.assertEqual(value, actual[key])
+            for key, value in actual.items():
+                self.assertEqual(value, expected[key])
+
+        def test_memoizes():
+            subject = self.get_blank_subject()
+            expected = 'some result'
+            subject._minimum_stop_times = expected
+            self.assertEqual(expected, subject.get_minimum_stop_times())
+
+        test_calculates_correct_result()
+        test_memoizes()
+
     def test_get_routes_by_stop(self):
         def test_munges_correctly():
             subject = self.get_subject_with_mock_data()
@@ -260,7 +308,7 @@ class MockTripInfo:
         self.serviceId = '2'
 
     def add_third_stop(self, stop_3_id):
-        self.tripStops['3'] = MockStopDeparture(stop_3_id, int(self.tripStops['1'].departureTime.split(':')[1]) + 1)
+        self.tripStops['3'] = MockStopDeparture(stop_3_id, int(self.tripStops['2'].departureTime.split(':')[0]) + 1)
 
 
 class MockStopDeparture:
