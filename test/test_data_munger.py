@@ -47,9 +47,9 @@ class TestDataMunger(unittest.TestCase):
 
             expected_none_result = None, None, None
 
-            self.assertEqual(subject.first_trip_after(DEFAULT_START_TIME, 1, 'Wonderland'), expected_none_result)
-            self.assertEqual(subject.first_trip_after(DEFAULT_START_TIME, 2, 'Lechmere'), expected_none_result)
-            self.assertEqual(subject.first_trip_after(DEFAULT_START_TIME, 3, 'Bowdoin'), expected_none_result)
+            self.assertEqual(subject.first_trip_after(DEFAULT_START_TIME, 1, 'Back of the Hill'), expected_none_result)
+            self.assertEqual(subject.first_trip_after(DEFAULT_START_TIME, 2, 'Back of the Hill'), expected_none_result)
+            self.assertEqual(subject.first_trip_after(DEFAULT_START_TIME, 3, 'Lynn'), expected_none_result)
 
         test_returns_correct_trip()
         test_returns_none_after_last_trip_of_day()
@@ -89,32 +89,13 @@ class TestDataMunger(unittest.TestCase):
 
     def test_get_minimum_stop_times(self):
         def test_calculates_correct_result():
-            subject = self.get_subject_with_mock_data(analysis=MockAnalysis())
-
-            new_route = 'A'
-            new_reverse_route = 'A2'
-            new_trip_schedules = {
-                'A-6AM': MockTripInfo('A', 'Back of the Hill', 'Bowdoin', 6),
-                'A-7AM': MockTripInfo('A', 'Back of the Hill', 'Bowdoin', 7),
-                'A-8AM': MockTripInfo('A', 'Back of the Hill', 'Bowdoin', 8),
-            }
-            new_reverse_trip_schedules = {
-                'A2-6AM': MockTripInfo('A2', 'Lynn', 'Bowdoin', 6),
-                'A2-7AM': MockTripInfo('A2', 'Lynn', 'Bowdoin', 7),
-                'A2-8AM': MockTripInfo('A2', 'Lynn', 'Bowdoin', 8),
-            }
-            for trip_id in new_trip_schedules.keys():
-                new_trip_schedules[trip_id].add_third_stop('Lynn')
-            for trip_id in new_reverse_trip_schedules.keys():
-                new_reverse_trip_schedules[trip_id].add_third_stop('Back of the Hill')
-            subject.data.add_route_and_trip(new_route, new_trip_schedules)
-            subject.data.add_route_and_trip(new_reverse_route, new_reverse_trip_schedules)
+            subject = self.get_subject_with_mock_data(analysis=MockAnalysis(route_types_to_solve=[1, 2]))
 
             expected = {
                 'Alewife': timedelta(minutes=90),
-                'Wonderland': timedelta(minutes=90),
+                'Wonderland': timedelta(minutes=30),
                 'Heath Street': timedelta(minutes=90),
-                'Lechmere': timedelta(minutes=90),
+                'Lechmere': timedelta(minutes=30),
                 'Bowdoin': timedelta(minutes=30),
                 'Lynn': timedelta(minutes=30),
                 'Back of the Hill': timedelta(minutes=30)
@@ -143,9 +124,11 @@ class TestDataMunger(unittest.TestCase):
             expected = {
                 'Alewife': {1},
                 'Wonderland': {1, 3},
+                'Back of the Hill': {1, 2},
                 'Heath Street': {2},
                 'Lechmere': {2},
                 'Bowdoin': {3},
+                'Lynn': {3},
             }
             actual = subject.get_routes_by_stop()
 
@@ -170,9 +153,9 @@ class TestDataMunger(unittest.TestCase):
         def test_returns_correct_result():
             subject = self.get_subject_with_mock_data(analysis=MockAnalysis(route_types_to_solve=[1, 2]))
             expected = {
-                1: {'Alewife', 'Wonderland'},
-                2: {'Heath Street', 'Lechmere'},
-                3: {'Wonderland', 'Bowdoin'},
+                1: {'Alewife', 'Wonderland', 'Back of the Hill'},
+                2: {'Heath Street', 'Lechmere', 'Back of the Hill'},
+                3: {'Wonderland', 'Bowdoin', 'Lynn'},
             }
             self.assertEqual(subject.get_stops_by_route_in_solution_set(), expected)
 
@@ -185,44 +168,19 @@ class TestDataMunger(unittest.TestCase):
         test_memoizes()
 
     def test_get_transfer_stops(self):
-        def test_returns_correct_result_midpoint_transfer():
+        def test_finds_midpoint_and_endpoint_transfers():
             subject = self.get_subject_with_mock_data(analysis=MockAnalysis(route_types_to_solve=[1, 2]))
 
-            new_route = 'A'
-            new_reverse_route = 'A2'
-            new_trip_schedules = {
-                'A-6AM': MockTripInfo('A', 'Back of the Hill', 'Bowdoin', 6),
-                'A-7AM': MockTripInfo('A', 'Back of the Hill', 'Bowdoin', 7),
-                'A-8AM': MockTripInfo('A', 'Back of the Hill', 'Bowdoin', 8),
-            }
-            new_reverse_trip_schedules = {
-                'A2-6AM': MockTripInfo('A2', 'Lynn', 'Bowdoin', 6),
-                'A2-7AM': MockTripInfo('A2', 'Lynn', 'Bowdoin', 7),
-                'A2-8AM': MockTripInfo('A2', 'Lynn', 'Bowdoin', 8),
-            }
-            for trip_id in new_trip_schedules.keys():
-                new_trip_schedules[trip_id].add_third_stop('Lynn')
-            for trip_id in new_reverse_trip_schedules.keys():
-                new_reverse_trip_schedules[trip_id].add_third_stop('Back of the Hill')
-            subject.data.add_route_and_trip(new_route, new_trip_schedules)
-            subject.data.add_route_and_trip(new_reverse_route, new_reverse_trip_schedules)
-
-            expected = {'Wonderland', 'Bowdoin'}
+            expected = {'Wonderland', 'Back of the Hill'}
             actual = set(subject.get_transfer_stops())
             self.assertSetEqual(expected, actual)
-
-        def test_returns_correct_result_endpoint_transfer():
-            subject = self.get_subject_with_mock_data(analysis=MockAnalysis(route_types_to_solve=[1, 2]))
-            expected = {'Wonderland'}
-            self.assertEqual(set(subject.get_transfer_stops()), expected)
 
         def test_memoizes():
             subject = self.get_subject_with_mock_data()
             subject._transfer_stops = 'some value'
             self.assertEqual('some value', subject.get_transfer_stops())
 
-        test_returns_correct_result_midpoint_transfer()
-        test_returns_correct_result_endpoint_transfer()
+        test_finds_midpoint_and_endpoint_transfers()
         test_memoizes()
 
     def test_get_unique_routes_to_solve(self):
@@ -246,7 +204,7 @@ class TestDataMunger(unittest.TestCase):
             analysis = MockAnalysis(route_types_to_solve=[1, 2])
             subject = self.get_subject_with_mock_data(analysis=analysis)
             self.assertEqual(subject._location_routes, None)
-            expected = {'Alewife', 'Wonderland', 'Heath Street', 'Lechmere', 'Bowdoin'}
+            expected = {'Alewife', 'Wonderland', 'Heath Street', 'Lechmere', 'Bowdoin', 'Back of the Hill', 'Lynn'}
             self.assertSetEqual(expected, subject.get_unique_stops_to_solve())
 
         def test_memoizes():
@@ -267,23 +225,16 @@ class MockData:
             3: MockUniqueRouteInfo('Blue'),
         }
         self.tripSchedules = {
-            '3-6AM': MockTripInfo(3, 'Alewife', 'Wonderland', 6),
-            '3-7AM': MockTripInfo(3, 'Alewife', 'Wonderland', 7),
-            '3-8AM': MockTripInfo(3, 'Alewife', 'Wonderland', 8),
-            '18-6AM': MockTripInfo(18, 'Heath Street', 'Lechmere', 6),
-            '18-7AM': MockTripInfo(18, 'Heath Street', 'Lechmere', 7),
-            '18-8AM': MockTripInfo(18, 'Heath Street', 'Lechmere', 8),
-            'Blue-6AM': MockTripInfo('Blue', 'Wonderland', 'Bowdoin', 6),
-            'Blue-7AM': MockTripInfo('Blue', 'Wonderland', 'Bowdoin', 7),
-            'Blue-8AM': MockTripInfo('Blue', 'Wonderland', 'Bowdoin', 8),
+            '3-6AM': MockTripInfo(3, 'Alewife', 'Wonderland', 'Back of the Hill', 6),
+            '3-7AM': MockTripInfo(3, 'Alewife', 'Wonderland', 'Back of the Hill', 7),
+            '3-8AM': MockTripInfo(3, 'Alewife', 'Wonderland', 'Back of the Hill', 8),
+            '18-6AM': MockTripInfo(18, 'Heath Street', 'Lechmere', 'Back of the Hill', 6),
+            '18-7AM': MockTripInfo(18, 'Heath Street', 'Lechmere', 'Back of the Hill', 7),
+            '18-8AM': MockTripInfo(18, 'Heath Street', 'Lechmere', 'Back of the Hill', 8),
+            'Blue-6AM': MockTripInfo('Blue', 'Wonderland', 'Bowdoin', 'Lynn', 6),
+            'Blue-7AM': MockTripInfo('Blue', 'Wonderland', 'Bowdoin', 'Lynn', 7),
+            'Blue-8AM': MockTripInfo('Blue', 'Wonderland', 'Bowdoin', 'Lynn', 8),
         }
-
-    def add_route_and_trip(self, route_number, trip_schedules):
-        self.uniqueRouteTrips[len(self.uniqueRouteTrips) + 1] = MockUniqueRouteInfo(route_number)
-        for trip, trip_info in trip_schedules.items():
-            if trip in self.tripSchedules:
-                raise KeyError("duplicate trip key")
-            self.tripSchedules[trip] = trip_info
 
 
 class MockUniqueRouteInfo:
@@ -299,16 +250,14 @@ class MockRouteInfo:
 
 
 class MockTripInfo:
-    def __init__(self, route_number, stop_1_id, stop_2_id, departure_hour):
+    def __init__(self, route_number, stop_1_id, stop_2_id, stop_3_id, departure_hour):
         self.tripStops = {
             '1': MockStopDeparture(stop_1_id, departure_hour),
             '2': MockStopDeparture(stop_2_id, departure_hour + 3),
+            '3': MockStopDeparture(stop_3_id, departure_hour + 4),
         }
         self.tripRouteInfo = MockUniqueRouteInfo(route_number)
         self.serviceId = '2'
-
-    def add_third_stop(self, stop_3_id):
-        self.tripStops['3'] = MockStopDeparture(stop_3_id, int(self.tripStops['2'].departureTime.split(':')[0]) + 1)
 
 
 class MockStopDeparture:
