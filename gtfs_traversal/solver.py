@@ -127,13 +127,14 @@ class Solver:
             # [n[0] for n in next_trips]:
             #     print('found')
             for route in new_routes:
-                next_departure_time, next_trip_id, stop_no = self.data_munger.first_trip_after(
+                next_departure_time, next_trip_id = self.data_munger.first_trip_after(
                     progress.start_time + progress.duration, route, location_status.location)
                 if next_trip_id is None:
                     continue
                 # print("transfer")
                 # if best_duration is None:
                 #     print(progress.start_time, progress.start_time + progress.duration, next_departure_time, next_trip_id)
+                stop_no = self.data_munger.get_stop_number_from_stop_id(location_status.location, route)
                 next_trips.extend(self.get_next_stop_data(location_status, progress, trips_data[next_trip_id],
                                                      routes_to_solve, next_trip_id, stop_no, route))
             # if len(next_trips) > 1:
@@ -477,7 +478,7 @@ class Solver:
                 stop_locs = [sor for sor, sid in self.get_trip_schedules()[self.get_route_trips()[route].tripIds[0]].tripStops.items() if
                              sid.stopId == sto]
                 for stop_loc in stop_locs:
-                    best_deptime, best_trip, best_stop = self.data_munger.first_trip_after(
+                    best_deptime, best_trip = self.data_munger.first_trip_after(
                         begin_time, route, sto)
                     if best_trip is None:
                         continue
@@ -485,6 +486,7 @@ class Solver:
                         best_dtime = best_deptime
                     if best_deptime < best_dtime:
                         best_dtime = best_deptime
+                    best_stop = self.data_munger.get_stop_number_from_stop_id(sto, route)
                     loc_info = LocationStatusInfo(location=sto, arrival_route=route,
                                                   unvisited=self.get_initial_unsolved_string())
                     prog_info = ProgressInfo(start_time=best_deptime, duration=timedelta(seconds=0), parent=None,

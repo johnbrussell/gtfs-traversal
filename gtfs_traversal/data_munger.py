@@ -32,7 +32,7 @@ class DataMunger:
 
         # handle case where the origin stop is the last stop on the route
         if str(int(origin_stop_number) + 1) not in stops_on_route:
-            return None, None, None
+            return None, None
 
         solution_trip_id = None
         for trip_id in self.get_trips_for_route(route_number):
@@ -43,8 +43,8 @@ class DataMunger:
                 solution_trip_id = trip_id
 
         if solution_trip_id is None:
-            return None, None, None
-        return latest_departure_time, solution_trip_id, origin_stop_number
+            return None, None
+        return latest_departure_time, solution_trip_id
 
     def get_all_stop_coordinates(self):
         return self.data.stopLocations
@@ -81,16 +81,17 @@ class DataMunger:
                 # Currently, this function does not support the situation where one trip visits the same stop
                 #  multiple times.
                 # Currently, this function assumes that the first trip of the day along each route is the fastest.
-                best_departure_time, best_trip_id, best_stop_id = self.first_trip_after(
+                best_departure_time, best_trip_id = self.first_trip_after(
                     self.start_time, route, stop)
                 if best_trip_id is None:
                     continue
-                next_stop_id = str(int(best_stop_id) + 1)
-                if next_stop_id not in self.get_stops_for_route(route).keys():
+                best_stop_number = self.get_stop_number_from_stop_id(stop, route)
+                next_stop_number = str(int(best_stop_number) + 1)
+                if next_stop_number not in self.get_stops_for_route(route).keys():
                     continue
                 stops_on_route = self.get_stops_for_route(route)
-                next_stop = stops_on_route[next_stop_id].stopId
-                raw_time = stops_on_route[next_stop_id].departureTime
+                next_stop = stops_on_route[next_stop_number].stopId
+                raw_time = stops_on_route[next_stop_number].departureTime
                 start_day_midnight = datetime(year=best_departure_time.year,
                                               month=best_departure_time.month,
                                               day=best_departure_time.day)
@@ -200,16 +201,17 @@ class DataMunger:
             routes_at_stop = self.get_solution_routes_at_stop(stop)
 
             for route in routes_at_stop:
-                best_departure_time, best_trip_id, best_stop_number = self.first_trip_after(
-                    self.start_time, route, stop)
-
-                if best_trip_id is None or best_stop_number == '1':
+                stop_number = self.get_stop_number_from_stop_id(stop, route)
+                if stop_number == '1':
                     endpoint_stops.add(stop)
 
+                best_departure_time, best_trip_id = self.first_trip_after(self.start_time, route, stop)
+
                 if best_trip_id is None:
+                    endpoint_stops.add(stop)
                     continue
 
-                next_stop_number = str(int(best_stop_number) + 1)
+                next_stop_number = str(int(stop_number) + 1)
                 stops_on_route = self.get_stops_for_route(route)
                 next_stop = stops_on_route[next_stop_number].stopId
 
