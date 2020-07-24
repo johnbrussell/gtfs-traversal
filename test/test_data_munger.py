@@ -20,9 +20,9 @@ class TestDataMunger(unittest.TestCase):
         def test_returns_correct_trip():
             subject = self.get_subject_with_mock_data(analysis=MockAnalysis())
 
-            expected_3 = datetime.strptime(DEFAULT_START_DATE + ' 06:00:00', '%Y-%m-%d %H:%M:%S'), '3-6AM', '1'
-            expected_18 = datetime.strptime(DEFAULT_START_DATE + ' 08:00:00', '%Y-%m-%d %H:%M:%S'), '18-8AM', '1'
-            expected_blue = datetime.strptime(DEFAULT_START_DATE + ' 06:00:00', '%Y-%m-%d %H:%M:%S'), 'Blue-6AM', '1'
+            expected_3 = datetime.strptime(DEFAULT_START_DATE + ' 06:00:00', '%Y-%m-%d %H:%M:%S'), '3-6AM'
+            expected_18 = datetime.strptime(DEFAULT_START_DATE + ' 08:00:00', '%Y-%m-%d %H:%M:%S'), '18-8AM'
+            expected_blue = datetime.strptime(DEFAULT_START_DATE + ' 06:00:00', '%Y-%m-%d %H:%M:%S'), 'Blue-6AM'
 
             self.assertEqual(subject.first_trip_after(DEFAULT_START_TIME + timedelta(hours=6), 1, 'Alewife'),
                              expected_3)
@@ -33,7 +33,7 @@ class TestDataMunger(unittest.TestCase):
         def test_returns_none_after_last_trip_of_day():
             subject = self.get_subject_with_mock_data(analysis=MockAnalysis())
 
-            expected_none_result = None, None, None
+            expected_none_result = None, None
 
             self.assertEqual(subject.first_trip_after(DEFAULT_START_TIME + timedelta(hours=8.01), 1, 'Alewife'),
                              expected_none_result)
@@ -45,7 +45,7 @@ class TestDataMunger(unittest.TestCase):
         def test_returns_none_for_last_stop_on_route():
             subject = self.get_subject_with_mock_data(analysis=MockAnalysis())
 
-            expected_none_result = None, None, None
+            expected_none_result = None, None
 
             self.assertEqual(subject.first_trip_after(DEFAULT_START_TIME, 1, 'Back of the Hill'), expected_none_result)
             self.assertEqual(subject.first_trip_after(DEFAULT_START_TIME, 2, 'Back of the Hill'), expected_none_result)
