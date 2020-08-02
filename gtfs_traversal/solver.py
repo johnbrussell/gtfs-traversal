@@ -10,7 +10,6 @@ class Solver:
                  stop_join_string, transfer_duration_seconds, transfer_route, walk_route, walk_speed_mph):
         self.walk_speed_mph = walk_speed_mph
         self.STOP_JOIN_STRING = stop_join_string
-        self.minimum_stop_times = None
         self.TRANSFER_ROUTE = transfer_route
         self.WALK_ROUTE = walk_route
         self.TRANSFER_DURATION_SECONDS = transfer_duration_seconds
@@ -63,13 +62,6 @@ class Solver:
 
         self.initial_unsolved_string = self.data_munger.get_initial_unsolved_string()
         return self.initial_unsolved_string
-
-    def get_minimum_stop_times(self):
-        if self.minimum_stop_times is not None:
-            return self.minimum_stop_times
-
-        self.minimum_stop_times = self.data_munger.get_minimum_stop_times()
-        return self.minimum_stop_times
 
     def get_next_stop_data(self, location_status, progress, trip_data, routes_to_solve, new_trip_id, trip_stop_no,
                            new_route_id):
