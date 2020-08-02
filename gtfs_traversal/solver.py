@@ -91,9 +91,9 @@ class Solver:
             uneliminated_next_stop_name = f'{self.STOP_JOIN_STRING}{next_stop_id}{self.STOP_JOIN_STRING}'
             new_minimum_remaining_time = \
                 progress.minimum_remaining_time - \
-                ((self.get_minimum_stop_times()[
+                ((self.data_munger.get_minimum_stop_times()[
                       current_stop_id] if uneliminated_current_stop_name in location_status.unvisited else
-                  timedelta(0)) + (self.get_minimum_stop_times()[next_stop_id] if uneliminated_next_stop_name in
+                  timedelta(0)) + (self.data_munger.get_minimum_stop_times()[next_stop_id] if uneliminated_next_stop_name in
                                    location_status.unvisited else timedelta(
                     0)) if new_route_id in routes_to_solve else timedelta(0))
             # decrease_in_minimum_remaining_time = progress.minimum_remaining_time - new_minimum_remaining_time
