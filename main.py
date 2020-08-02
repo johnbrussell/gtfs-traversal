@@ -73,7 +73,7 @@ if __name__ == "__main__":
     while start_time < end_date_midnight:
         print(start_time)
         new_best_time, new_best_progress_dictionary, earliest_departure_time = solver.find_solution(
-            start_time, unique_stops_to_solve, location_routes, unique_routes_to_solve, best_time)
+            start_time, unique_stops_to_solve, unique_routes_to_solve, best_time)
         assert new_best_time is not None
         if best_time is None or new_best_time < best_time:
             best_time = new_best_time
