@@ -105,7 +105,6 @@ class Solver:
         return []
 
     def get_new_nodes(self, location_status, progress, stop_routes, trips_data, routes_to_solve, analysis_data,
-                      route_trip_data,
                       locations_to_solve, locations_to_not_solve):
         if location_status.arrival_route == self.TRANSFER_ROUTE:
             # print("finding new route after transfer")
@@ -516,8 +515,7 @@ class Solver:
 
             new_nodess = self.get_new_nodes(expandeee, progress_dict[expandeee], self.LOCATION_ROUTES,
                                             self.get_trip_schedules(), routes_to_solve, self.ANALYSIS,
-                                            self.get_route_trips(), self.get_stop_locations_to_solve(),
-                                            self.get_off_course_stop_locations())
+                                            self.get_stop_locations_to_solve(), self.get_off_course_stop_locations())
 
             if len(new_nodess) == 0:
                 continue
