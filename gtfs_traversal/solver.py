@@ -21,7 +21,6 @@ class Solver:
         self.stops_at_ends_of_solution_routes = None
         self.LOCATION_ROUTES = location_routes
         self.total_minimum_time = None
-        self.transfer_stops = None
         self.ANALYSIS = analysis
         self.stop_locations_to_solve = None
         self.off_course_stop_locations = None
@@ -198,12 +197,6 @@ class Solver:
             self.total_minimum_time = self.data_munger.get_total_minimum_time()
 
         return self.total_minimum_time
-
-    def get_transfer_stops(self):
-        if self.transfer_stops is None:
-            self.transfer_stops = self.data_munger.get_transfer_stops()
-
-        return self.transfer_stops
 
     def get_trip_schedules(self):
         if self.trip_schedules is not None:
