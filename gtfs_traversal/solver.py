@@ -458,26 +458,24 @@ class Solver:
             for route in self.data_munger.get_routes_by_stop()[stop]:
                 if route not in routes_to_solve:
                     continue
-                stop_locs = [sor for sor, sid in self.data_munger.get_stops_for_route(route).items() if
-                             sid.stopId == stop]
-                for stop_loc in stop_locs:
-                    best_deptime, best_trip = self.data_munger.first_trip_after(
-                        begin_time, route, stop)
-                    if best_trip is None:
-                        continue
-                    if best_dtime is None:
-                        best_dtime = best_deptime
-                    if best_deptime < best_dtime:
-                        best_dtime = best_deptime
-                    best_stop = self.data_munger.get_stop_number_from_stop_id(stop, route)
-                    loc_info = LocationStatusInfo(location=stop, arrival_route=route,
-                                                  unvisited=self.get_initial_unsolved_string())
-                    prog_info = ProgressInfo(start_time=best_deptime, duration=timedelta(seconds=0), parent=None,
-                                             arrival_trip=best_trip, trip_stop_no=best_stop,
-                                             start_location=stop, start_route=route,
-                                             minimum_remaining_time=self.get_total_minimum_time(), depth=0,
-                                             expanded=False, eliminated=False)
-                    progress_dict[loc_info] = prog_info
+
+                # This function assumes that each route does not visit any stop multiple times
+                best_deptime, best_trip = self.data_munger.first_trip_after(begin_time, route, stop)
+                if best_trip is None:
+                    continue
+                if best_dtime is None:
+                    best_dtime = best_deptime
+                if best_deptime < best_dtime:
+                    best_dtime = best_deptime
+                best_stop = self.data_munger.get_stop_number_from_stop_id(stop, route)
+                loc_info = LocationStatusInfo(location=stop, arrival_route=route,
+                                              unvisited=self.get_initial_unsolved_string())
+                prog_info = ProgressInfo(start_time=best_deptime, duration=timedelta(seconds=0), parent=None,
+                                         arrival_trip=best_trip, trip_stop_no=best_stop,
+                                         start_location=stop, start_route=route,
+                                         minimum_remaining_time=self.get_total_minimum_time(), depth=0,
+                                         expanded=False, eliminated=False)
+                progress_dict[loc_info] = prog_info
 
         exp_queue = ExpansionQueue(routes_to_solve, stops_to_solve, self.TRANSFER_ROUTE, self.WALK_ROUTE,
                                    self.get_stops_at_ends_of_solution_routes(), self.MAX_EXPANSION_QUEUE,
