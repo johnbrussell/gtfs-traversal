@@ -460,6 +460,8 @@ class Solver:
                                              expanded=False, eliminated=False)
                 progress_dict[location_info] = progress_info
 
+        progress_dict = {location: progress for location, progress in progress_dict.items() if
+                         progress.start_time == departure_time}
         return progress_dict, departure_time
 
     def print_path(self, progress_dict):
