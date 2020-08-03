@@ -439,27 +439,28 @@ class Solver:
 
     def initialize_progress_dict(self, begin_time):
         progress_dict = dict()
-        best_dtime = None
+        departure_time = None
         for stop in self.data_munger.get_unique_stops_to_solve():
             for route in self.data_munger.get_solution_routes_at_stop(stop):
                 # This function assumes that each route does not visit any stop multiple times
-                best_deptime, best_trip = self.data_munger.first_trip_after(begin_time, route, stop)
+                best_departure_time, best_trip = self.data_munger.first_trip_after(begin_time, route, stop)
                 if best_trip is None:
                     continue
-                if best_dtime is None:
-                    best_dtime = best_deptime
-                if best_deptime < best_dtime:
-                    best_dtime = best_deptime
-                best_stop = self.data_munger.get_stop_number_from_stop_id(stop, route)
-                loc_info = LocationStatusInfo(location=stop, arrival_route=route,
-                                              unvisited=self.get_initial_unsolved_string())
-                prog_info = ProgressInfo(start_time=best_deptime, duration=timedelta(seconds=0), parent=None,
-                                         arrival_trip=best_trip, trip_stop_no=best_stop,
-                                         start_location=stop, start_route=route,
-                                         minimum_remaining_time=self.get_total_minimum_time(), depth=0,
-                                         expanded=False, eliminated=False)
-                progress_dict[loc_info] = prog_info
-        return progress_dict, best_dtime
+                if departure_time is None:
+                    departure_time = best_departure_time
+                if best_departure_time < departure_time:
+                    departure_time = best_departure_time
+                stop_number = self.data_munger.get_stop_number_from_stop_id(stop, route)
+                location_info = LocationStatusInfo(location=stop, arrival_route=route,
+                                                   unvisited=self.get_initial_unsolved_string())
+                progress_info = ProgressInfo(start_time=best_departure_time, duration=timedelta(seconds=0), parent=None,
+                                             arrival_trip=best_trip, trip_stop_no=stop_number,
+                                             start_location=stop, start_route=route,
+                                             minimum_remaining_time=self.get_total_minimum_time(), depth=0,
+                                             expanded=False, eliminated=False)
+                progress_dict[location_info] = progress_info
+
+        return progress_dict, departure_time
 
     def print_path(self, progress_dict):
         solution_locations = [k for k in progress_dict.keys() if k.unvisited == self.STOP_JOIN_STRING and
