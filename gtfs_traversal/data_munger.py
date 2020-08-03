@@ -153,8 +153,7 @@ class DataMunger:
     def get_stops_at_ends_of_solution_routes(self):
         stops_at_ends_of_solution_routes = set()
         for r in self.get_unique_routes_to_solve():
-            trip_id = self.get_route_trips()[r].tripIds[0]
-            trip_stops = self.get_trip_schedules()[trip_id].tripStops
+            trip_stops = self.get_stops_for_route(r)
             stops_at_ends_of_solution_routes.add(trip_stops['1'].stopId)
             stops_at_ends_of_solution_routes.add(trip_stops[str(len(trip_stops))].stopId)
         return stops_at_ends_of_solution_routes
