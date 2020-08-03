@@ -451,15 +451,12 @@ class Solver:
             for locati in path:
                 print(locati)
 
-    def find_solution(self, begin_time, routes_to_solve, known_best_time):
+    def find_solution(self, begin_time, known_best_time):
         progress_dict = dict()
         best_dtime = None
         stops_to_solve = self.data_munger.get_unique_stops_to_solve()
         for stop in stops_to_solve:
-            for route in self.data_munger.get_routes_by_stop()[stop]:
-                if route not in routes_to_solve:
-                    continue
-
+            for route in self.data_munger.get_solution_routes_at_stop(stop):
                 # This function assumes that each route does not visit any stop multiple times
                 best_deptime, best_trip = self.data_munger.first_trip_after(begin_time, route, stop)
                 if best_trip is None:
@@ -478,9 +475,9 @@ class Solver:
                                          expanded=False, eliminated=False)
                 progress_dict[loc_info] = prog_info
 
-        exp_queue = ExpansionQueue(routes_to_solve, stops_to_solve, self.TRANSFER_ROUTE, self.WALK_ROUTE,
-                                   self.get_stops_at_ends_of_solution_routes(), self.MAX_EXPANSION_QUEUE,
-                                   self.data_munger.get_transfer_stops(),
+        exp_queue = ExpansionQueue(self.data_munger.get_unique_routes_to_solve(), stops_to_solve, self.TRANSFER_ROUTE,
+                                   self.WALK_ROUTE, self.get_stops_at_ends_of_solution_routes(),
+                                   self.MAX_EXPANSION_QUEUE, self.data_munger.get_transfer_stops(),
                                    self.data_munger.get_stops_by_route_in_solution_set())
         if len(progress_dict) > 0:
             exp_queue.add_with_depth(progress_dict.keys(), progress_dict.values(), known_best_time)
@@ -512,8 +509,9 @@ class Solver:
             progress_dict[expandeee] = progress_dict[expandeee]._replace(expanded=True)
 
             new_nodess = self.get_new_nodes(expandeee, progress_dict[expandeee], self.LOCATION_ROUTES,
-                                            self.get_trip_schedules(), routes_to_solve, self.ANALYSIS,
-                                            self.get_stop_locations_to_solve(), self.get_off_course_stop_locations())
+                                            self.get_trip_schedules(), self.data_munger.get_unique_routes_to_solve(),
+                                            self.ANALYSIS, self.get_stop_locations_to_solve(),
+                                            self.get_off_course_stop_locations())
 
             if len(new_nodess) == 0:
                 continue
