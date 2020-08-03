@@ -1,9 +1,111 @@
+from datetime import datetime, timedelta
 import unittest
 
+from gtfs_traversal.data_structures import *
 from gtfs_traversal.solver import Solver
+
+DEFAULT_START_DATE = '2020-01-01'
+DEFAULT_START_TIME = datetime.strptime(DEFAULT_START_DATE, '%Y-%m-%d')
 
 
 class TestSolver(unittest.TestCase):
+    def test_initialize_progress_dict(self):
+        def test_start_of_route():
+            subject = Solver(analysis=MockAnalysis(), data=MockData(), location_routes=None,
+                             max_expansion_queue=None, max_progress_dict=None, start_time=DEFAULT_START_TIME,
+                             stop_join_string='~~', transfer_duration_seconds=None, transfer_route=None,
+                             walk_route=None, walk_speed_mph=None)
+            actual_dict, actual_start_time = subject.initialize_progress_dict(DEFAULT_START_TIME +
+                                                                              timedelta(hours=7.01))
+
+            sample_unvisited_string = {key.unvisited for key in actual_dict.keys()}.pop()
+            expected_start_time = DEFAULT_START_TIME + timedelta(hours=8)
+
+            all_stations = subject.data_munger.get_unique_stops_to_solve()
+            for station in all_stations:
+                self.assertTrue(station in sample_unvisited_string)
+
+            expected_dict = {
+                LocationStatusInfo(location="Heath Street", arrival_route=2, unvisited=sample_unvisited_string):
+                    ProgressInfo(
+                        start_time=expected_start_time, duration=timedelta(seconds=0), parent=None,
+                        arrival_trip='18-8AM', trip_stop_no='1', start_location="Heath Street", start_route=2,
+                        minimum_remaining_time=timedelta(hours=5, minutes=30), depth=0, expanded=False, eliminated=False
+                    ),
+                LocationStatusInfo(location="Alewife", arrival_route=1, unvisited=sample_unvisited_string):
+                    ProgressInfo(
+                        start_time=expected_start_time, duration=timedelta(seconds=0), parent=None,
+                        arrival_trip='3-8AM', trip_stop_no='1', start_location="Alewife", start_route=1,
+                        minimum_remaining_time=timedelta(hours=5, minutes=30), depth=0, expanded=False, eliminated=False
+                    ),
+                LocationStatusInfo(location="Wonderland", arrival_route=3, unvisited=sample_unvisited_string):
+                    ProgressInfo(
+                        start_time=expected_start_time, duration=timedelta(seconds=0), parent=None,
+                        arrival_trip='Blue-8AM', trip_stop_no='1', start_location="Wonderland", start_route=3,
+                        minimum_remaining_time=timedelta(hours=5, minutes=30), depth=0, expanded=False, eliminated=False
+                    ),
+            }
+
+            self.assertDictEqual(actual_dict, expected_dict)
+            self.assertEqual(expected_start_time, actual_start_time)
+
+        def test_middle_of_route():
+            subject = Solver(analysis=MockAnalysis(), data=MockData(), location_routes=None,
+                             max_expansion_queue=None, max_progress_dict=None, start_time=DEFAULT_START_TIME,
+                             stop_join_string='~~', transfer_duration_seconds=None, transfer_route=None,
+                             walk_route=None, walk_speed_mph=None)
+            actual_dict, actual_start_time = subject.initialize_progress_dict(DEFAULT_START_TIME +
+                                                                              timedelta(hours=8.01))
+
+            sample_unvisited_string = {key.unvisited for key in actual_dict.keys()}.pop()
+            expected_start_time = DEFAULT_START_TIME + timedelta(hours=9)
+
+            all_stations = subject.data_munger.get_unique_stops_to_solve()
+            for station in all_stations:
+                self.assertTrue(station in sample_unvisited_string)
+
+            expected_dict = {
+                LocationStatusInfo(location="Lechmere", arrival_route=2, unvisited=sample_unvisited_string):
+                    ProgressInfo(
+                        start_time=expected_start_time, duration=timedelta(seconds=0), parent=None,
+                        arrival_trip='18-6AM', trip_stop_no='2', start_location="Lechmere", start_route=2,
+                        minimum_remaining_time=timedelta(hours=5, minutes=30), depth=0, expanded=False, eliminated=False
+                    ),
+                LocationStatusInfo(location="Wonderland", arrival_route=1, unvisited=sample_unvisited_string):
+                    ProgressInfo(
+                        start_time=expected_start_time, duration=timedelta(seconds=0), parent=None,
+                        arrival_trip='3-6AM', trip_stop_no='2', start_location="Wonderland", start_route=1,
+                        minimum_remaining_time=timedelta(hours=5, minutes=30), depth=0, expanded=False, eliminated=False
+                    ),
+                LocationStatusInfo(location="Bowdoin", arrival_route=3, unvisited=sample_unvisited_string):
+                    ProgressInfo(
+                        start_time=expected_start_time, duration=timedelta(seconds=0), parent=None,
+                        arrival_trip='Blue-6AM', trip_stop_no='2', start_location="Bowdoin", start_route=3,
+                        minimum_remaining_time=timedelta(hours=5, minutes=30), depth=0, expanded=False, eliminated=False
+                    ),
+            }
+
+            self.assertDictEqual(actual_dict, expected_dict)
+            self.assertEqual(expected_start_time, actual_start_time)
+
+        def test_no_valid_departures():
+            subject = Solver(analysis=MockAnalysis(), data=MockData(), location_routes=None,
+                             max_expansion_queue=None, max_progress_dict=None, start_time=DEFAULT_START_TIME,
+                             stop_join_string='~~', transfer_duration_seconds=None, transfer_route=None,
+                             walk_route=None, walk_speed_mph=None)
+            actual_dict, actual_start_time = subject.initialize_progress_dict(DEFAULT_START_TIME +
+                                                                              timedelta(hours=11.01))
+
+            expected_start_time = None
+            expected_dict = {}
+
+            self.assertDictEqual(actual_dict, expected_dict)
+            self.assertEqual(expected_start_time, actual_start_time)
+
+        test_start_of_route()
+        test_middle_of_route()
+        test_no_valid_departures()
+
     def test_walk_time_seconds(self):
         def get_solver_with_speed(*, mph):
             return Solver(analysis=None, data=None, location_routes=None, max_expansion_queue=None,
@@ -28,3 +130,58 @@ class TestSolver(unittest.TestCase):
         test_zero_time_at_any_speed_for_no_distance()
         test_time_accuracy_1()
         test_time_accuracy_2()
+
+
+class MockData:
+    def __init__(self):
+        self.uniqueRouteTrips = {
+            1: MockUniqueRouteInfo(3),
+            2: MockUniqueRouteInfo(18),
+            3: MockUniqueRouteInfo('Blue'),
+        }
+        self.tripSchedules = {
+            '3-6AM': MockTripInfo(3, 'Alewife', 'Wonderland', 'Back of the Hill', 6),
+            '3-7AM': MockTripInfo(3, 'Alewife', 'Wonderland', 'Back of the Hill', 7),
+            '3-8AM': MockTripInfo(3, 'Alewife', 'Wonderland', 'Back of the Hill', 8),
+            '18-6AM': MockTripInfo(18, 'Heath Street', 'Lechmere', 'Back of the Hill', 6),
+            '18-7AM': MockTripInfo(18, 'Heath Street', 'Lechmere', 'Back of the Hill', 7),
+            '18-8AM': MockTripInfo(18, 'Heath Street', 'Lechmere', 'Back of the Hill', 8),
+            'Blue-6AM': MockTripInfo('Blue', 'Wonderland', 'Bowdoin', 'Lynn', 6),
+            'Blue-7AM': MockTripInfo('Blue', 'Wonderland', 'Bowdoin', 'Lynn', 7),
+            'Blue-8AM': MockTripInfo('Blue', 'Wonderland', 'Bowdoin', 'Lynn', 8),
+        }
+
+
+class MockUniqueRouteInfo:
+    def __init__(self, route_number):
+        self.tripIds = [f'{route_number}-6AM', f'{route_number}-7AM', f'{route_number}-8AM']
+        self.routeInfo = MockRouteInfo(route_number)
+
+
+class MockRouteInfo:
+    def __init__(self, route_number):
+        self.routeId = f'{route_number}'
+        self.routeType = 1 if route_number == 'Blue' else 2
+
+
+class MockTripInfo:
+    def __init__(self, route_number, stop_1_id, stop_2_id, stop_3_id, departure_hour):
+        self.tripStops = {
+            '1': MockStopDeparture(stop_1_id, departure_hour),
+            '2': MockStopDeparture(stop_2_id, departure_hour + 3),
+            '3': MockStopDeparture(stop_3_id, departure_hour + 4),
+        }
+        self.tripRouteInfo = MockUniqueRouteInfo(route_number)
+        self.serviceId = '2'
+
+
+class MockStopDeparture:
+    def __init__(self, stop_id, departure_hour):
+        self.stopId = stop_id
+        self.departureTime = f'{departure_hour}:00:00'
+
+
+class MockAnalysis:
+    def __init__(self, route_types_to_solve=None):
+        self.route_types = [1, 2] if route_types_to_solve is None else route_types_to_solve
+        self.end_date = DEFAULT_START_DATE

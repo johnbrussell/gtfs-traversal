@@ -437,6 +437,33 @@ class Solver:
         parent = progress_dict[key].parent
         return self.eliminate_nodes(parent, progress_dict)
 
+    def initialize_progress_dict(self, begin_time):
+        progress_dict = dict()
+        departure_time = None
+        for stop in self.data_munger.get_unique_stops_to_solve():
+            for route in self.data_munger.get_solution_routes_at_stop(stop):
+                # This function assumes that each route does not visit any stop multiple times
+                best_departure_time, best_trip = self.data_munger.first_trip_after(begin_time, route, stop)
+                if best_trip is None:
+                    continue
+                if departure_time is None:
+                    departure_time = best_departure_time
+                if best_departure_time < departure_time:
+                    departure_time = best_departure_time
+                stop_number = self.data_munger.get_stop_number_from_stop_id(stop, route)
+                location_info = LocationStatusInfo(location=stop, arrival_route=route,
+                                                   unvisited=self.get_initial_unsolved_string())
+                progress_info = ProgressInfo(start_time=best_departure_time, duration=timedelta(seconds=0), parent=None,
+                                             arrival_trip=best_trip, trip_stop_no=stop_number,
+                                             start_location=stop, start_route=route,
+                                             minimum_remaining_time=self.get_total_minimum_time(), depth=0,
+                                             expanded=False, eliminated=False)
+                progress_dict[location_info] = progress_info
+
+        progress_dict = {location: progress for location, progress in progress_dict.items() if
+                         progress.start_time == departure_time}
+        return progress_dict, departure_time
+
     def print_path(self, progress_dict):
         solution_locations = [k for k in progress_dict.keys() if k.unvisited == self.STOP_JOIN_STRING and
                               not self.is_node_eliminated(progress_dict, k)]
@@ -451,35 +478,10 @@ class Solver:
             for locati in path:
                 print(locati)
 
-    def find_solution(self, begin_time, stops_to_solve, routes_to_solve, known_best_time):
-        progress_dict = dict()
-        best_dtime = None
-        for stop in stops_to_solve:
-            for route in self.data_munger.get_routes_by_stop()[stop]:
-                if route not in routes_to_solve:
-                    continue
-                stop_locs = [sor for sor, sid in self.get_trip_schedules()[self.get_route_trips()[route].tripIds[0]].tripStops.items() if
-                             sid.stopId == stop]
-                for stop_loc in stop_locs:
-                    best_deptime, best_trip = self.data_munger.first_trip_after(
-                        begin_time, route, stop)
-                    if best_trip is None:
-                        continue
-                    if best_dtime is None:
-                        best_dtime = best_deptime
-                    if best_deptime < best_dtime:
-                        best_dtime = best_deptime
-                    best_stop = self.data_munger.get_stop_number_from_stop_id(stop, route)
-                    loc_info = LocationStatusInfo(location=stop, arrival_route=route,
-                                                  unvisited=self.get_initial_unsolved_string())
-                    prog_info = ProgressInfo(start_time=best_deptime, duration=timedelta(seconds=0), parent=None,
-                                             arrival_trip=best_trip, trip_stop_no=best_stop,
-                                             start_location=stop, start_route=route,
-                                             minimum_remaining_time=self.get_total_minimum_time(), depth=0,
-                                             expanded=False, eliminated=False)
-                    progress_dict[loc_info] = prog_info
-
-        exp_queue = ExpansionQueue(routes_to_solve, stops_to_solve, self.TRANSFER_ROUTE, self.WALK_ROUTE,
+    def find_solution(self, begin_time, known_best_time):
+        progress_dict, best_dtime = self.initialize_progress_dict(begin_time)
+        exp_queue = ExpansionQueue(self.data_munger.get_unique_routes_to_solve(),
+                                   self.data_munger.get_unique_stops_to_solve(), self.TRANSFER_ROUTE, self.WALK_ROUTE,
                                    self.get_stops_at_ends_of_solution_routes(), self.MAX_EXPANSION_QUEUE,
                                    self.data_munger.get_transfer_stops(),
                                    self.data_munger.get_stops_by_route_in_solution_set())
@@ -513,8 +515,9 @@ class Solver:
             progress_dict[expandeee] = progress_dict[expandeee]._replace(expanded=True)
 
             new_nodess = self.get_new_nodes(expandeee, progress_dict[expandeee], self.LOCATION_ROUTES,
-                                            self.get_trip_schedules(), routes_to_solve, self.ANALYSIS,
-                                            self.get_stop_locations_to_solve(), self.get_off_course_stop_locations())
+                                            self.get_trip_schedules(), self.data_munger.get_unique_routes_to_solve(),
+                                            self.ANALYSIS, self.get_stop_locations_to_solve(),
+                                            self.get_off_course_stop_locations())
 
             if len(new_nodess) == 0:
                 continue
