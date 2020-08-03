@@ -451,9 +451,10 @@ class Solver:
             for locati in path:
                 print(locati)
 
-    def find_solution(self, begin_time, stops_to_solve, routes_to_solve, known_best_time):
+    def find_solution(self, begin_time, routes_to_solve, known_best_time):
         progress_dict = dict()
         best_dtime = None
+        stops_to_solve = self.data_munger.get_unique_stops_to_solve()
         for stop in stops_to_solve:
             for route in self.data_munger.get_routes_by_stop()[stop]:
                 if route not in routes_to_solve:

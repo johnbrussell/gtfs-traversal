@@ -58,7 +58,6 @@ if __name__ == "__main__":
 
     location_routes = data_munger.get_routes_by_stop()
     unique_routes_to_solve = data_munger.get_unique_routes_to_solve()
-    unique_stops_to_solve = data_munger.get_unique_stops_to_solve()
 
     solver = Solver(analysis=analysis, data=data, location_routes=location_routes,
                     max_expansion_queue=MAX_EXPANSION_QUEUE, max_progress_dict=MAX_PROGRESS_DICT, start_time=start_time,
@@ -73,7 +72,7 @@ if __name__ == "__main__":
     while start_time < end_date_midnight:
         print(start_time)
         new_best_time, new_best_progress_dictionary, earliest_departure_time = solver.find_solution(
-            start_time, unique_stops_to_solve, unique_routes_to_solve, best_time)
+            start_time, unique_routes_to_solve, best_time)
         assert new_best_time is not None
         if best_time is None or new_best_time < best_time:
             best_time = new_best_time
