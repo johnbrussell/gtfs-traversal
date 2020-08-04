@@ -486,7 +486,7 @@ class Solver:
                                    self.data_munger.get_transfer_stops(),
                                    self.data_munger.get_stops_by_route_in_solution_set())
         if len(progress_dict) > 0:
-            exp_queue.add_with_depth(progress_dict.keys(), progress_dict.values(), known_best_time)
+            exp_queue.add(progress_dict.keys(), self.STOP_JOIN_STRING)
 
         expansionss = 1
         best_nn_time = None
@@ -496,7 +496,7 @@ class Solver:
             if expansionss % 10000 == 0:
                 if expansionss % 10000 == 0:
                     expansionss = 0
-                    print('e', exp_queue.len_detail())
+                    print('e', exp_queue.len())
                     print("p", len(progress_dict))
                 progress_dict, exp_queue = self.prune(progress_dict, exp_queue, known_best_time)
                 if exp_queue.len() == 0:
@@ -538,7 +538,7 @@ class Solver:
             # print(new_nodess)
             new_locs, new_progs = tuple(zip(*new_nodess))
             exp_queue.remove_keys(new_locs)
-            exp_queue.add_with_depth(new_locs, new_progs, None)
+            exp_queue.add(new_locs, self.STOP_JOIN_STRING)
             # print(exp_queue.len())
 
         return known_best_time, progress_dict, best_dtime
