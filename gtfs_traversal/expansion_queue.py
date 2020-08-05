@@ -1,8 +1,8 @@
 class ExpansionQueue:
     def __init__(self, solution_routes, solution_stops, transfer_route, walk_route, solution_endpoints, max_len,
                  system_transfer_locations, route_stops):
+        self._num_remaining_stops_to_pop = 1000000000
         self._queue = dict()
-        self._num_stops = len(solution_stops)
 
     def add(self, nodes, stop_join_string):
         for node in nodes:
@@ -14,6 +14,8 @@ class ExpansionQueue:
             return
         if num_remaining_stops not in self._queue:
             self._queue[num_remaining_stops] = []
+            if num_remaining_stops < self._num_remaining_stops_to_pop:
+                self._num_remaining_stops_to_pop = num_remaining_stops
         self._queue[num_remaining_stops].append(node)
 
     def len(self):
@@ -23,10 +25,13 @@ class ExpansionQueue:
         return length
 
     def pop(self):
-        num_remaining_stops_to_pop = min(self._queue.keys())
-        to_return = self._queue[num_remaining_stops_to_pop].pop(0)
-        if self.is_list_empty(self._queue[num_remaining_stops_to_pop]):
-            del self._queue[num_remaining_stops_to_pop]
+        to_return = self._queue[self._num_remaining_stops_to_pop].pop(0)
+        if self.is_list_empty(self._queue[self._num_remaining_stops_to_pop]):
+            del self._queue[self._num_remaining_stops_to_pop]
+            if len(self._queue) > 0:
+                self._num_remaining_stops_to_pop = min(self._queue.keys())
+            else:
+                self._num_remaining_stops_to_pop = 1000000000
         return to_return
 
     @staticmethod
