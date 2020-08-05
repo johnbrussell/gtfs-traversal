@@ -207,19 +207,11 @@ class Solver:
     def get_walking_data(self, location_status, progress, locations_to_solve, locations_to_not_solve, analysis_data):
         if location_status.location in locations_to_solve.keys():
             current_location = locations_to_solve[location_status.location]
-            # if location_status.location == 'W15307':
-            #     print('in locations to solve')
-            #     print(current_location)
             locations_to_solve = {k: va for k, va in locations_to_solve.items() if k != location_status.location}
         else:
             current_location = locations_to_not_solve[location_status.location]
-            # if location_status.location == 'W15307':
-            #     print('in locations to not solve')
-            #     print(current_location)
             locations_to_not_solve = {k: va for k, va in locations_to_not_solve.items() if
                                       k != location_status.location}
-
-        # print('get walk', location_status.unvisited)
 
         other_location_status_infos = [
             LocationStatusInfo(location=loc, arrival_route=self.WALK_ROUTE, unvisited=location_status.unvisited)
@@ -235,22 +227,16 @@ class Solver:
                                       for
                                       lsi in solution_location_status_infos]
         max_walking_duration = max(solution_walking_durations)
-        # print(max_walking_duration)
         other_walking_durations = [self.walk_time_seconds(current_location.lat, locations_to_not_solve[lsi.location].lat,
                                                      current_location.long, locations_to_not_solve[lsi.location].long)
                                    for
                                    lsi in other_location_status_infos]
 
-        # walking_durations_to_solve = [walk_time_seconds(current_location.lat, va.lat, current_location.long, va.long) for
-        #                               k, va in locations_to_solve.items()]
-        # max_walking_duration = max(walking_durations_to_solve)
-        # print("max walking seconds", max_walking_duration)
         all_location_status_infos = other_location_status_infos + solution_location_status_infos
         all_walking_durations = other_walking_durations + solution_walking_durations
         assert (len(all_location_status_infos) == len(all_walking_durations))
 
         analysis_end = datetime.strptime(analysis_data.end_date, '%Y-%m-%d') + timedelta(days=1)
-        # print(progress.start_time + progress.duration, analysis_end)
 
         to_return = [
             (
@@ -265,8 +251,6 @@ class Solver:
             if wts <= max_walking_duration and
                progress.start_time + progress.duration + timedelta(seconds=wts) < analysis_end
         ]
-        # print([r[0].location for r in to_return if r[0] in solution_location_status_infos])
-        # print('return', to_return[0])
         return to_return
 
     def add_new_nodes_to_progress_dict(self, progress_dict, new_nodes_list, best_solution_duration, exp_queue,
