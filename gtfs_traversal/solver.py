@@ -490,7 +490,7 @@ class Solver:
 
         num_expansions = 1
         best_nn_time = None
-        while exp_queue.len() > 0:
+        while not exp_queue.is_empty():
             if num_expansions % 10000 == 0:
                 if num_expansions % 10000 == 0:
                     num_expansions = 0
