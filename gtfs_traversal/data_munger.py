@@ -87,7 +87,7 @@ class DataMunger:
                     continue
                 best_stop_number = self.get_stop_number_from_stop_id(stop, route)
                 next_stop_number = str(int(best_stop_number) + 1)
-                if next_stop_number not in self.get_stops_for_route(route).keys():
+                if next_stop_number not in self.get_stops_for_route(route):
                     continue
                 stops_on_route = self.get_stops_for_route(route)
                 next_stop = stops_on_route[next_stop_number].stopId
