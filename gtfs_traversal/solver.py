@@ -488,20 +488,20 @@ class Solver:
         if len(progress_dict) > 0:
             exp_queue.add(progress_dict.keys(), self.STOP_JOIN_STRING)
 
-        expansionss = 1
+        num_expansions = 1
         best_nn_time = None
         while exp_queue.len() > 0:
-            # if expansionss > max_expand:
+            # if num_expansions > max_expand:
             #     quit()
-            if expansionss % 10000 == 0:
-                if expansionss % 10000 == 0:
-                    expansionss = 0
+            if num_expansions % 10000 == 0:
+                if num_expansions % 10000 == 0:
+                    num_expansions = 0
                     print('e', exp_queue.len())
                     print("p", len(progress_dict))
                 progress_dict, exp_queue = self.prune(progress_dict, exp_queue, known_best_time)
                 if exp_queue.len() == 0:
                     break
-            expansionss += 1
+            num_expansions += 1
 
             expandeee = exp_queue.pop()
             exp_prog = progress_dict[expandeee]
