@@ -513,16 +513,15 @@ class Solver:
             progress_dict[expandeee] = progress_dict[expandeee]._replace(expanded=True)
 
             new_nodes = self.get_new_nodes(expandeee, progress_dict[expandeee], self.LOCATION_ROUTES,
-                                            self.get_trip_schedules(), self.data_munger.get_unique_routes_to_solve(),
-                                            self.ANALYSIS, self.get_stop_locations_to_solve(),
-                                            self.get_off_course_stop_locations())
+                                           self.get_trip_schedules(), self.data_munger.get_unique_routes_to_solve(),
+                                           self.ANALYSIS, self.get_stop_locations_to_solve(),
+                                           self.get_off_course_stop_locations())
 
             if len(new_nodes) == 0:
                 continue
 
             progress_dict, known_best_time, new_nodes, exp_queue = \
-                self.add_new_nodes_to_progress_dict(progress_dict, new_nodes, known_best_time, exp_queue,
-                                               best_nn_time)
+                self.add_new_nodes_to_progress_dict(progress_dict, new_nodes, known_best_time, exp_queue, best_nn_time)
             if known_best_time is not None:
                 best_nn_time = known_best_time - self.get_total_minimum_time()
 
