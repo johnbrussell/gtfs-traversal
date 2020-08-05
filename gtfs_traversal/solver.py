@@ -491,8 +491,6 @@ class Solver:
         num_expansions = 1
         best_nn_time = None
         while exp_queue.len() > 0:
-            # if num_expansions > max_expand:
-            #     quit()
             if num_expansions % 10000 == 0:
                 if num_expansions % 10000 == 0:
                     num_expansions = 0
@@ -528,17 +526,11 @@ class Solver:
             if known_best_time is not None:
                 best_nn_time = known_best_time - self.get_total_minimum_time()
 
-            # print(len(new_nodes))
-            # print(len([n for n in new_nodes if n[0].location in unique_stops_to_solve]))
-
             if len(new_nodes) == 0:
                 continue
 
-            # print(len(new_nodes), exp_queue.len())
-            # print(new_nodes)
             new_locs, new_progs = tuple(zip(*new_nodes))
             exp_queue.remove_keys(new_locs)
             exp_queue.add(new_locs, self.STOP_JOIN_STRING)
-            # print(exp_queue.len())
 
         return known_best_time, progress_dict, best_dtime
