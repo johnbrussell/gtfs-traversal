@@ -21,6 +21,9 @@ class ExpansionQueue:
                 self._num_remaining_stops_to_pop = num_remaining_stops
         self._queue[num_remaining_stops].append(node)
 
+    def is_empty(self):
+        return self._num_remaining_stops_to_pop >= MAX_INT
+
     def len(self):
         length = 0
         for l in self._queue.values():
