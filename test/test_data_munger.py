@@ -116,6 +116,29 @@ class TestDataMunger(unittest.TestCase):
         test_calculates_correct_result()
         test_memoizes()
 
+    def test_get_next_stop_id(self):
+        def test_first_stop_on_route():
+            subject = self.get_subject_with_mock_data(analysis=MockAnalysis(route_types_to_solve=[1, 2]))
+            expected = "Wonderland"
+            actual = subject.get_next_stop_id("Alewife", 1)
+            self.assertEqual(expected, actual)
+
+        def test_stop_in_middle_of_route():
+            subject = self.get_subject_with_mock_data(analysis=MockAnalysis(route_types_to_solve=[1, 2]))
+            expected = "Back of the Hill"
+            actual = subject.get_next_stop_id("Lechmere", 2)
+            self.assertEqual(expected, actual)
+
+        def test_stop_at_end_of_route():
+            subject = self.get_subject_with_mock_data(analysis=MockAnalysis(route_types_to_solve=[1, 2]))
+            expected = None
+            actual = subject.get_next_stop_id("Lynn", 3)
+            self.assertEqual(expected, actual)
+
+        test_first_stop_on_route()
+        test_stop_in_middle_of_route()
+        test_stop_at_end_of_route()
+
     def test_get_routes_by_stop(self):
         def test_munges_correctly():
             subject = self.get_subject_with_mock_data()
