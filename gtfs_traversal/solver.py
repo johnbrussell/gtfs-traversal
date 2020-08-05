@@ -501,18 +501,18 @@ class Solver:
                     break
             num_expansions += 1
 
-            expandeee = exp_queue.pop()
-            exp_prog = progress_dict[expandeee]
+            expandee = exp_queue.pop()
+            expandee_progress = progress_dict[expandee]
 
-            if exp_prog.expanded or expandeee.unvisited == self.STOP_JOIN_STRING:
+            if expandee_progress.expanded or expandee.unvisited == self.STOP_JOIN_STRING:
                 continue
-            if self.is_node_eliminated(progress_dict, expandeee):
-                progress_dict = self.eliminate_nodes(expandeee, progress_dict)
+            if self.is_node_eliminated(progress_dict, expandee):
+                progress_dict = self.eliminate_nodes(expandee, progress_dict)
                 continue
 
-            progress_dict[expandeee] = progress_dict[expandeee]._replace(expanded=True)
+            progress_dict[expandee] = progress_dict[expandee]._replace(expanded=True)
 
-            new_nodes = self.get_new_nodes(expandeee, progress_dict[expandeee], self.LOCATION_ROUTES,
+            new_nodes = self.get_new_nodes(expandee, progress_dict[expandee], self.LOCATION_ROUTES,
                                            self.get_trip_schedules(), self.data_munger.get_unique_routes_to_solve(),
                                            self.ANALYSIS, self.get_stop_locations_to_solve(),
                                            self.get_off_course_stop_locations())
