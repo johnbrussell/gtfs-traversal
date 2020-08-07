@@ -1,8 +1,8 @@
 class ExpansionQueue:
     def __init__(self, solution_routes, solution_stops, transfer_route, walk_route, solution_endpoints, max_len,
                  system_transfer_locations, route_stops):
-        self._max_int = len(solution_stops) + 1
-        self._num_remaining_stops_to_pop = self._max_int
+        self._one_more_than_number_of_solution_stops = len(solution_stops) + 1
+        self._num_remaining_stops_to_pop = self._one_more_than_number_of_solution_stops
         self._queue = dict()
 
     def add(self, nodes, stop_join_string):
@@ -20,7 +20,7 @@ class ExpansionQueue:
         self._queue[num_remaining_stops].append(node)
 
     def is_empty(self):
-        return self._num_remaining_stops_to_pop >= self._max_int
+        return self._num_remaining_stops_to_pop >= self._one_more_than_number_of_solution_stops
 
     def len(self):
         length = 0
@@ -35,7 +35,7 @@ class ExpansionQueue:
             if len(self._queue) > 0:
                 self._num_remaining_stops_to_pop = min(self._queue.keys())
             else:
-                self._num_remaining_stops_to_pop = self._max_int
+                self._num_remaining_stops_to_pop = self._one_more_than_number_of_solution_stops
         return to_return
 
     @staticmethod
