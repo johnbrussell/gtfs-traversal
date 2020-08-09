@@ -1,7 +1,7 @@
 class ExpansionQueue:
-    def __init__(self, solution_routes, solution_stops, transfer_route, walk_route, solution_endpoints, max_len,
+    def __init__(self, solution_routes, num_solution_stops, transfer_route, walk_route, solution_endpoints, max_len,
                  system_transfer_locations, route_stops):
-        self._one_more_than_number_of_solution_stops = len(solution_stops) + 1
+        self._one_more_than_number_of_solution_stops = num_solution_stops + 1
         self._num_remaining_stops_to_pop = self._one_more_than_number_of_solution_stops
         self._queue = dict()
 
