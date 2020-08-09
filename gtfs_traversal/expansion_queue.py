@@ -52,6 +52,7 @@ class ExpansionQueue:
                 queue_keys_to_remove.add(num_remaining_stops)
         for queue_key_to_remove in queue_keys_to_remove:
             del self._queue[queue_key_to_remove]
+        self._reset_num_remaining_stops_to_pop()
 
     def _reset_num_remaining_stops_to_pop(self):
         if self._queue:

@@ -10,13 +10,16 @@ class TestExpansionQueue(unittest.TestCase):
         nodes = [location_a, location_b]
         subject = ExpansionQueue(num_solution_stops=2, stop_join_string="~~")
         subject.add(nodes)
-        expected = {
+        expected_queue = {
             1: [location_a],
             2: [location_b],
         }
-        actual = subject._queue
+        expected_stop_to_pop = 1
+        actual_queue = subject._queue
+        actual_stop_to_pop = subject._num_remaining_stops_to_pop
 
-        self.assertDictEqual(expected, actual)
+        self.assertDictEqual(expected_queue, actual_queue)
+        self.assertEqual(expected_stop_to_pop, actual_stop_to_pop)
 
     def test_is_empty(self):
         location_a = LocationStatusInfo(location='a', arrival_route=None, unvisited="~~a~~")
@@ -60,12 +63,15 @@ class TestExpansionQueue(unittest.TestCase):
             2: [location_b]
         }
         expected_node = location_a
+        expected_stop_to_pop = 2
 
         actual_node = subject.pop()
         actual_queue = subject._queue
+        actual_stop_to_pop = subject._num_remaining_stops_to_pop
 
         self.assertEqual(expected_node, actual_node)
         self.assertDictEqual(expected_queue, actual_queue)
+        self.assertEqual(expected_stop_to_pop, actual_stop_to_pop)
 
     def test_remove_keys(self):
         location_a = LocationStatusInfo(location='a', arrival_route=None, unvisited="~~a~~")
@@ -75,9 +81,12 @@ class TestExpansionQueue(unittest.TestCase):
         subject.add([location_a, location_b, location_c])
 
         subject.remove_keys([location_a, location_c])
-        expected = {
+        expected_queue = {
             2: [location_b]
         }
-        actual = subject._queue
+        expected_stop_to_pop = 2
+        actual_queue = subject._queue
+        actual_stop_to_pop = subject._num_remaining_stops_to_pop
 
-        self.assertDictEqual(expected, actual)
+        self.assertDictEqual(expected_queue, actual_queue)
+        self.assertEqual(expected_stop_to_pop, actual_stop_to_pop)
