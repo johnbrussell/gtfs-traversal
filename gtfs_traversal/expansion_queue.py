@@ -22,6 +22,10 @@ class ExpansionQueue:
     def is_empty(self):
         return self._num_remaining_stops_to_pop >= self._one_more_than_number_of_solution_stops
 
+    @staticmethod
+    def is_list_empty(lst):
+        return True if not lst else False
+
     def len(self):
         length = 0
         for l in self._queue.values():
@@ -37,10 +41,6 @@ class ExpansionQueue:
             else:
                 self._num_remaining_stops_to_pop = self._one_more_than_number_of_solution_stops
         return to_return
-
-    @staticmethod
-    def is_list_empty(lst):
-        return True if not lst else False
 
     def remove_keys(self, bad_keys):
         for key in bad_keys:
