@@ -36,10 +36,7 @@ class ExpansionQueue:
         to_return = self._queue[self._num_remaining_stops_to_pop].pop(0)
         if self.is_list_empty(self._queue[self._num_remaining_stops_to_pop]):
             del self._queue[self._num_remaining_stops_to_pop]
-            if self._queue:
-                self._num_remaining_stops_to_pop = min(self._queue.keys())
-            else:
-                self._num_remaining_stops_to_pop = self._one_more_than_number_of_solution_stops
+            self._reset_num_remaining_stops_to_pop()
         return to_return
 
     def remove_keys(self, bad_keys):
@@ -50,6 +47,12 @@ class ExpansionQueue:
         for num_remaining_stops in self._queue.keys():
             while bad_key in self._queue[num_remaining_stops]:
                 self._queue[num_remaining_stops].remove(bad_key)
+
+    def _reset_num_remaining_stops_to_pop(self):
+        if self._queue:
+            self._num_remaining_stops_to_pop = min(self._queue.keys())
+        else:
+            self._num_remaining_stops_to_pop = self._one_more_than_number_of_solution_stops
 
 
     #     self._solve_system = set()
