@@ -40,9 +40,7 @@ class ExpansionQueue:
 
     @staticmethod
     def is_list_empty(lst):
-        for _ in lst:
-            return False
-        return True
+        return True if not lst else False
 
     def remove_keys(self, bad_keys):
         for key in bad_keys:
