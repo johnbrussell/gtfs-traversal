@@ -17,3 +17,15 @@ class TestExpansionQueue(unittest.TestCase):
         actual = subject._queue
 
         self.assertDictEqual(expected, actual)
+
+    def test_is_empty(self):
+        location_a = LocationStatusInfo(location='a', arrival_route=None, unvisited="~~a~~")
+        subject = ExpansionQueue(num_solution_stops=2, stop_join_string="~~")
+
+        self.assertTrue(subject.is_empty())
+
+        subject.add([location_a])
+        self.assertFalse(subject.is_empty())
+
+        subject.pop()
+        self.assertTrue(subject.is_empty())
