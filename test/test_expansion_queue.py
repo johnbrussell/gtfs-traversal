@@ -29,3 +29,22 @@ class TestExpansionQueue(unittest.TestCase):
 
         subject.pop()
         self.assertTrue(subject.is_empty())
+
+    def test_len(self):
+        location_a = LocationStatusInfo(location='a', arrival_route=None, unvisited="~~a~~")
+        location_b = LocationStatusInfo(location='b', arrival_route=None, unvisited="~~a~~b~~")
+        subject = ExpansionQueue(num_solution_stops=2, stop_join_string="~~")
+
+        self.assertEqual(subject.len(), 0)
+
+        subject.add([location_a])
+        self.assertEqual(subject.len(), 1)
+
+        subject.add([location_b])
+        self.assertEqual(subject.len(), 2)
+
+        subject.pop()
+        self.assertEqual(subject.len(), 1)
+
+        subject.pop()
+        self.assertEqual(subject.len(), 0)
