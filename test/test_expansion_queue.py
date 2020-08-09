@@ -76,7 +76,6 @@ class TestExpansionQueue(unittest.TestCase):
 
         subject.remove_keys([location_a, location_c])
         expected = {
-            1: [],
             2: [location_b]
         }
         actual = subject._queue
