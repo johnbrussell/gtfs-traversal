@@ -464,13 +464,9 @@ class Solver:
 
     def find_solution(self, begin_time, known_best_time):
         progress_dict, best_dtime = self.initialize_progress_dict(begin_time)
-        exp_queue = ExpansionQueue(self.data_munger.get_unique_routes_to_solve(),
-                                   self.data_munger.get_unique_stops_to_solve(), self.TRANSFER_ROUTE, self.WALK_ROUTE,
-                                   self.get_stops_at_ends_of_solution_routes(), self.MAX_EXPANSION_QUEUE,
-                                   self.data_munger.get_transfer_stops(),
-                                   self.data_munger.get_stops_by_route_in_solution_set())
+        exp_queue = ExpansionQueue(len(self.data_munger.get_unique_stops_to_solve()), self.STOP_JOIN_STRING)
         if len(progress_dict) > 0:
-            exp_queue.add(progress_dict.keys(), self.STOP_JOIN_STRING)
+            exp_queue.add(progress_dict.keys())
 
         num_expansions = 1
         best_nn_time = None
@@ -514,6 +510,6 @@ class Solver:
 
             new_locs, new_progs = tuple(zip(*new_nodes))
             exp_queue.remove_keys(new_locs)
-            exp_queue.add(new_locs, self.STOP_JOIN_STRING)
+            exp_queue.add(new_locs)
 
         return known_best_time, progress_dict, best_dtime
