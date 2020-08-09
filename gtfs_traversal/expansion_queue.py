@@ -1,15 +1,16 @@
 class ExpansionQueue:
-    def __init__(self, num_solution_stops):
+    def __init__(self, num_solution_stops, stop_join_string):
         self._one_more_than_number_of_solution_stops = num_solution_stops + 1
         self._num_remaining_stops_to_pop = self._one_more_than_number_of_solution_stops
         self._queue = dict()
+        self._stop_join_string = stop_join_string
 
-    def add(self, nodes, stop_join_string):
+    def add(self, nodes):
         for node in nodes:
-            self._add_node(node, stop_join_string)
+            self._add_node(node)
 
-    def _add_node(self, node, stop_join_string):
-        num_remaining_stops = len(node.unvisited.split(stop_join_string)) - 2
+    def _add_node(self, node):
+        num_remaining_stops = len(node.unvisited.split(self._stop_join_string)) - 2
         if num_remaining_stops == 0:
             return
         if num_remaining_stops not in self._queue:
