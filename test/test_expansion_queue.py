@@ -66,3 +66,19 @@ class TestExpansionQueue(unittest.TestCase):
 
         self.assertEqual(expected_node, actual_node)
         self.assertDictEqual(expected_queue, actual_queue)
+
+    def test_remove_keys(self):
+        location_a = LocationStatusInfo(location='a', arrival_route=None, unvisited="~~a~~")
+        location_b = LocationStatusInfo(location='b', arrival_route=None, unvisited="~~a~~b~~")
+        location_c = LocationStatusInfo(location='c', arrival_route=None, unvisited="~~a~~b~~")
+        subject = ExpansionQueue(num_solution_stops=2, stop_join_string="~~")
+        subject.add([location_a, location_b, location_c])
+
+        subject.remove_keys([location_a, location_c])
+        expected = {
+            1: [],
+            2: [location_b]
+        }
+        actual = subject._queue
+
+        self.assertDictEqual(expected, actual)
