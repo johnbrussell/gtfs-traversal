@@ -82,7 +82,6 @@ class Solver:
                                       day=progress.start_time.day)
         current_time = start_day_midnight + timedelta(seconds=trip_hms_duration)
         new_duration = current_time - progress.start_time
-        # change_in_duration = new_duration - progress.duration
         uneliminated_current_stop_name = f'{self.STOP_JOIN_STRING}{current_stop_id}{self.STOP_JOIN_STRING}'
         uneliminated_next_stop_name = f'{self.STOP_JOIN_STRING}{next_stop_id}{self.STOP_JOIN_STRING}'
         new_minimum_remaining_time = \
@@ -92,13 +91,6 @@ class Solver:
               timedelta(0)) + (self.data_munger.get_minimum_stop_times()[next_stop_id] if uneliminated_next_stop_name in
                                location_status.unvisited else timedelta(
                 0)) if route in routes_to_solve else timedelta(0))
-        # decrease_in_minimum_remaining_time = progress.minimum_remaining_time - new_minimum_remaining_time
-        # new_non_necessary_time = progress.non_necessary_time + change_in_duration -
-        # decrease_in_minimum_remaining_time
-        # if best_duration is None:
-        #     print(progress.start_time + new_duration)
-        # if next_stop_id in stop_locations_to_solve:
-        #     print(new_location_eliminations)
         return [(
             LocationStatusInfo(location=next_stop_id, arrival_route=route, unvisited=new_location_eliminations),
             ProgressInfo(start_time=progress.start_time, duration=new_duration, arrival_trip=new_trip_id,
