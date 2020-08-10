@@ -109,14 +109,7 @@ class Solver:
         if location_status.arrival_route == self.TRANSFER_ROUTE:
             return self.get_nodes_after_transfer(location_status, progress)
 
-        transfer_data = (location_status._replace(arrival_route=self.TRANSFER_ROUTE),
-                         ProgressInfo(start_time=progress.start_time,
-                                      duration=progress.duration + timedelta(seconds=self.TRANSFER_DURATION_SECONDS),
-                                      arrival_trip=self.TRANSFER_ROUTE, trip_stop_no=self.TRANSFER_ROUTE,
-                                      parent=location_status, start_location=progress.start_location,
-                                      start_route=progress.start_route,
-                                      minimum_remaining_time=progress.minimum_remaining_time, depth=progress.depth + 1,
-                                      expanded=False, eliminated=False))
+        transfer_data = self.get_transfer_data(location_status, progress)
 
         if location_status.arrival_route == self.WALK_ROUTE:
             return [transfer_data]
@@ -176,6 +169,16 @@ class Solver:
             self.total_minimum_time = self.data_munger.get_total_minimum_time()
 
         return self.total_minimum_time
+
+    def get_transfer_data(self, location_status, progress):
+        return (location_status._replace(arrival_route=self.TRANSFER_ROUTE),
+                ProgressInfo(start_time=progress.start_time,
+                             duration=progress.duration + timedelta(seconds=self.TRANSFER_DURATION_SECONDS),
+                             arrival_trip=self.TRANSFER_ROUTE, trip_stop_no=self.TRANSFER_ROUTE, parent=location_status,
+                             start_location=progress.start_location, start_route=progress.start_route,
+                             minimum_remaining_time=progress.minimum_remaining_time, depth=progress.depth + 1,
+                             expanded=False, eliminated=False))
+
 
     def get_trip_schedules(self):
         if self.trip_schedules is not None:
