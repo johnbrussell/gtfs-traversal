@@ -146,7 +146,7 @@ class Solver:
 
     def get_nodes_after_transfer(self, location_status, progress):
         routes_at_location = self.data_munger.get_routes_at_stop(location_status.location)
-        walking_data = self.get_walking_data(location_status, progress, self.ANALYSIS) \
+        walking_data = self.get_walking_data(location_status, progress) \
             if progress.parent is not None and progress.parent.arrival_route != self.WALK_ROUTE else []
 
         new_route_data = [self.get_node_after_boarding_route(location_status, progress, route)
@@ -202,7 +202,7 @@ class Solver:
         self._trip_schedules = self.data_munger.get_trip_schedules()
         return self._trip_schedules
 
-    def get_walking_data(self, location_status, progress, analysis_data):
+    def get_walking_data(self, location_status, progress):
         locations_to_solve = self.get_stop_locations_to_solve()
         locations_to_not_solve = self.get_off_course_stop_locations()
         if location_status.location in self.get_stop_locations_to_solve():
@@ -233,7 +233,7 @@ class Solver:
         all_walking_durations = other_walking_durations + solution_walking_durations
         assert len(all_location_status_infos) == len(all_walking_durations)
 
-        analysis_end = datetime.strptime(analysis_data.end_date, '%Y-%m-%d') + timedelta(days=1)
+        analysis_end = datetime.strptime(self.ANALYSIS.end_date, '%Y-%m-%d') + timedelta(days=1)
 
         to_return = [
             (

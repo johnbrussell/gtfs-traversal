@@ -162,7 +162,7 @@ class TestSolver(unittest.TestCase):
             with patch.object(Solver, 'get_node_after_boarding_route', return_value='new route data') \
                     as mock_node_after_boarding_route:
                 actual = subject.get_nodes_after_transfer(input_location_status, input_progress)
-                mock_walking_data.assert_called_once_with(input_location_status, input_progress, analysis)
+                mock_walking_data.assert_called_once_with(input_location_status, input_progress)
                 self.assertEqual(mock_node_after_boarding_route.call_count, 2)
                 mock_node_after_boarding_route.assert_any_call(input_location_status, input_progress, 1)
                 mock_node_after_boarding_route.assert_any_call(input_location_status, input_progress, 3)
