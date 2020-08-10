@@ -17,7 +17,6 @@ class Solver:
         self.MAX_EXPANSION_QUEUE = max_expansion_queue
         self.trip_schedules = None
         self.LOCATION_ROUTES = location_routes
-        self.total_minimum_time = None
         self.ANALYSIS = analysis
 
         self._initial_unsolved_string = None
@@ -25,6 +24,7 @@ class Solver:
         self._route_trips = None
         self._stop_locations_to_solve = None
         self._stops_at_ends_of_solution_routes = None
+        self._total_minimum_time = None
 
         self.data_munger = DataMunger(
             analysis=analysis,
@@ -161,10 +161,10 @@ class Solver:
         return self._stops_at_ends_of_solution_routes
 
     def get_total_minimum_time(self):
-        if self.total_minimum_time is None:
-            self.total_minimum_time = self.data_munger.get_total_minimum_time()
+        if self._total_minimum_time is None:
+            self._total_minimum_time = self.data_munger.get_total_minimum_time()
 
-        return self.total_minimum_time
+        return self._total_minimum_time
 
     def get_transfer_data(self, location_status, progress):
         return (location_status._replace(arrival_route=self.TRANSFER_ROUTE),
