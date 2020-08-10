@@ -209,20 +209,16 @@ class Solver:
         locations_to_not_solve = self.get_off_course_stop_locations()
         if location_status.location in self.get_stop_locations_to_solve():
             current_location = self.get_stop_locations_to_solve()[location_status.location]
-            locations_to_solve = {k: va for k, va in self.get_stop_locations_to_solve().items()
-                                  if k != location_status.location}
         else:
             current_location = locations_to_not_solve[location_status.location]
-            locations_to_not_solve = {k: va for k, va in locations_to_not_solve.items() if
-                                      k != location_status.location}
 
         other_location_status_infos = [
             LocationStatusInfo(location=loc, arrival_route=self.WALK_ROUTE, unvisited=location_status.unvisited)
-            for loc in locations_to_not_solve.keys()
+            for loc in locations_to_not_solve.keys() if loc != location_status.location
         ]
         solution_location_status_infos = [
             LocationStatusInfo(location=loc, arrival_route=self.WALK_ROUTE, unvisited=location_status.unvisited)
-            for loc in locations_to_solve.keys()
+            for loc in locations_to_solve.keys() if loc != location_status.location
         ]
 
         solution_walking_durations = [self.walk_time_seconds(current_location.lat, locations_to_solve[lsi.location].lat,
