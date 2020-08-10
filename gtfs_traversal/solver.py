@@ -15,7 +15,6 @@ class Solver:
         self.TRANSFER_DURATION_SECONDS = transfer_duration_seconds
         self.MAX_PROGRESS_DICT = max_progress_dict
         self.MAX_EXPANSION_QUEUE = max_expansion_queue
-        self.trip_schedules = None
         self.LOCATION_ROUTES = location_routes
         self.ANALYSIS = analysis
 
@@ -25,6 +24,7 @@ class Solver:
         self._stop_locations_to_solve = None
         self._stops_at_ends_of_solution_routes = None
         self._total_minimum_time = None
+        self._trip_schedules = None
 
         self.data_munger = DataMunger(
             analysis=analysis,
@@ -176,11 +176,11 @@ class Solver:
                              expanded=False, eliminated=False))
 
     def get_trip_schedules(self):
-        if self.trip_schedules is not None:
-            return self.trip_schedules
+        if self._trip_schedules is not None:
+            return self._trip_schedules
 
-        self.trip_schedules = self.data_munger.get_trip_schedules()
-        return self.trip_schedules
+        self._trip_schedules = self.data_munger.get_trip_schedules()
+        return self._trip_schedules
 
     def get_walking_data(self, location_status, progress, analysis_data):
         locations_to_solve = self.get_stop_locations_to_solve()
