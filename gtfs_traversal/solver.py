@@ -108,6 +108,7 @@ class Solver:
     def get_new_nodes(self, location_status, progress):
         if location_status.arrival_route == self.TRANSFER_ROUTE:
             return self.get_nodes_after_transfer(location_status, progress)
+
         transfer_data = (location_status._replace(arrival_route=self.TRANSFER_ROUTE),
                          ProgressInfo(start_time=progress.start_time,
                                       duration=progress.duration + timedelta(seconds=self.TRANSFER_DURATION_SECONDS),
@@ -118,18 +119,15 @@ class Solver:
                                       expanded=False, eliminated=False))
 
         if location_status.arrival_route == self.WALK_ROUTE:
-            # print("expanding walk")
             return [transfer_data]
 
         next_stop_no = str(int(progress.trip_stop_no) + 1)
         trip_data = self.get_trip_schedules()[progress.arrival_trip]
 
         if next_stop_no in trip_data.tripStops.keys():
-            # print("continue")
             return [transfer_data] + self.get_next_stop_data(location_status, progress, progress.arrival_trip,
                                                              progress.trip_stop_no, location_status.arrival_route)
 
-        # print("end of route")
         return [transfer_data]
 
     def get_nodes_after_transfer(self, location_status, progress):
