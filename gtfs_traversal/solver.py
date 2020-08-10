@@ -66,44 +66,46 @@ class Solver:
     def get_next_stop_data_for_trip(self, route, location_status, progress, new_trip_id, trip_stop_no):
         next_stop_no = str(int(trip_stop_no) + 1)
         trip_data = self.get_trip_schedules()[new_trip_id]
-        if next_stop_no in trip_data.tripStops.keys():
-            routes_to_solve = self.data_munger.get_unique_routes_to_solve()
-            current_stop_id = location_status.location
-            next_stop_id = trip_data.tripStops[next_stop_no].stopId
-            new_location_eliminations = self.eliminate_stop_from_string(
-                next_stop_id, self.eliminate_stop_from_string(current_stop_id, location_status.unvisited)) if \
-                route in routes_to_solve else location_status.unvisited
-            h, m, s = trip_data.tripStops[next_stop_no].departureTime.split(':')
-            trip_hms_duration = int(s) + int(m) * 60 + int(h) * 60 * 60
-            start_day_midnight = datetime(year=progress.start_time.year, month=progress.start_time.month,
-                                          day=progress.start_time.day)
-            current_time = start_day_midnight + timedelta(seconds=trip_hms_duration)
-            new_duration = current_time - progress.start_time
-            # change_in_duration = new_duration - progress.duration
-            uneliminated_current_stop_name = f'{self.STOP_JOIN_STRING}{current_stop_id}{self.STOP_JOIN_STRING}'
-            uneliminated_next_stop_name = f'{self.STOP_JOIN_STRING}{next_stop_id}{self.STOP_JOIN_STRING}'
-            new_minimum_remaining_time = \
-                progress.minimum_remaining_time - \
-                ((self.data_munger.get_minimum_stop_times()[
-                      current_stop_id] if uneliminated_current_stop_name in location_status.unvisited else
-                  timedelta(0)) + (self.data_munger.get_minimum_stop_times()[next_stop_id] if uneliminated_next_stop_name in
-                                   location_status.unvisited else timedelta(
-                    0)) if route in routes_to_solve else timedelta(0))
-            # decrease_in_minimum_remaining_time = progress.minimum_remaining_time - new_minimum_remaining_time
-            # new_non_necessary_time = progress.non_necessary_time + change_in_duration -
-            # decrease_in_minimum_remaining_time
-            # if best_duration is None:
-            #     print(progress.start_time + new_duration)
-            # if next_stop_id in stop_locations_to_solve:
-            #     print(new_location_eliminations)
-            return [(
-                LocationStatusInfo(location=next_stop_id, arrival_route=route, unvisited=new_location_eliminations),
-                ProgressInfo(start_time=progress.start_time, duration=new_duration, arrival_trip=new_trip_id,
-                             trip_stop_no=next_stop_no, parent=location_status, start_location=progress.start_location,
-                             start_route=progress.start_route, minimum_remaining_time=new_minimum_remaining_time,
-                             depth=progress.depth + 1, expanded=False, eliminated=False)
-            )]
-        return []
+
+        if next_stop_no not in trip_data.tripStops:
+            return []
+
+        routes_to_solve = self.data_munger.get_unique_routes_to_solve()
+        current_stop_id = location_status.location
+        next_stop_id = trip_data.tripStops[next_stop_no].stopId
+        new_location_eliminations = self.eliminate_stop_from_string(
+            next_stop_id, self.eliminate_stop_from_string(current_stop_id, location_status.unvisited)) if \
+            route in routes_to_solve else location_status.unvisited
+        h, m, s = trip_data.tripStops[next_stop_no].departureTime.split(':')
+        trip_hms_duration = int(s) + int(m) * 60 + int(h) * 60 * 60
+        start_day_midnight = datetime(year=progress.start_time.year, month=progress.start_time.month,
+                                      day=progress.start_time.day)
+        current_time = start_day_midnight + timedelta(seconds=trip_hms_duration)
+        new_duration = current_time - progress.start_time
+        # change_in_duration = new_duration - progress.duration
+        uneliminated_current_stop_name = f'{self.STOP_JOIN_STRING}{current_stop_id}{self.STOP_JOIN_STRING}'
+        uneliminated_next_stop_name = f'{self.STOP_JOIN_STRING}{next_stop_id}{self.STOP_JOIN_STRING}'
+        new_minimum_remaining_time = \
+            progress.minimum_remaining_time - \
+            ((self.data_munger.get_minimum_stop_times()[
+                  current_stop_id] if uneliminated_current_stop_name in location_status.unvisited else
+              timedelta(0)) + (self.data_munger.get_minimum_stop_times()[next_stop_id] if uneliminated_next_stop_name in
+                               location_status.unvisited else timedelta(
+                0)) if route in routes_to_solve else timedelta(0))
+        # decrease_in_minimum_remaining_time = progress.minimum_remaining_time - new_minimum_remaining_time
+        # new_non_necessary_time = progress.non_necessary_time + change_in_duration -
+        # decrease_in_minimum_remaining_time
+        # if best_duration is None:
+        #     print(progress.start_time + new_duration)
+        # if next_stop_id in stop_locations_to_solve:
+        #     print(new_location_eliminations)
+        return [(
+            LocationStatusInfo(location=next_stop_id, arrival_route=route, unvisited=new_location_eliminations),
+            ProgressInfo(start_time=progress.start_time, duration=new_duration, arrival_trip=new_trip_id,
+                         trip_stop_no=next_stop_no, parent=location_status, start_location=progress.start_location,
+                         start_route=progress.start_route, minimum_remaining_time=new_minimum_remaining_time,
+                         depth=progress.depth + 1, expanded=False, eliminated=False)
+        )]
 
     def get_new_nodes(self, location_status, progress):
         if location_status.arrival_route == self.TRANSFER_ROUTE:
