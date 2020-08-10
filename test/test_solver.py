@@ -1,5 +1,6 @@
 from datetime import datetime, timedelta
 import unittest
+from unittest.mock import patch
 
 from gtfs_traversal.data_structures import *
 from gtfs_traversal.solver import Solver
@@ -9,6 +10,62 @@ DEFAULT_START_TIME = datetime.strptime(DEFAULT_START_DATE, '%Y-%m-%d')
 
 
 class TestSolver(unittest.TestCase):
+    def test_get_new_nodes(self):
+        def test_after_transfer():
+            subject = Solver(analysis=MockAnalysis(), data=MockData(), location_routes=None,
+                             max_expansion_queue=None, max_progress_dict=None, start_time=DEFAULT_START_TIME,
+                             stop_join_string='~~', transfer_duration_seconds=None, transfer_route='transfer route',
+                             walk_route=None, walk_speed_mph=None)
+            location_status_info = LocationStatusInfo(location=None, arrival_route='transfer route', unvisited=None)
+            expected = ['after transfer']
+            with patch.object(subject, 'get_nodes_after_transfer', return_value=['after transfer']) as \
+                    mock_after_transfer:
+                actual = subject.get_new_nodes(location_status_info, None)
+                mock_after_transfer.assert_called_once_with(location_status_info, None)
+
+            self.assertEqual(actual, expected)
+
+        def test_after_walk():
+            subject = Solver(analysis=MockAnalysis(), data=MockData(), location_routes=None,
+                             max_expansion_queue=None, max_progress_dict=None, start_time=DEFAULT_START_TIME,
+                             stop_join_string='~~', transfer_duration_seconds=53, transfer_route='transfer route',
+                             walk_route='walk route', walk_speed_mph=None)
+            location_status_info = LocationStatusInfo(location=None, arrival_route='walk route', unvisited=None)
+            progress_info = ProgressInfo(start_time=None, duration=timedelta(seconds=47), arrival_trip=None,
+                                         trip_stop_no=None, parent=None, start_location=None, start_route=None,
+                                         minimum_remaining_time=None, depth=4, expanded=None, eliminated=None)
+
+            expected = [(location_status_info._replace(arrival_route='transfer route'),
+                         progress_info._replace(duration=timedelta(seconds=100), depth=5,
+                                                trip_stop_no='transfer route', arrival_trip='transfer route',
+                                                parent=location_status_info, expanded=False, eliminated=False))]
+            actual = subject.get_new_nodes(location_status_info, progress_info)
+
+            self.assertEqual(actual, expected)
+
+        def test_after_service():
+            subject = Solver(analysis=MockAnalysis(), data=MockData(), location_routes=None,
+                             max_expansion_queue=None, max_progress_dict=None, start_time=DEFAULT_START_TIME,
+                             stop_join_string='~~', transfer_duration_seconds=None, transfer_route=None,
+                             walk_route=None, walk_speed_mph=None)
+            location_status_info = LocationStatusInfo(location=None, arrival_route='1', unvisited=None)
+            progress_info = ProgressInfo(start_time=None, duration=None, arrival_trip=None, trip_stop_no=None,
+                                         parent=None, start_location=None, start_route=None,
+                                         minimum_remaining_time=None, depth=None, expanded=None, eliminated=None)
+            expected = ['transfer data', 'after service']
+            with patch.object(subject, 'get_next_stop_data_for_route', return_value=['after service']) as \
+                    mock_after_service:
+                with patch.object(subject, 'get_transfer_data', return_value='transfer data') as mock_transfer_data:
+                    actual = subject.get_new_nodes(location_status_info, progress_info)
+                    mock_after_service.assert_called_once_with('1', location_status_info, progress_info, None, None)
+                    mock_transfer_data.assert_called_once_with(location_status_info, progress_info)
+
+            self.assertEqual(actual, expected)
+
+        test_after_transfer()
+        test_after_walk()
+        test_after_service()
+
     def test_initialize_progress_dict(self):
         def test_start_of_route():
             subject = Solver(analysis=MockAnalysis(), data=MockData(), location_routes=None,
