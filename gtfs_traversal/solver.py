@@ -62,9 +62,9 @@ class Solver:
         self.initial_unsolved_string = self.data_munger.get_initial_unsolved_string()
         return self.initial_unsolved_string
 
-    def get_next_stop_data(self, location_status, progress, trip_data, routes_to_solve, new_trip_id, trip_stop_no,
-                           new_route_id):
+    def get_next_stop_data(self, location_status, progress, trip_data, new_trip_id, trip_stop_no, new_route_id):
         next_stop_no = str(int(trip_stop_no) + 1)
+        routes_to_solve = self.data_munger.get_unique_routes_to_solve()
         if next_stop_no in trip_data.tripStops.keys():
             current_stop_id = location_status.location
             next_stop_id = trip_data.tripStops[next_stop_no].stopId
@@ -104,11 +104,10 @@ class Solver:
             )]
         return []
 
-    def get_new_nodes(self, location_status, progress, trips_data, routes_to_solve, locations_to_solve,
-                      locations_to_not_solve):
+    def get_new_nodes(self, location_status, progress, trips_data, locations_to_solve, locations_to_not_solve):
         if location_status.arrival_route == self.TRANSFER_ROUTE:
-            return self.get_transfer_nodes(location_status, progress, locations_to_solve,
-                                           locations_to_not_solve, trips_data, routes_to_solve)
+            return self.get_transfer_nodes(location_status, progress, locations_to_solve, locations_to_not_solve,
+                                           trips_data)
         transfer_data = (location_status._replace(arrival_route=self.TRANSFER_ROUTE),
                          ProgressInfo(start_time=progress.start_time,
                                       duration=progress.duration + timedelta(seconds=self.TRANSFER_DURATION_SECONDS),
@@ -127,9 +126,9 @@ class Solver:
 
         if next_stop_no in trip_data.tripStops.keys():
             # print("continue")
-            return [transfer_data] + self.get_next_stop_data(location_status, progress, trip_data, routes_to_solve,
-                                                        progress.arrival_trip, progress.trip_stop_no,
-                                                        location_status.arrival_route)
+            return [transfer_data] + self.get_next_stop_data(location_status, progress, trip_data,
+                                                             progress.arrival_trip, progress.trip_stop_no,
+                                                             location_status.arrival_route)
 
         # print("end of route")
         return [transfer_data]
@@ -165,9 +164,7 @@ class Solver:
 
         return self.total_minimum_time
 
-    def get_transfer_nodes(self, location_status, progress, locations_to_solve, locations_to_not_solve,
-                           trips_data, routes_to_solve):
-        # print("finding new route after transfer")
+    def get_transfer_nodes(self, location_status, progress, locations_to_solve, locations_to_not_solve, trips_data):
         new_routes = self.LOCATION_ROUTES[location_status.location]
         next_trips = self.get_walking_data(location_status, progress, locations_to_solve, locations_to_not_solve,
                                       self.ANALYSIS) if progress.parent is not None and \
@@ -185,8 +182,9 @@ class Solver:
             # if best_duration is None:
             #     print(progress.start_time, progress.start_time + progress.duration, next_departure_time, next_trip_id)
             stop_no = self.data_munger.get_stop_number_from_stop_id(location_status.location, route)
-            next_trips.extend(self.get_next_stop_data(location_status, progress, trips_data[next_trip_id],
-                                                 routes_to_solve, next_trip_id, stop_no, route))
+            next_trips.extend(
+                self.get_next_stop_data(location_status, progress, trips_data[next_trip_id], next_trip_id, stop_no,
+                                        route))
         # if len(next_trips) > 1:
         #     print([t[0] for t in next_trips])
         # next_trips_to_solve = [t for t in next_trips if t[0].arrival_route in routes_to_solve]
@@ -497,7 +495,6 @@ class Solver:
             progress_dict[expandee] = progress_dict[expandee]._replace(expanded=True)
 
             new_nodes = self.get_new_nodes(expandee, progress_dict[expandee], self.get_trip_schedules(),
-                                           self.data_munger.get_unique_routes_to_solve(),
                                            self.get_stop_locations_to_solve(), self.get_off_course_stop_locations())
 
             if len(new_nodes) == 0:
