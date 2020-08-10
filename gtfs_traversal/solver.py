@@ -107,8 +107,8 @@ class Solver:
     def get_new_nodes(self, location_status, progress, trips_data, routes_to_solve, locations_to_solve,
                       locations_to_not_solve):
         if location_status.arrival_route == self.TRANSFER_ROUTE:
-            return self.get_nodes_adjacent_to_transfer(location_status, progress, locations_to_solve,
-                                                       locations_to_not_solve, trips_data, routes_to_solve)
+            return self.get_transfer_nodes(location_status, progress, locations_to_solve,
+                                           locations_to_not_solve, trips_data, routes_to_solve)
         transfer_data = (location_status._replace(arrival_route=self.TRANSFER_ROUTE),
                          ProgressInfo(start_time=progress.start_time,
                                       duration=progress.duration + timedelta(seconds=self.TRANSFER_DURATION_SECONDS),
@@ -134,8 +134,39 @@ class Solver:
         # print("end of route")
         return [transfer_data]
 
-    def get_nodes_adjacent_to_transfer(self, location_status, progress, locations_to_solve, locations_to_not_solve,
-                                       trips_data, routes_to_solve):
+    def get_off_course_stop_locations(self):
+        if self.off_course_stop_locations is None:
+            self.off_course_stop_locations = self.data_munger.get_off_course_stop_locations()
+
+        return self.off_course_stop_locations
+
+    def get_route_trips(self):
+        if self.route_trips is not None:
+            return self.route_trips
+
+        self.route_trips = self.data_munger.get_route_trips()
+        return self.route_trips
+
+    def get_stop_locations_to_solve(self):
+        if self.stop_locations_to_solve is None:
+            self.stop_locations_to_solve = self.data_munger.get_stop_locations_to_solve()
+
+        return self.stop_locations_to_solve
+
+    def get_stops_at_ends_of_solution_routes(self):
+        if self.stops_at_ends_of_solution_routes is None:
+            self.stops_at_ends_of_solution_routes = self.data_munger.get_stops_at_ends_of_solution_routes()
+
+        return self.stops_at_ends_of_solution_routes
+
+    def get_total_minimum_time(self):
+        if self.total_minimum_time is None:
+            self.total_minimum_time = self.data_munger.get_total_minimum_time()
+
+        return self.total_minimum_time
+
+    def get_transfer_nodes(self, location_status, progress, locations_to_solve, locations_to_not_solve,
+                           trips_data, routes_to_solve):
         # print("finding new route after transfer")
         new_routes = self.LOCATION_ROUTES[location_status.location]
         next_trips = self.get_walking_data(location_status, progress, locations_to_solve, locations_to_not_solve,
@@ -169,37 +200,6 @@ class Solver:
         #     quit()
         # print(next_trips)
         return next_trips
-
-    def get_off_course_stop_locations(self):
-        if self.off_course_stop_locations is None:
-            self.off_course_stop_locations = self.data_munger.get_off_course_stop_locations()
-
-        return self.off_course_stop_locations
-
-    def get_route_trips(self):
-        if self.route_trips is not None:
-            return self.route_trips
-
-        self.route_trips = self.data_munger.get_route_trips()
-        return self.route_trips
-
-    def get_stop_locations_to_solve(self):
-        if self.stop_locations_to_solve is None:
-            self.stop_locations_to_solve = self.data_munger.get_stop_locations_to_solve()
-
-        return self.stop_locations_to_solve
-
-    def get_stops_at_ends_of_solution_routes(self):
-        if self.stops_at_ends_of_solution_routes is None:
-            self.stops_at_ends_of_solution_routes = self.data_munger.get_stops_at_ends_of_solution_routes()
-
-        return self.stops_at_ends_of_solution_routes
-
-    def get_total_minimum_time(self):
-        if self.total_minimum_time is None:
-            self.total_minimum_time = self.data_munger.get_total_minimum_time()
-
-        return self.total_minimum_time
 
     def get_trip_schedules(self):
         if self.trip_schedules is not None:
