@@ -15,7 +15,6 @@ class Solver:
         self.TRANSFER_DURATION_SECONDS = transfer_duration_seconds
         self.MAX_PROGRESS_DICT = max_progress_dict
         self.MAX_EXPANSION_QUEUE = max_expansion_queue
-        self.initial_unsolved_string = None
         self.trip_schedules = None
         self.route_trips = None
         self.stops_at_ends_of_solution_routes = None
@@ -24,6 +23,8 @@ class Solver:
         self.ANALYSIS = analysis
         self.stop_locations_to_solve = None
         self.off_course_stop_locations = None
+
+        self._initial_unsolved_string = None
 
         self.data_munger = DataMunger(
             analysis=analysis,
@@ -56,11 +57,11 @@ class Solver:
         return uneliminated.replace(f'{self.STOP_JOIN_STRING}{name}{self.STOP_JOIN_STRING}', self.STOP_JOIN_STRING)
 
     def get_initial_unsolved_string(self):
-        if self.initial_unsolved_string is not None:
-            return self.initial_unsolved_string
+        if self._initial_unsolved_string is not None:
+            return self._initial_unsolved_string
 
-        self.initial_unsolved_string = self.data_munger.get_initial_unsolved_string()
-        return self.initial_unsolved_string
+        self._initial_unsolved_string = self.data_munger.get_initial_unsolved_string()
+        return self._initial_unsolved_string
 
     def get_next_stop_data_for_route(self, location_status, progress, new_trip_id, trip_stop_no, new_route_id):
         next_stop_no = str(int(trip_stop_no) + 1)
