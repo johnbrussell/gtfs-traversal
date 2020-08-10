@@ -6,8 +6,8 @@ from datetime import datetime, timedelta
 
 
 class Solver:
-    def __init__(self, analysis, data, location_routes, max_expansion_queue, max_progress_dict, start_time,
-                 stop_join_string, transfer_duration_seconds, transfer_route, walk_route, walk_speed_mph):
+    def __init__(self, analysis, data, max_expansion_queue, max_progress_dict, start_time, stop_join_string,
+                 transfer_duration_seconds, transfer_route, walk_route, walk_speed_mph):
         self.walk_speed_mph = walk_speed_mph
         self.STOP_JOIN_STRING = stop_join_string
         self.TRANSFER_ROUTE = transfer_route
@@ -15,7 +15,6 @@ class Solver:
         self.TRANSFER_DURATION_SECONDS = transfer_duration_seconds
         self.MAX_PROGRESS_DICT = max_progress_dict
         self.MAX_EXPANSION_QUEUE = max_expansion_queue
-        self.LOCATION_ROUTES = location_routes
         self.ANALYSIS = analysis
 
         self._initial_unsolved_string = None
@@ -146,7 +145,7 @@ class Solver:
         )
 
     def get_nodes_after_transfer(self, location_status, progress):
-        routes_at_location = self.LOCATION_ROUTES[location_status.location]
+        routes_at_location = self.data_munger.get_routes_at_stop(location_status.location)
         walking_data = self.get_walking_data(location_status, progress, self.ANALYSIS) \
             if progress.parent is not None and progress.parent.arrival_route != self.WALK_ROUTE else []
 
