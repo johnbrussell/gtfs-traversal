@@ -67,12 +67,16 @@ class Solver:
                                        uneliminated_current_stop_name, unvisited, next_stop_id,
                                        uneliminated_next_stop_name, route):
         routes_to_solve = self.data_munger.get_unique_stops_to_solve()
+
+        if route not in routes_to_solve:
+            return old_minimum_remaining_time
+
         return old_minimum_remaining_time - \
             ((self.data_munger.get_minimum_stop_times()[
                   current_stop_id] if uneliminated_current_stop_name in unvisited else
               timedelta(0)) + (self.data_munger.get_minimum_stop_times()[next_stop_id] if uneliminated_next_stop_name in
                                unvisited else timedelta(
-                0)) if route in routes_to_solve else timedelta(0))
+                0)))
 
     def get_next_stop_data_for_trip(self, route, location_status, progress, new_trip_id, trip_stop_no):
         next_stop_no = str(int(trip_stop_no) + 1)

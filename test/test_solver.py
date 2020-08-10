@@ -10,6 +10,19 @@ DEFAULT_START_TIME = datetime.strptime(DEFAULT_START_DATE, '%Y-%m-%d')
 
 
 class TestSolver(unittest.TestCase):
+    def test_get_new_minimum_remaining_time(self):
+        def test_route_not_on_solution_set():
+            subject = Solver(analysis=MockAnalysis(), data=MockData(), location_routes=None,
+                             max_expansion_queue=None, max_progress_dict=None, start_time=None,
+                             stop_join_string=None, transfer_duration_seconds=None, transfer_route=None,
+                             walk_route=None, walk_speed_mph=None)
+            input_time = timedelta(seconds=400)
+            expected = input_time
+            actual = subject.get_new_minimum_remaining_time(input_time, None, None, None, None, None, 'not a route')
+            self.assertEqual(expected, actual)
+
+        test_route_not_on_solution_set()
+
     def test_get_new_nodes(self):
         def test_after_transfer():
             subject = Solver(analysis=MockAnalysis(), data=MockData(), location_routes=None,
