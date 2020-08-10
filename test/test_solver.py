@@ -7,6 +7,7 @@ from gtfs_traversal.solver import Solver
 
 DEFAULT_START_DATE = '2020-01-01'
 DEFAULT_START_TIME = datetime.strptime(DEFAULT_START_DATE, '%Y-%m-%d')
+DEFAULT_TRANSFER_ROUTE = 'transfer route'
 
 
 class TestSolver(unittest.TestCase):
@@ -90,6 +91,62 @@ class TestSolver(unittest.TestCase):
         test_after_transfer()
         test_after_walk()
         test_after_service()
+
+    def test_get_node_after_boarding_route(self):
+        def test_not_last_stop():
+            subject = Solver(analysis=MockAnalysis(), data=MockData(), location_routes=None, max_expansion_queue=None,
+                             max_progress_dict=None, start_time=DEFAULT_START_TIME, stop_join_string='~~',
+                             transfer_duration_seconds=None, transfer_route=DEFAULT_TRANSFER_ROUTE, walk_route=None,
+                             walk_speed_mph=None)
+
+            input_location_status = LocationStatusInfo(
+                location='Bowdoin', arrival_route=DEFAULT_TRANSFER_ROUTE,
+                unvisited='~~Lynn~~Bowdoin~~Back of the Hill~~')
+            input_progress = ProgressInfo(
+                start_time=DEFAULT_START_TIME+timedelta(minutes=418), duration=timedelta(minutes=20), parent=None,
+                arrival_trip=DEFAULT_TRANSFER_ROUTE, trip_stop_no='1', start_location='Wonderland', start_route=1,
+                minimum_remaining_time=timedelta(hours=1), depth=12, expanded=False, eliminated=False)
+            input_new_route = 3
+
+            expected = (
+                LocationStatusInfo(location='Bowdoin', arrival_route=3,
+                                   unvisited='~~Lynn~~Bowdoin~~Back of the Hill~~'),
+                ProgressInfo(start_time=DEFAULT_START_TIME+timedelta(minutes=418), duration=timedelta(minutes=122),
+                             parent=input_location_status, arrival_trip='Blue-6AM', trip_stop_no='2',
+                             start_location='Wonderland', start_route=1, minimum_remaining_time=timedelta(hours=1),
+                             depth=13, expanded=False, eliminated=False)
+            )
+            actual = subject.get_node_after_boarding_route(input_location_status, input_progress, input_new_route)
+            self.assertEqual(expected, actual)
+
+        def test_last_stop():
+            subject = Solver(analysis=MockAnalysis(), data=MockData(), location_routes=None, max_expansion_queue=None,
+                             max_progress_dict=None, start_time=DEFAULT_START_TIME, stop_join_string='~~',
+                             transfer_duration_seconds=None, transfer_route=DEFAULT_TRANSFER_ROUTE, walk_route=None,
+                             walk_speed_mph=None)
+
+            input_location_status = LocationStatusInfo(
+                location='Back of the Hill', arrival_route=DEFAULT_TRANSFER_ROUTE,
+                unvisited='~~Lynn~~Bowdoin~~Back of the Hill~~')
+            input_progress = ProgressInfo(
+                start_time=DEFAULT_START_TIME+timedelta(minutes=418), duration=timedelta(minutes=20), parent=None,
+                arrival_trip=DEFAULT_TRANSFER_ROUTE, trip_stop_no='1', start_location='Wonderland', start_route=1,
+                minimum_remaining_time=timedelta(hours=1), depth=12, expanded=False, eliminated=False)
+            input_new_route = 2
+
+            expected = (
+                LocationStatusInfo(location='Back of the Hill', arrival_route=DEFAULT_TRANSFER_ROUTE,
+                                   unvisited='~~Lynn~~Bowdoin~~Back of the Hill~~'),
+                ProgressInfo(start_time=DEFAULT_START_TIME+timedelta(minutes=418), duration=timedelta(minutes=20),
+                             parent=input_location_status, arrival_trip=DEFAULT_TRANSFER_ROUTE, trip_stop_no='1',
+                             start_location='Wonderland', start_route=1, minimum_remaining_time=timedelta(hours=1),
+                             depth=13, expanded=False, eliminated=True)
+            )
+            actual = subject.get_node_after_boarding_route(input_location_status, input_progress, input_new_route)
+            self.assertEqual(expected, actual)
+
+        test_not_last_stop()
+        test_last_stop()
 
     def test_initialize_progress_dict(self):
         def test_start_of_route():

@@ -256,9 +256,10 @@ class Solver:
         return (
             location_status,
             ProgressInfo(start_time=progress.start_time, duration=progress.duration, arrival_trip=progress.arrival_trip,
-                         trip_stop_no=progress.trip_stop_no, parent=progress, start_location=progress.start_location,
-                         start_route=progress.start_route, minimum_remaining_time=progress.minimum_remaining_time,
-                         depth=progress.depth + 1, expanded=False, eliminated=True)
+                         trip_stop_no=progress.trip_stop_no, parent=location_status,
+                         start_location=progress.start_location, start_route=progress.start_route,
+                         minimum_remaining_time=progress.minimum_remaining_time, depth=progress.depth + 1,
+                         expanded=False, eliminated=True)
         )
 
     def add_new_nodes_to_progress_dict(self, progress_dict, new_nodes_list, best_solution_duration, exp_queue,
