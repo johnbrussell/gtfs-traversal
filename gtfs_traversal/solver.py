@@ -215,7 +215,7 @@ class Solver:
 
         all_location_status_infos = other_location_status_infos + solution_location_status_infos
         all_walking_durations = other_walking_durations + solution_walking_durations
-        assert (len(all_location_status_infos) == len(all_walking_durations))
+        assert len(all_location_status_infos) == len(all_walking_durations)
 
         analysis_end = datetime.strptime(analysis_data.end_date, '%Y-%m-%d') + timedelta(days=1)
 
