@@ -63,7 +63,7 @@ class Solver:
         self._initial_unsolved_string = self.data_munger.get_initial_unsolved_string()
         return self._initial_unsolved_string
 
-    def get_next_stop_data_for_route(self, route, location_status, progress, new_trip_id, trip_stop_no):
+    def get_next_stop_data_for_trip(self, route, location_status, progress, new_trip_id, trip_stop_no):
         next_stop_no = str(int(trip_stop_no) + 1)
         trip_data = self.get_trip_schedules()[new_trip_id]
         if next_stop_no in trip_data.tripStops.keys():
@@ -114,9 +114,9 @@ class Solver:
         if location_status.arrival_route == self.WALK_ROUTE:
             return [transfer_data]
 
-        return [transfer_data] + self.get_next_stop_data_for_route(location_status.arrival_route, location_status,
-                                                                   progress, progress.arrival_trip,
-                                                                   progress.trip_stop_no)
+        return [transfer_data] + self.get_next_stop_data_for_trip(location_status.arrival_route, location_status,
+                                                                  progress, progress.arrival_trip,
+                                                                  progress.trip_stop_no)
 
     def get_nodes_after_transfer(self, location_status, progress):
         routes_at_location = self.LOCATION_ROUTES[location_status.location]
@@ -131,7 +131,7 @@ class Solver:
                 continue
             stop_no = self.data_munger.get_stop_number_from_stop_id(location_status.location, route)
             new_route_data.extend(
-                self.get_next_stop_data_for_route(route, location_status, progress, next_trip_id, stop_no))
+                self.get_next_stop_data_for_trip(route, location_status, progress, next_trip_id, stop_no))
 
         return walking_data + new_route_data
 

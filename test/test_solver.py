@@ -53,7 +53,7 @@ class TestSolver(unittest.TestCase):
                                          parent=None, start_location=None, start_route=None,
                                          minimum_remaining_time=None, depth=None, expanded=None, eliminated=None)
             expected = ['transfer data', 'after service']
-            with patch.object(subject, 'get_next_stop_data_for_route', return_value=['after service']) as \
+            with patch.object(subject, 'get_next_stop_data_for_trip', return_value=['after service']) as \
                     mock_after_service:
                 with patch.object(subject, 'get_transfer_data', return_value='transfer data') as mock_transfer_data:
                     actual = subject.get_new_nodes(location_status_info, progress_info)
