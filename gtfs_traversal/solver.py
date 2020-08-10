@@ -56,6 +56,11 @@ class Solver:
     def add_separators_to_stop_name(self, stop_name):
         return f'{self.STOP_JOIN_STRING}{stop_name}{self.STOP_JOIN_STRING}'
 
+    def eliminate_stops_from_string(self, stops, uneliminated):
+        for stop in stops:
+            uneliminated = self.eliminate_stop_from_string(stop, uneliminated)
+        return uneliminated
+
     def eliminate_stop_from_string(self, name, uneliminated):
         return uneliminated.replace(self.add_separators_to_stop_name(name), self.STOP_JOIN_STRING)
 
@@ -89,9 +94,9 @@ class Solver:
         routes_to_solve = self.data_munger.get_unique_routes_to_solve()
         current_stop_id = location_status.location
         next_stop_id = trip_stops[next_stop_no].stopId
-        new_location_eliminations = self.eliminate_stop_from_string(
-            next_stop_id, self.eliminate_stop_from_string(current_stop_id, location_status.unvisited)) if \
-            route in routes_to_solve else location_status.unvisited
+        new_unvisited_string = self.eliminate_stops_from_string(
+            [current_stop_id, next_stop_id], location_status.unvisited) \
+            if route in routes_to_solve else location_status.unvisited
         h, m, s = trip_stops[next_stop_no].departureTime.split(':')
         trip_hms_duration = int(s) + int(m) * 60 + int(h) * 60 * 60
         start_day_midnight = datetime(year=progress.start_time.year, month=progress.start_time.month,
@@ -102,7 +107,7 @@ class Solver:
                                                                          [current_stop_id, next_stop_id],
                                                                          location_status.unvisited, route)
         return [(
-            LocationStatusInfo(location=next_stop_id, arrival_route=route, unvisited=new_location_eliminations),
+            LocationStatusInfo(location=next_stop_id, arrival_route=route, unvisited=new_unvisited_string),
             ProgressInfo(start_time=progress.start_time, duration=new_duration, arrival_trip=new_trip_id,
                          trip_stop_no=next_stop_no, parent=location_status, start_location=progress.start_location,
                          start_route=progress.start_route, minimum_remaining_time=new_minimum_remaining_time,
