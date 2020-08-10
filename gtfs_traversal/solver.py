@@ -6,8 +6,8 @@ from datetime import datetime, timedelta
 
 
 class Solver:
-    def __init__(self, analysis, data, location_routes, max_expansion_queue, max_progress_dict, start_time,
-                 stop_join_string, transfer_duration_seconds, transfer_route, walk_route, walk_speed_mph):
+    def __init__(self, analysis, data, max_expansion_queue, max_progress_dict, start_time, stop_join_string,
+                 transfer_duration_seconds, transfer_route, walk_route, walk_speed_mph):
         self.walk_speed_mph = walk_speed_mph
         self.STOP_JOIN_STRING = stop_join_string
         self.TRANSFER_ROUTE = transfer_route
@@ -15,15 +15,15 @@ class Solver:
         self.TRANSFER_DURATION_SECONDS = transfer_duration_seconds
         self.MAX_PROGRESS_DICT = max_progress_dict
         self.MAX_EXPANSION_QUEUE = max_expansion_queue
-        self.initial_unsolved_string = None
-        self.trip_schedules = None
-        self.route_trips = None
-        self.stops_at_ends_of_solution_routes = None
-        self.LOCATION_ROUTES = location_routes
-        self.total_minimum_time = None
         self.ANALYSIS = analysis
-        self.stop_locations_to_solve = None
-        self.off_course_stop_locations = None
+
+        self._initial_unsolved_string = None
+        self._off_course_stop_locations = None
+        self._route_trips = None
+        self._stop_locations_to_solve = None
+        self._stops_at_ends_of_solution_routes = None
+        self._total_minimum_time = None
+        self._trip_schedules = None
 
         self.data_munger = DataMunger(
             analysis=analysis,
@@ -52,58 +52,66 @@ class Solver:
     def to_radians_from_degrees(degrees):
         return degrees * math.pi / 180
 
+    def add_separators_to_stop_name(self, stop_name):
+        return f'{self.STOP_JOIN_STRING}{stop_name}{self.STOP_JOIN_STRING}'
+
+    def eliminate_stops_from_string(self, stops, uneliminated):
+        for stop in stops:
+            uneliminated = self.eliminate_stop_from_string(stop, uneliminated)
+        return uneliminated
+
     def eliminate_stop_from_string(self, name, uneliminated):
-        return uneliminated.replace(f'{self.STOP_JOIN_STRING}{name}{self.STOP_JOIN_STRING}', self.STOP_JOIN_STRING)
+        return uneliminated.replace(self.add_separators_to_stop_name(name), self.STOP_JOIN_STRING)
 
     def get_initial_unsolved_string(self):
-        if self.initial_unsolved_string is not None:
-            return self.initial_unsolved_string
+        if self._initial_unsolved_string is not None:
+            return self._initial_unsolved_string
 
-        self.initial_unsolved_string = self.data_munger.get_initial_unsolved_string()
-        return self.initial_unsolved_string
+        self._initial_unsolved_string = self.data_munger.get_initial_unsolved_string()
+        return self._initial_unsolved_string
 
-    def get_next_stop_data_for_route(self, location_status, progress, new_trip_id, trip_stop_no, new_route_id):
+    def get_new_minimum_remaining_time(self, old_minimum_remaining_time, stops_ids_to_eliminate, unvisited_stops_string,
+                                       route):
+        routes_to_solve = self.data_munger.get_unique_routes_to_solve()
+
+        if route not in routes_to_solve:
+            return old_minimum_remaining_time
+
+        new_minimum_remaining_time = old_minimum_remaining_time
+        for stop in stops_ids_to_eliminate:
+            if self.add_separators_to_stop_name(stop) in unvisited_stops_string:
+                new_minimum_remaining_time -= self.data_munger.get_minimum_stop_times()[stop]
+        return new_minimum_remaining_time
+
+    def get_next_stop_data_for_trip(self, route, location_status, progress, new_trip_id, trip_stop_no):
         next_stop_no = str(int(trip_stop_no) + 1)
-        trip_data = self.get_trip_schedules()[new_trip_id]
-        if next_stop_no in trip_data.tripStops.keys():
-            routes_to_solve = self.data_munger.get_unique_routes_to_solve()
-            current_stop_id = location_status.location
-            next_stop_id = trip_data.tripStops[next_stop_no].stopId
-            new_location_eliminations = self.eliminate_stop_from_string(
-                next_stop_id, self.eliminate_stop_from_string(current_stop_id, location_status.unvisited)) if \
-                new_route_id in routes_to_solve else location_status.unvisited
-            h, m, s = trip_data.tripStops[next_stop_no].departureTime.split(':')
-            trip_hms_duration = int(s) + int(m) * 60 + int(h) * 60 * 60
-            start_day_midnight = datetime(year=progress.start_time.year, month=progress.start_time.month,
-                                          day=progress.start_time.day)
-            current_time = start_day_midnight + timedelta(seconds=trip_hms_duration)
-            new_duration = current_time - progress.start_time
-            # change_in_duration = new_duration - progress.duration
-            uneliminated_current_stop_name = f'{self.STOP_JOIN_STRING}{current_stop_id}{self.STOP_JOIN_STRING}'
-            uneliminated_next_stop_name = f'{self.STOP_JOIN_STRING}{next_stop_id}{self.STOP_JOIN_STRING}'
-            new_minimum_remaining_time = \
-                progress.minimum_remaining_time - \
-                ((self.data_munger.get_minimum_stop_times()[
-                      current_stop_id] if uneliminated_current_stop_name in location_status.unvisited else
-                  timedelta(0)) + (self.data_munger.get_minimum_stop_times()[next_stop_id] if uneliminated_next_stop_name in
-                                   location_status.unvisited else timedelta(
-                    0)) if new_route_id in routes_to_solve else timedelta(0))
-            # decrease_in_minimum_remaining_time = progress.minimum_remaining_time - new_minimum_remaining_time
-            # new_non_necessary_time = progress.non_necessary_time + change_in_duration -
-            # decrease_in_minimum_remaining_time
-            # if best_duration is None:
-            #     print(progress.start_time + new_duration)
-            # if next_stop_id in stop_locations_to_solve:
-            #     print(new_location_eliminations)
-            return [(
-                LocationStatusInfo(location=next_stop_id, arrival_route=new_route_id,
-                                   unvisited=new_location_eliminations),
-                ProgressInfo(start_time=progress.start_time, duration=new_duration, arrival_trip=new_trip_id,
-                             trip_stop_no=next_stop_no, parent=location_status, start_location=progress.start_location,
-                             start_route=progress.start_route, minimum_remaining_time=new_minimum_remaining_time,
-                             depth=progress.depth + 1, expanded=False, eliminated=False)
-            )]
-        return []
+        trip_stops = self.data_munger.get_stops_for_trip(new_trip_id)
+
+        if next_stop_no not in trip_stops:
+            return []
+
+        routes_to_solve = self.data_munger.get_unique_routes_to_solve()
+        current_stop_id = location_status.location
+        next_stop_id = trip_stops[next_stop_no].stopId
+        new_unvisited_string = self.eliminate_stops_from_string(
+            [current_stop_id, next_stop_id], location_status.unvisited) \
+            if route in routes_to_solve else location_status.unvisited
+        h, m, s = trip_stops[next_stop_no].departureTime.split(':')
+        trip_hms_duration = int(s) + int(m) * 60 + int(h) * 60 * 60
+        start_day_midnight = datetime(year=progress.start_time.year, month=progress.start_time.month,
+                                      day=progress.start_time.day)
+        current_time = start_day_midnight + timedelta(seconds=trip_hms_duration)
+        new_duration = current_time - progress.start_time
+        new_minimum_remaining_time = self.get_new_minimum_remaining_time(progress.minimum_remaining_time,
+                                                                         [current_stop_id, next_stop_id],
+                                                                         location_status.unvisited, route)
+        return [(
+            LocationStatusInfo(location=next_stop_id, arrival_route=route, unvisited=new_unvisited_string),
+            ProgressInfo(start_time=progress.start_time, duration=new_duration, arrival_trip=new_trip_id,
+                         trip_stop_no=next_stop_no, parent=location_status, start_location=progress.start_location,
+                         start_route=progress.start_route, minimum_remaining_time=new_minimum_remaining_time,
+                         depth=progress.depth + 1, expanded=False, eliminated=False)
+        )]
 
     def get_new_nodes(self, location_status, progress):
         if location_status.arrival_route == self.TRANSFER_ROUTE:
@@ -114,56 +122,69 @@ class Solver:
         if location_status.arrival_route == self.WALK_ROUTE:
             return [transfer_data]
 
-        return [transfer_data] + self.get_next_stop_data_for_route(location_status, progress, progress.arrival_trip,
-                                                                   progress.trip_stop_no, location_status.arrival_route)
+        return [transfer_data] + self.get_next_stop_data_for_trip(location_status.arrival_route, location_status,
+                                                                  progress, progress.arrival_trip,
+                                                                  progress.trip_stop_no)
+
+    def get_node_after_boarding_route(self, location_status, progress, route):
+        departure_time, trip_id = self.data_munger.first_trip_after(
+            progress.start_time + progress.duration, route, location_status.location)
+
+        if trip_id is None:
+            return self.new_eliminated_node(location_status, progress)
+
+        stop_number = self.data_munger.get_stop_number_from_stop_id(location_status.location, route)
+        new_duration = departure_time - progress.start_time
+
+        return (
+            location_status._replace(arrival_route=route),
+            ProgressInfo(start_time=progress.start_time, duration=new_duration, arrival_trip=trip_id,
+                         trip_stop_no=stop_number, parent=location_status, start_location=progress.start_location,
+                         start_route=progress.start_route, minimum_remaining_time=progress.minimum_remaining_time,
+                         depth=progress.depth + 1, expanded=False, eliminated=False)
+        )
 
     def get_nodes_after_transfer(self, location_status, progress):
-        routes_at_location = self.LOCATION_ROUTES[location_status.location]
-        walking_data = self.get_walking_data(location_status, progress, self.ANALYSIS) \
+        routes_at_location = self.data_munger.get_routes_at_stop(location_status.location)
+        walking_data = self.get_walking_data(location_status, progress) \
             if progress.parent is not None and progress.parent.arrival_route != self.WALK_ROUTE else []
-        new_route_data = []
 
-        for route in routes_at_location:
-            next_departure_time, next_trip_id = self.data_munger.first_trip_after(
-                progress.start_time + progress.duration, route, location_status.location)
-            if next_trip_id is None:
-                continue
-            stop_no = self.data_munger.get_stop_number_from_stop_id(location_status.location, route)
-            new_route_data.extend(self.get_next_stop_data_for_route(location_status, progress, next_trip_id, stop_no,
-                                                                    route))
+        new_route_data = [self.get_node_after_boarding_route(location_status, progress, route)
+                          for route in routes_at_location
+                          if not self.data_munger.is_last_stop_on_route(location_status.location, route)]
 
         return walking_data + new_route_data
 
     def get_off_course_stop_locations(self):
-        if self.off_course_stop_locations is None:
-            self.off_course_stop_locations = self.data_munger.get_off_course_stop_locations()
+        if self._off_course_stop_locations is None:
+            self._off_course_stop_locations = self.data_munger.get_off_course_stop_locations()
 
-        return self.off_course_stop_locations
+        return self._off_course_stop_locations
 
     def get_route_trips(self):
-        if self.route_trips is not None:
-            return self.route_trips
+        if self._route_trips is not None:
+            return self._route_trips
 
-        self.route_trips = self.data_munger.get_route_trips()
-        return self.route_trips
+        self._route_trips = self.data_munger.get_route_trips()
+        return self._route_trips
 
     def get_stop_locations_to_solve(self):
-        if self.stop_locations_to_solve is None:
-            self.stop_locations_to_solve = self.data_munger.get_stop_locations_to_solve()
+        if self._stop_locations_to_solve is None:
+            self._stop_locations_to_solve = self.data_munger.get_stop_locations_to_solve()
 
-        return self.stop_locations_to_solve
+        return self._stop_locations_to_solve
 
     def get_stops_at_ends_of_solution_routes(self):
-        if self.stops_at_ends_of_solution_routes is None:
-            self.stops_at_ends_of_solution_routes = self.data_munger.get_stops_at_ends_of_solution_routes()
+        if self._stops_at_ends_of_solution_routes is None:
+            self._stops_at_ends_of_solution_routes = self.data_munger.get_stops_at_ends_of_solution_routes()
 
-        return self.stops_at_ends_of_solution_routes
+        return self._stops_at_ends_of_solution_routes
 
     def get_total_minimum_time(self):
-        if self.total_minimum_time is None:
-            self.total_minimum_time = self.data_munger.get_total_minimum_time()
+        if self._total_minimum_time is None:
+            self._total_minimum_time = self.data_munger.get_total_minimum_time()
 
-        return self.total_minimum_time
+        return self._total_minimum_time
 
     def get_transfer_data(self, location_status, progress):
         return (location_status._replace(arrival_route=self.TRANSFER_ROUTE),
@@ -174,15 +195,14 @@ class Solver:
                              minimum_remaining_time=progress.minimum_remaining_time, depth=progress.depth + 1,
                              expanded=False, eliminated=False))
 
-
     def get_trip_schedules(self):
-        if self.trip_schedules is not None:
-            return self.trip_schedules
+        if self._trip_schedules is not None:
+            return self._trip_schedules
 
-        self.trip_schedules = self.data_munger.get_trip_schedules()
-        return self.trip_schedules
+        self._trip_schedules = self.data_munger.get_trip_schedules()
+        return self._trip_schedules
 
-    def get_walking_data(self, location_status, progress, analysis_data):
+    def get_walking_data(self, location_status, progress):
         locations_to_solve = self.get_stop_locations_to_solve()
         locations_to_not_solve = self.get_off_course_stop_locations()
         if location_status.location in self.get_stop_locations_to_solve():
@@ -213,7 +233,7 @@ class Solver:
         all_walking_durations = other_walking_durations + solution_walking_durations
         assert len(all_location_status_infos) == len(all_walking_durations)
 
-        analysis_end = datetime.strptime(analysis_data.end_date, '%Y-%m-%d') + timedelta(days=1)
+        analysis_end = datetime.strptime(self.ANALYSIS.end_date, '%Y-%m-%d') + timedelta(days=1)
 
         to_return = [
             (
@@ -229,6 +249,17 @@ class Solver:
                progress.start_time + progress.duration + timedelta(seconds=wts) < analysis_end
         ]
         return to_return
+
+    @staticmethod
+    def new_eliminated_node(location_status, progress):
+        return (
+            location_status,
+            ProgressInfo(start_time=progress.start_time, duration=progress.duration, arrival_trip=progress.arrival_trip,
+                         trip_stop_no=progress.trip_stop_no, parent=location_status,
+                         start_location=progress.start_location, start_route=progress.start_route,
+                         minimum_remaining_time=progress.minimum_remaining_time, depth=progress.depth + 1,
+                         expanded=False, eliminated=True)
+        )
 
     def add_new_nodes_to_progress_dict(self, progress_dict, new_nodes_list, best_solution_duration, exp_queue,
                                        unnecessary_time):

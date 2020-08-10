@@ -1,20 +1,180 @@
 from datetime import datetime, timedelta
 import unittest
+from unittest.mock import patch
 
 from gtfs_traversal.data_structures import *
 from gtfs_traversal.solver import Solver
 
 DEFAULT_START_DATE = '2020-01-01'
 DEFAULT_START_TIME = datetime.strptime(DEFAULT_START_DATE, '%Y-%m-%d')
+DEFAULT_TRANSFER_ROUTE = 'transfer route'
 
 
 class TestSolver(unittest.TestCase):
+    def test_get_new_minimum_remaining_time(self):
+        def test_route_not_on_solution_set():
+            subject = Solver(analysis=MockAnalysis(), data=MockData(), max_expansion_queue=None, max_progress_dict=None,
+                             start_time=None, stop_join_string=None, transfer_duration_seconds=None,
+                             transfer_route=None, walk_route=None, walk_speed_mph=None)
+            input_time = timedelta(seconds=400)
+            expected = input_time
+            actual = subject.get_new_minimum_remaining_time(input_time, None, None, 'not a route')
+            self.assertEqual(expected, actual)
+
+        def test_route_on_solution_set():
+            subject = Solver(analysis=MockAnalysis(), data=MockData(), max_expansion_queue=None, max_progress_dict=None,
+                             start_time=DEFAULT_START_TIME, stop_join_string='##', transfer_duration_seconds=None,
+                             transfer_route=None, walk_route=None, walk_speed_mph=None)
+            input_time = timedelta(minutes=400)
+            expected = timedelta(minutes=340)
+            actual = subject.get_new_minimum_remaining_time(input_time, ['Bowdoin', 'Lynn'],
+                                                            '##Bowdoin##Lynn##Wonderland##', 3)
+            self.assertEqual(expected, actual)
+
+        test_route_not_on_solution_set()
+        test_route_on_solution_set()
+
+    def test_get_new_nodes(self):
+        def test_after_transfer():
+            subject = Solver(analysis=MockAnalysis(), data=MockData(), max_expansion_queue=None, max_progress_dict=None,
+                             start_time=DEFAULT_START_TIME, stop_join_string='~~', transfer_duration_seconds=None,
+                             transfer_route='transfer route', walk_route=None, walk_speed_mph=None)
+            location_status_info = LocationStatusInfo(location=None, arrival_route='transfer route', unvisited=None)
+            expected = ['after transfer']
+            with patch.object(subject, 'get_nodes_after_transfer', return_value=['after transfer']) as \
+                    mock_after_transfer:
+                actual = subject.get_new_nodes(location_status_info, None)
+                mock_after_transfer.assert_called_once_with(location_status_info, None)
+
+            self.assertEqual(actual, expected)
+
+        def test_after_walk():
+            subject = Solver(analysis=MockAnalysis(), data=MockData(), max_expansion_queue=None, max_progress_dict=None,
+                             start_time=DEFAULT_START_TIME, stop_join_string='~~', transfer_duration_seconds=53,
+                             transfer_route='transfer route', walk_route='walk route', walk_speed_mph=None)
+            location_status_info = LocationStatusInfo(location=None, arrival_route='walk route', unvisited=None)
+            progress_info = ProgressInfo(start_time=None, duration=timedelta(seconds=47), arrival_trip=None,
+                                         trip_stop_no=None, parent=None, start_location=None, start_route=None,
+                                         minimum_remaining_time=None, depth=4, expanded=None, eliminated=None)
+
+            expected = [(location_status_info._replace(arrival_route='transfer route'),
+                         progress_info._replace(duration=timedelta(seconds=100), depth=5,
+                                                trip_stop_no='transfer route', arrival_trip='transfer route',
+                                                parent=location_status_info, expanded=False, eliminated=False))]
+            actual = subject.get_new_nodes(location_status_info, progress_info)
+
+            self.assertEqual(actual, expected)
+
+        def test_after_service():
+            subject = Solver(analysis=MockAnalysis(), data=MockData(), max_expansion_queue=None, max_progress_dict=None,
+                             start_time=DEFAULT_START_TIME, stop_join_string='~~', transfer_duration_seconds=None,
+                             transfer_route=None, walk_route=None, walk_speed_mph=None)
+            location_status_info = LocationStatusInfo(location=None, arrival_route='1', unvisited=None)
+            progress_info = ProgressInfo(start_time=None, duration=None, arrival_trip=None, trip_stop_no=None,
+                                         parent=None, start_location=None, start_route=None,
+                                         minimum_remaining_time=None, depth=None, expanded=None, eliminated=None)
+            expected = ['transfer data', 'after service']
+            with patch.object(subject, 'get_next_stop_data_for_trip', return_value=['after service']) as \
+                    mock_after_service:
+                with patch.object(subject, 'get_transfer_data', return_value='transfer data') as mock_transfer_data:
+                    actual = subject.get_new_nodes(location_status_info, progress_info)
+                    mock_after_service.assert_called_once_with('1', location_status_info, progress_info, None, None)
+                    mock_transfer_data.assert_called_once_with(location_status_info, progress_info)
+
+            self.assertEqual(actual, expected)
+
+        test_after_transfer()
+        test_after_walk()
+        test_after_service()
+
+    def test_get_node_after_boarding_route(self):
+        def test_not_last_stop():
+            subject = Solver(analysis=MockAnalysis(), data=MockData(), max_expansion_queue=None, max_progress_dict=None,
+                             start_time=DEFAULT_START_TIME, stop_join_string='~~', transfer_duration_seconds=None,
+                             transfer_route=DEFAULT_TRANSFER_ROUTE, walk_route=None, walk_speed_mph=None)
+
+            input_location_status = LocationStatusInfo(
+                location='Bowdoin', arrival_route=DEFAULT_TRANSFER_ROUTE,
+                unvisited='~~Lynn~~Bowdoin~~Back of the Hill~~')
+            input_progress = ProgressInfo(
+                start_time=DEFAULT_START_TIME+timedelta(minutes=418), duration=timedelta(minutes=20), parent=None,
+                arrival_trip=DEFAULT_TRANSFER_ROUTE, trip_stop_no='1', start_location='Wonderland', start_route=1,
+                minimum_remaining_time=timedelta(hours=1), depth=12, expanded=False, eliminated=False)
+            input_new_route = 3
+
+            expected = (
+                LocationStatusInfo(location='Bowdoin', arrival_route=3,
+                                   unvisited='~~Lynn~~Bowdoin~~Back of the Hill~~'),
+                ProgressInfo(start_time=DEFAULT_START_TIME+timedelta(minutes=418), duration=timedelta(minutes=122),
+                             parent=input_location_status, arrival_trip='Blue-6AM', trip_stop_no='2',
+                             start_location='Wonderland', start_route=1, minimum_remaining_time=timedelta(hours=1),
+                             depth=13, expanded=False, eliminated=False)
+            )
+            actual = subject.get_node_after_boarding_route(input_location_status, input_progress, input_new_route)
+            self.assertEqual(expected, actual)
+
+        def test_last_stop():
+            subject = Solver(analysis=MockAnalysis(), data=MockData(), max_expansion_queue=None, max_progress_dict=None,
+                             start_time=DEFAULT_START_TIME, stop_join_string='~~', transfer_duration_seconds=None,
+                             transfer_route=DEFAULT_TRANSFER_ROUTE, walk_route=None, walk_speed_mph=None)
+
+            input_location_status = LocationStatusInfo(
+                location='Back of the Hill', arrival_route=DEFAULT_TRANSFER_ROUTE,
+                unvisited='~~Lynn~~Bowdoin~~Back of the Hill~~')
+            input_progress = ProgressInfo(
+                start_time=DEFAULT_START_TIME+timedelta(minutes=418), duration=timedelta(minutes=20), parent=None,
+                arrival_trip=DEFAULT_TRANSFER_ROUTE, trip_stop_no='1', start_location='Wonderland', start_route=1,
+                minimum_remaining_time=timedelta(hours=1), depth=12, expanded=False, eliminated=False)
+            input_new_route = 2
+
+            expected = (
+                LocationStatusInfo(location='Back of the Hill', arrival_route=DEFAULT_TRANSFER_ROUTE,
+                                   unvisited='~~Lynn~~Bowdoin~~Back of the Hill~~'),
+                ProgressInfo(start_time=DEFAULT_START_TIME+timedelta(minutes=418), duration=timedelta(minutes=20),
+                             parent=input_location_status, arrival_trip=DEFAULT_TRANSFER_ROUTE, trip_stop_no='1',
+                             start_location='Wonderland', start_route=1, minimum_remaining_time=timedelta(hours=1),
+                             depth=13, expanded=False, eliminated=True)
+            )
+            actual = subject.get_node_after_boarding_route(input_location_status, input_progress, input_new_route)
+            self.assertEqual(expected, actual)
+
+        test_not_last_stop()
+        test_last_stop()
+
+    def test_get_nodes_after_transfer(self):
+        analysis = MockAnalysis()
+        subject = Solver(analysis=analysis, data=MockData(), max_expansion_queue=None, max_progress_dict=None,
+                         start_time=DEFAULT_START_TIME, stop_join_string='~~', transfer_duration_seconds=None,
+                         transfer_route=DEFAULT_TRANSFER_ROUTE, walk_route=None, walk_speed_mph=None)
+
+        input_location_status = LocationStatusInfo(
+            location='Wonderland', arrival_route=DEFAULT_TRANSFER_ROUTE,
+            unvisited='~~Lynn~~Bowdoin~~Back of the Hill~~')
+        input_progress_parent = LocationStatusInfo(location='Wonderland', arrival_route=2,
+                                                   unvisited='~~Lynn~~Bowdoin~~Back of the Hill~~')
+        input_progress = ProgressInfo(
+            start_time=DEFAULT_START_TIME + timedelta(minutes=418), duration=timedelta(minutes=20),
+            parent=input_progress_parent, arrival_trip=DEFAULT_TRANSFER_ROUTE, trip_stop_no='1',
+            start_location='Wonderland', start_route=1, minimum_remaining_time=timedelta(hours=1), depth=12,
+            expanded=False, eliminated=False)
+
+        with patch.object(Solver, 'get_walking_data', return_value=['walking data']) as mock_walking_data:
+            with patch.object(Solver, 'get_node_after_boarding_route', return_value='new route data') \
+                    as mock_node_after_boarding_route:
+                actual = subject.get_nodes_after_transfer(input_location_status, input_progress)
+                mock_walking_data.assert_called_once_with(input_location_status, input_progress)
+                self.assertEqual(mock_node_after_boarding_route.call_count, 2)
+                mock_node_after_boarding_route.assert_any_call(input_location_status, input_progress, 1)
+                mock_node_after_boarding_route.assert_any_call(input_location_status, input_progress, 3)
+
+        expected = ['walking data', 'new route data', 'new route data']
+        self.assertEqual(expected, actual)
+
     def test_initialize_progress_dict(self):
         def test_start_of_route():
-            subject = Solver(analysis=MockAnalysis(), data=MockData(), location_routes=None,
-                             max_expansion_queue=None, max_progress_dict=None, start_time=DEFAULT_START_TIME,
-                             stop_join_string='~~', transfer_duration_seconds=None, transfer_route=None,
-                             walk_route=None, walk_speed_mph=None)
+            subject = Solver(analysis=MockAnalysis(), data=MockData(), max_expansion_queue=None, max_progress_dict=None,
+                             start_time=DEFAULT_START_TIME, stop_join_string='~~', transfer_duration_seconds=None,
+                             transfer_route=None, walk_route=None, walk_speed_mph=None)
             actual_dict, actual_start_time = subject.initialize_progress_dict(DEFAULT_START_TIME +
                                                                               timedelta(hours=7.01))
 
@@ -50,10 +210,9 @@ class TestSolver(unittest.TestCase):
             self.assertEqual(expected_start_time, actual_start_time)
 
         def test_middle_of_route():
-            subject = Solver(analysis=MockAnalysis(), data=MockData(), location_routes=None,
-                             max_expansion_queue=None, max_progress_dict=None, start_time=DEFAULT_START_TIME,
-                             stop_join_string='~~', transfer_duration_seconds=None, transfer_route=None,
-                             walk_route=None, walk_speed_mph=None)
+            subject = Solver(analysis=MockAnalysis(), data=MockData(), max_expansion_queue=None, max_progress_dict=None,
+                             start_time=DEFAULT_START_TIME, stop_join_string='~~', transfer_duration_seconds=None,
+                             transfer_route=None, walk_route=None, walk_speed_mph=None)
             actual_dict, actual_start_time = subject.initialize_progress_dict(DEFAULT_START_TIME +
                                                                               timedelta(hours=8.01))
 
@@ -89,10 +248,9 @@ class TestSolver(unittest.TestCase):
             self.assertEqual(expected_start_time, actual_start_time)
 
         def test_no_valid_departures():
-            subject = Solver(analysis=MockAnalysis(), data=MockData(), location_routes=None,
-                             max_expansion_queue=None, max_progress_dict=None, start_time=DEFAULT_START_TIME,
-                             stop_join_string='~~', transfer_duration_seconds=None, transfer_route=None,
-                             walk_route=None, walk_speed_mph=None)
+            subject = Solver(analysis=MockAnalysis(), data=MockData(), max_expansion_queue=None, max_progress_dict=None,
+                             start_time=DEFAULT_START_TIME, stop_join_string='~~', transfer_duration_seconds=None,
+                             transfer_route=None, walk_route=None, walk_speed_mph=None)
             actual_dict, actual_start_time = subject.initialize_progress_dict(DEFAULT_START_TIME +
                                                                               timedelta(hours=11.01))
 
@@ -108,9 +266,9 @@ class TestSolver(unittest.TestCase):
 
     def test_walk_time_seconds(self):
         def get_solver_with_speed(*, mph):
-            return Solver(analysis=None, data=None, location_routes=None, max_expansion_queue=None,
-                          max_progress_dict=None, start_time=None, stop_join_string=None,
-                          transfer_duration_seconds=None, transfer_route=None, walk_route=None, walk_speed_mph=mph)
+            return Solver(analysis=None, data=None, max_expansion_queue=None, max_progress_dict=None, start_time=None,
+                          stop_join_string=None, transfer_duration_seconds=None, transfer_route=None, walk_route=None,
+                          walk_speed_mph=mph)
 
         def test_zero_time_at_any_speed_for_no_distance():
             self.assertEqual(get_solver_with_speed(mph=0.5).walk_time_seconds(2, 2, -40, -40), 0)
