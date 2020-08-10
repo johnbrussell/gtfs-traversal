@@ -21,10 +21,10 @@ class Solver:
         self.LOCATION_ROUTES = location_routes
         self.total_minimum_time = None
         self.ANALYSIS = analysis
-        self.stop_locations_to_solve = None
 
         self._initial_unsolved_string = None
         self._off_course_stop_locations = None
+        self._stop_locations_to_solve = None
 
         self.data_munger = DataMunger(
             analysis=analysis,
@@ -149,10 +149,10 @@ class Solver:
         return self.route_trips
 
     def get_stop_locations_to_solve(self):
-        if self.stop_locations_to_solve is None:
-            self.stop_locations_to_solve = self.data_munger.get_stop_locations_to_solve()
+        if self._stop_locations_to_solve is None:
+            self._stop_locations_to_solve = self.data_munger.get_stop_locations_to_solve()
 
-        return self.stop_locations_to_solve
+        return self._stop_locations_to_solve
 
     def get_stops_at_ends_of_solution_routes(self):
         if self.stops_at_ends_of_solution_routes is None:
