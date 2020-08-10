@@ -104,9 +104,9 @@ class Solver:
             )]
         return []
 
-    def get_new_nodes(self, location_status, progress, locations_to_not_solve):
+    def get_new_nodes(self, location_status, progress):
         if location_status.arrival_route == self.TRANSFER_ROUTE:
-            return self.get_transfer_nodes(location_status, progress, locations_to_not_solve)
+            return self.get_transfer_nodes(location_status, progress)
         transfer_data = (location_status._replace(arrival_route=self.TRANSFER_ROUTE),
                          ProgressInfo(start_time=progress.start_time,
                                       duration=progress.duration + timedelta(seconds=self.TRANSFER_DURATION_SECONDS),
@@ -163,11 +163,10 @@ class Solver:
 
         return self.total_minimum_time
 
-    def get_transfer_nodes(self, location_status, progress, locations_to_not_solve):
+    def get_transfer_nodes(self, location_status, progress):
         new_routes = self.LOCATION_ROUTES[location_status.location]
-        next_trips = self.get_walking_data(location_status, progress, locations_to_not_solve,
-                                           self.ANALYSIS) if progress.parent is not None and \
-                                                             progress.parent.arrival_route != self.WALK_ROUTE \
+        next_trips = self.get_walking_data(location_status, progress, self.ANALYSIS) if progress.parent is not None and \
+                                                                                        progress.parent.arrival_route != self.WALK_ROUTE \
             else []
         # if LocationStatusInfo(location='W15307', arrival_route=WALK_ROUTE, unvisited='~~W15307~~W15308~~') in
         # [n[0] for n in next_trips]:
@@ -205,8 +204,9 @@ class Solver:
         self.trip_schedules = self.data_munger.get_trip_schedules()
         return self.trip_schedules
 
-    def get_walking_data(self, location_status, progress, locations_to_not_solve, analysis_data):
+    def get_walking_data(self, location_status, progress, analysis_data):
         locations_to_solve = self.get_stop_locations_to_solve()
+        locations_to_not_solve = self.get_off_course_stop_locations()
         if location_status.location in self.get_stop_locations_to_solve():
             current_location = self.get_stop_locations_to_solve()[location_status.location]
             locations_to_solve = {k: va for k, va in self.get_stop_locations_to_solve().items()
@@ -495,7 +495,7 @@ class Solver:
 
             progress_dict[expandee] = progress_dict[expandee]._replace(expanded=True)
 
-            new_nodes = self.get_new_nodes(expandee, progress_dict[expandee], self.get_off_course_stop_locations())
+            new_nodes = self.get_new_nodes(expandee, progress_dict[expandee])
 
             if len(new_nodes) == 0:
                 continue
