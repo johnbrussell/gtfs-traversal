@@ -164,20 +164,20 @@ class Solver:
         return self.total_minimum_time
 
     def get_transfer_nodes(self, location_status, progress):
-        new_routes = self.LOCATION_ROUTES[location_status.location]
-        next_trips = self.get_walking_data(location_status, progress, self.ANALYSIS) \
+        routes_at_location = self.LOCATION_ROUTES[location_status.location]
+        walking_data = self.get_walking_data(location_status, progress, self.ANALYSIS) \
             if progress.parent is not None and progress.parent.arrival_route != self.WALK_ROUTE else []
+        new_route_data = []
 
-        for route in new_routes:
+        for route in routes_at_location:
             next_departure_time, next_trip_id = self.data_munger.first_trip_after(
                 progress.start_time + progress.duration, route, location_status.location)
             if next_trip_id is None:
                 continue
             stop_no = self.data_munger.get_stop_number_from_stop_id(location_status.location, route)
-            next_trips.extend(
-                self.get_next_stop_data(location_status, progress, next_trip_id, stop_no, route))
+            new_route_data.extend(self.get_next_stop_data(location_status, progress, next_trip_id, stop_no, route))
 
-        return next_trips
+        return walking_data + new_route_data
 
     def get_trip_schedules(self):
         if self.trip_schedules is not None:
