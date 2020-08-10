@@ -65,7 +65,8 @@ class Solver:
 
     def get_new_minimum_remaining_time(self, old_minimum_remaining_time, current_stop_id,
                                        uneliminated_current_stop_name, unvisited, next_stop_id,
-                                       uneliminated_next_stop_name, route, routes_to_solve):
+                                       uneliminated_next_stop_name, route):
+        routes_to_solve = self.data_munger.get_unique_stops_to_solve()
         return old_minimum_remaining_time - \
             ((self.data_munger.get_minimum_stop_times()[
                   current_stop_id] if uneliminated_current_stop_name in unvisited else
@@ -97,10 +98,8 @@ class Solver:
         new_minimum_remaining_time = self.get_new_minimum_remaining_time(progress.minimum_remaining_time,
                                                                          current_stop_id,
                                                                          uneliminated_current_stop_name,
-                                                                         location_status.unvisited,
-                                                                         next_stop_id,
-                                                                         uneliminated_next_stop_name, route,
-                                                                         routes_to_solve)
+                                                                         location_status.unvisited, next_stop_id,
+                                                                         uneliminated_next_stop_name, route)
         return [(
             LocationStatusInfo(location=next_stop_id, arrival_route=route, unvisited=new_location_eliminations),
             ProgressInfo(start_time=progress.start_time, duration=new_duration, arrival_trip=new_trip_id,
