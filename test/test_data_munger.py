@@ -239,6 +239,24 @@ class TestDataMunger(unittest.TestCase):
         test_memoizes()
         test_returns_correct_result()
 
+    def test_is_last_stop_on_route(self):
+        def test_last_stop():
+            subject = self.get_subject_with_mock_data(analysis=MockAnalysis())
+            self.assertTrue(subject.is_last_stop_on_route('Back of the Hill', 1))
+            self.assertTrue(subject.is_last_stop_on_route('Back of the Hill', 2))
+            self.assertTrue(subject.is_last_stop_on_route('Lynn', 3))
+
+        def test_not_last_stop():
+            subject = self.get_subject_with_mock_data(analysis=MockAnalysis())
+            self.assertFalse(subject.is_last_stop_on_route('Alewife', 1))
+            self.assertFalse(subject.is_last_stop_on_route('Wonderland', 1))
+            self.assertFalse(subject.is_last_stop_on_route('Heath Street', 2))
+            self.assertFalse(subject.is_last_stop_on_route('Lechmere', 2))
+            self.assertFalse(subject.is_last_stop_on_route('Wonderland', 3))
+            self.assertFalse(subject.is_last_stop_on_route('Bowdoin', 3))
+
+        test_last_stop()
+        test_not_last_stop()
 
 class MockData:
     def __init__(self):

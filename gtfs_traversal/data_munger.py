@@ -27,12 +27,11 @@ class DataMunger:
         # GTFS uses days longer than 24 hours, so need to add a buffer to the end date to allow 25+ hour trips
         latest_departure_time = self.get_buffered_analysis_end_time()
 
-        stops_on_route = self.get_stops_for_route(route_number)  # dict
-        origin_stop_number = self.get_stop_number_from_stop_id(origin_stop_id, route_number)
-
         # handle case where the origin stop is the last stop on the route
-        if str(int(origin_stop_number) + 1) not in stops_on_route:
+        if self.is_last_stop_on_route(origin_stop_id, route_number):
             return None, None
+
+        origin_stop_number = self.get_stop_number_from_stop_id(origin_stop_id, route_number)
 
         solution_trip_id = None
         for trip_id in self.get_trips_for_route(route_number):
@@ -292,3 +291,7 @@ class DataMunger:
 
         self._unique_stops_to_solve = unique_stops_to_solve
         return unique_stops_to_solve
+
+    def is_last_stop_on_route(self, stop_id, route):
+        stop_number = self.get_stop_number_from_stop_id(stop_id, route)
+        return str(int(stop_number) + 1) not in self.get_stops_for_route(route)
