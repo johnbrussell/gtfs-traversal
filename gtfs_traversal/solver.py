@@ -174,7 +174,6 @@ class Solver:
                              minimum_remaining_time=progress.minimum_remaining_time, depth=progress.depth + 1,
                              expanded=False, eliminated=False))
 
-
     def get_trip_schedules(self):
         if self.trip_schedules is not None:
             return self.trip_schedules
