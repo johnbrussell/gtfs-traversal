@@ -141,6 +141,35 @@ class TestSolver(unittest.TestCase):
         test_not_last_stop()
         test_last_stop()
 
+    def test_get_nodes_after_transfer(self):
+        analysis = MockAnalysis()
+        subject = Solver(analysis=analysis, data=MockData(), max_expansion_queue=None, max_progress_dict=None,
+                         start_time=DEFAULT_START_TIME, stop_join_string='~~', transfer_duration_seconds=None,
+                         transfer_route=DEFAULT_TRANSFER_ROUTE, walk_route=None, walk_speed_mph=None)
+
+        input_location_status = LocationStatusInfo(
+            location='Wonderland', arrival_route=DEFAULT_TRANSFER_ROUTE,
+            unvisited='~~Lynn~~Bowdoin~~Back of the Hill~~')
+        input_progress_parent = LocationStatusInfo(location='Wonderland', arrival_route=2,
+                                                   unvisited='~~Lynn~~Bowdoin~~Back of the Hill~~')
+        input_progress = ProgressInfo(
+            start_time=DEFAULT_START_TIME + timedelta(minutes=418), duration=timedelta(minutes=20),
+            parent=input_progress_parent, arrival_trip=DEFAULT_TRANSFER_ROUTE, trip_stop_no='1',
+            start_location='Wonderland', start_route=1, minimum_remaining_time=timedelta(hours=1), depth=12,
+            expanded=False, eliminated=False)
+
+        with patch.object(Solver, 'get_walking_data', return_value=['walking data']) as mock_walking_data:
+            with patch.object(Solver, 'get_node_after_boarding_route', return_value='new route data') \
+                    as mock_node_after_boarding_route:
+                actual = subject.get_nodes_after_transfer(input_location_status, input_progress)
+                mock_walking_data.assert_called_once_with(input_location_status, input_progress, analysis)
+                self.assertEqual(mock_node_after_boarding_route.call_count, 2)
+                mock_node_after_boarding_route.assert_any_call(input_location_status, input_progress, 1)
+                mock_node_after_boarding_route.assert_any_call(input_location_status, input_progress, 3)
+
+        expected = ['walking data', 'new route data', 'new route data']
+        self.assertEqual(expected, actual)
+
     def test_initialize_progress_dict(self):
         def test_start_of_route():
             subject = Solver(analysis=MockAnalysis(), data=MockData(), max_expansion_queue=None, max_progress_dict=None,
