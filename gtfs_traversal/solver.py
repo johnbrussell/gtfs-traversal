@@ -65,18 +65,18 @@ class Solver:
 
     def get_next_stop_data_for_trip(self, route, location_status, progress, new_trip_id, trip_stop_no):
         next_stop_no = str(int(trip_stop_no) + 1)
-        trip_data = self.get_trip_schedules()[new_trip_id]
+        trip_stops = self.get_trip_schedules()[new_trip_id].tripStops
 
-        if next_stop_no not in trip_data.tripStops:
+        if next_stop_no not in trip_stops:
             return []
 
         routes_to_solve = self.data_munger.get_unique_routes_to_solve()
         current_stop_id = location_status.location
-        next_stop_id = trip_data.tripStops[next_stop_no].stopId
+        next_stop_id = trip_stops[next_stop_no].stopId
         new_location_eliminations = self.eliminate_stop_from_string(
             next_stop_id, self.eliminate_stop_from_string(current_stop_id, location_status.unvisited)) if \
             route in routes_to_solve else location_status.unvisited
-        h, m, s = trip_data.tripStops[next_stop_no].departureTime.split(':')
+        h, m, s = trip_stops[next_stop_no].departureTime.split(':')
         trip_hms_duration = int(s) + int(m) * 60 + int(h) * 60 * 60
         start_day_midnight = datetime(year=progress.start_time.year, month=progress.start_time.month,
                                       day=progress.start_time.day)
