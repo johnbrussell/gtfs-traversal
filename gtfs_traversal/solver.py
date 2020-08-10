@@ -53,8 +53,11 @@ class Solver:
     def to_radians_from_degrees(degrees):
         return degrees * math.pi / 180
 
+    def add_separators_to_stop_name(self, stop_name):
+        return f'{self.STOP_JOIN_STRING}{stop_name}{self.STOP_JOIN_STRING}'
+
     def eliminate_stop_from_string(self, name, uneliminated):
-        return uneliminated.replace(f'{self.STOP_JOIN_STRING}{name}{self.STOP_JOIN_STRING}', self.STOP_JOIN_STRING)
+        return uneliminated.replace(self.add_separators_to_stop_name(name), self.STOP_JOIN_STRING)
 
     def get_initial_unsolved_string(self):
         if self._initial_unsolved_string is not None:
@@ -63,20 +66,18 @@ class Solver:
         self._initial_unsolved_string = self.data_munger.get_initial_unsolved_string()
         return self._initial_unsolved_string
 
-    def get_new_minimum_remaining_time(self, old_minimum_remaining_time, current_stop_id,
-                                       uneliminated_current_stop_name, unvisited, next_stop_id,
-                                       uneliminated_next_stop_name, route):
-        routes_to_solve = self.data_munger.get_unique_stops_to_solve()
+    def get_new_minimum_remaining_time(self, old_minimum_remaining_time, stops_ids_to_eliminate, unvisited_stops_string,
+                                       route):
+        routes_to_solve = self.data_munger.get_unique_routes_to_solve()
 
         if route not in routes_to_solve:
             return old_minimum_remaining_time
 
-        return old_minimum_remaining_time - \
-            ((self.data_munger.get_minimum_stop_times()[
-                  current_stop_id] if uneliminated_current_stop_name in unvisited else
-              timedelta(0)) + (self.data_munger.get_minimum_stop_times()[next_stop_id] if uneliminated_next_stop_name in
-                               unvisited else timedelta(
-                0)))
+        new_minimum_remaining_time = old_minimum_remaining_time
+        for stop in stops_ids_to_eliminate:
+            if self.add_separators_to_stop_name(stop) in unvisited_stops_string:
+                new_minimum_remaining_time -= self.data_munger.get_minimum_stop_times()[stop]
+        return new_minimum_remaining_time
 
     def get_next_stop_data_for_trip(self, route, location_status, progress, new_trip_id, trip_stop_no):
         next_stop_no = str(int(trip_stop_no) + 1)
@@ -97,13 +98,9 @@ class Solver:
                                       day=progress.start_time.day)
         current_time = start_day_midnight + timedelta(seconds=trip_hms_duration)
         new_duration = current_time - progress.start_time
-        uneliminated_current_stop_name = f'{self.STOP_JOIN_STRING}{current_stop_id}{self.STOP_JOIN_STRING}'
-        uneliminated_next_stop_name = f'{self.STOP_JOIN_STRING}{next_stop_id}{self.STOP_JOIN_STRING}'
         new_minimum_remaining_time = self.get_new_minimum_remaining_time(progress.minimum_remaining_time,
-                                                                         current_stop_id,
-                                                                         uneliminated_current_stop_name,
-                                                                         location_status.unvisited, next_stop_id,
-                                                                         uneliminated_next_stop_name, route)
+                                                                         [current_stop_id, next_stop_id],
+                                                                         location_status.unvisited, route)
         return [(
             LocationStatusInfo(location=next_stop_id, arrival_route=route, unvisited=new_location_eliminations),
             ProgressInfo(start_time=progress.start_time, duration=new_duration, arrival_trip=new_trip_id,

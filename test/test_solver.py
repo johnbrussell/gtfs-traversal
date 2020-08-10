@@ -18,10 +18,22 @@ class TestSolver(unittest.TestCase):
                              walk_route=None, walk_speed_mph=None)
             input_time = timedelta(seconds=400)
             expected = input_time
-            actual = subject.get_new_minimum_remaining_time(input_time, None, None, None, None, None, 'not a route')
+            actual = subject.get_new_minimum_remaining_time(input_time, None, None, 'not a route')
+            self.assertEqual(expected, actual)
+
+        def test_route_on_solution_set():
+            subject = Solver(analysis=MockAnalysis(), data=MockData(), location_routes=None,
+                             max_expansion_queue=None, max_progress_dict=None, start_time=DEFAULT_START_TIME,
+                             stop_join_string='##', transfer_duration_seconds=None, transfer_route=None,
+                             walk_route=None, walk_speed_mph=None)
+            input_time = timedelta(minutes=400)
+            expected = timedelta(minutes=340)
+            actual = subject.get_new_minimum_remaining_time(input_time, ['Bowdoin', 'Lynn'],
+                                                            '##Bowdoin##Lynn##Wonderland##', 3)
             self.assertEqual(expected, actual)
 
         test_route_not_on_solution_set()
+        test_route_on_solution_set()
 
     def test_get_new_nodes(self):
         def test_after_transfer():
