@@ -165,36 +165,19 @@ class Solver:
 
     def get_transfer_nodes(self, location_status, progress):
         new_routes = self.LOCATION_ROUTES[location_status.location]
-        next_trips = self.get_walking_data(location_status, progress, self.ANALYSIS) if progress.parent is not None and \
-                                                                                        progress.parent.arrival_route != self.WALK_ROUTE \
-            else []
-        # if LocationStatusInfo(location='W15307', arrival_route=WALK_ROUTE, unvisited='~~W15307~~W15308~~') in
-        # [n[0] for n in next_trips]:
-        #     print('found')
+        next_trips = self.get_walking_data(location_status, progress, self.ANALYSIS) \
+            if progress.parent is not None and progress.parent.arrival_route != self.WALK_ROUTE else []
+
         for route in new_routes:
             next_departure_time, next_trip_id = self.data_munger.first_trip_after(
                 progress.start_time + progress.duration, route, location_status.location)
             if next_trip_id is None:
                 continue
-            # print("transfer")
-            # if best_duration is None:
-            #     print(progress.start_time, progress.start_time + progress.duration, next_departure_time, next_trip_id)
             stop_no = self.data_munger.get_stop_number_from_stop_id(location_status.location, route)
             next_trips.extend(
                 self.get_next_stop_data(location_status, progress, self.get_trip_schedules()[next_trip_id],
                                         next_trip_id, stop_no, route))
-        # if len(next_trips) > 1:
-        #     print([t[0] for t in next_trips])
-        # next_trips_to_solve = [t for t in next_trips if t[0].arrival_route in routes_to_solve]
-        # next_trips_to_not_solve = [t for t in next_trips if t[0].arrival_route not in routes_to_solve]
-        # next_trips = sorted(next_trips_to_not_solve, key=lambda x: x[1].duration, reverse=True) + \
-        #     sorted(next_trips_to_solve, key=lambda x: len(x[0].unvisited) + x[1].duration.total_seconds() / 86400,
-        #            reverse=True)
-        # print(next_trips[0][1].duration, next_trips[len(next_trips) - 1][1].duration)
-        # if len(next_trips) > 1:
-        #     print([t[0] for t in next_trips])
-        #     quit()
-        # print(next_trips)
+
         return next_trips
 
     def get_trip_schedules(self):
