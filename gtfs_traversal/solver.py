@@ -62,9 +62,10 @@ class Solver:
         self.initial_unsolved_string = self.data_munger.get_initial_unsolved_string()
         return self.initial_unsolved_string
 
-    def get_next_stop_data(self, location_status, progress, trip_data, new_trip_id, trip_stop_no, new_route_id):
+    def get_next_stop_data(self, location_status, progress, new_trip_id, trip_stop_no, new_route_id):
         next_stop_no = str(int(trip_stop_no) + 1)
         routes_to_solve = self.data_munger.get_unique_routes_to_solve()
+        trip_data = self.get_trip_schedules()[new_trip_id]
         if next_stop_no in trip_data.tripStops.keys():
             current_stop_id = location_status.location
             next_stop_id = trip_data.tripStops[next_stop_no].stopId
@@ -125,9 +126,8 @@ class Solver:
 
         if next_stop_no in trip_data.tripStops.keys():
             # print("continue")
-            return [transfer_data] + self.get_next_stop_data(location_status, progress, trip_data,
-                                                             progress.arrival_trip, progress.trip_stop_no,
-                                                             location_status.arrival_route)
+            return [transfer_data] + self.get_next_stop_data(location_status, progress, progress.arrival_trip,
+                                                             progress.trip_stop_no, location_status.arrival_route)
 
         # print("end of route")
         return [transfer_data]
@@ -175,8 +175,7 @@ class Solver:
                 continue
             stop_no = self.data_munger.get_stop_number_from_stop_id(location_status.location, route)
             next_trips.extend(
-                self.get_next_stop_data(location_status, progress, self.get_trip_schedules()[next_trip_id],
-                                        next_trip_id, stop_no, route))
+                self.get_next_stop_data(location_status, progress, next_trip_id, stop_no, route))
 
         return next_trips
 
