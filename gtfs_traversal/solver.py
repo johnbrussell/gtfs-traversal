@@ -107,7 +107,7 @@ class Solver:
 
     def get_new_nodes(self, location_status, progress):
         if location_status.arrival_route == self.TRANSFER_ROUTE:
-            return self.get_transfer_nodes(location_status, progress)
+            return self.get_nodes_after_transfer(location_status, progress)
         transfer_data = (location_status._replace(arrival_route=self.TRANSFER_ROUTE),
                          ProgressInfo(start_time=progress.start_time,
                                       duration=progress.duration + timedelta(seconds=self.TRANSFER_DURATION_SECONDS),
@@ -131,6 +131,22 @@ class Solver:
 
         # print("end of route")
         return [transfer_data]
+
+    def get_nodes_after_transfer(self, location_status, progress):
+        routes_at_location = self.LOCATION_ROUTES[location_status.location]
+        walking_data = self.get_walking_data(location_status, progress, self.ANALYSIS) \
+            if progress.parent is not None and progress.parent.arrival_route != self.WALK_ROUTE else []
+        new_route_data = []
+
+        for route in routes_at_location:
+            next_departure_time, next_trip_id = self.data_munger.first_trip_after(
+                progress.start_time + progress.duration, route, location_status.location)
+            if next_trip_id is None:
+                continue
+            stop_no = self.data_munger.get_stop_number_from_stop_id(location_status.location, route)
+            new_route_data.extend(self.get_next_stop_data(location_status, progress, next_trip_id, stop_no, route))
+
+        return walking_data + new_route_data
 
     def get_off_course_stop_locations(self):
         if self.off_course_stop_locations is None:
@@ -162,22 +178,6 @@ class Solver:
             self.total_minimum_time = self.data_munger.get_total_minimum_time()
 
         return self.total_minimum_time
-
-    def get_transfer_nodes(self, location_status, progress):
-        routes_at_location = self.LOCATION_ROUTES[location_status.location]
-        walking_data = self.get_walking_data(location_status, progress, self.ANALYSIS) \
-            if progress.parent is not None and progress.parent.arrival_route != self.WALK_ROUTE else []
-        new_route_data = []
-
-        for route in routes_at_location:
-            next_departure_time, next_trip_id = self.data_munger.first_trip_after(
-                progress.start_time + progress.duration, route, location_status.location)
-            if next_trip_id is None:
-                continue
-            stop_no = self.data_munger.get_stop_number_from_stop_id(location_status.location, route)
-            new_route_data.extend(self.get_next_stop_data(location_status, progress, next_trip_id, stop_no, route))
-
-        return walking_data + new_route_data
 
     def get_trip_schedules(self):
         if self.trip_schedules is not None:
