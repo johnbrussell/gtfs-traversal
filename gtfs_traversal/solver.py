@@ -63,7 +63,7 @@ class Solver:
         self._initial_unsolved_string = self.data_munger.get_initial_unsolved_string()
         return self._initial_unsolved_string
 
-    def get_next_stop_data_for_route(self, new_route_id, location_status, progress, new_trip_id, trip_stop_no):
+    def get_next_stop_data_for_route(self, route, location_status, progress, new_trip_id, trip_stop_no):
         next_stop_no = str(int(trip_stop_no) + 1)
         trip_data = self.get_trip_schedules()[new_trip_id]
         if next_stop_no in trip_data.tripStops.keys():
@@ -72,7 +72,7 @@ class Solver:
             next_stop_id = trip_data.tripStops[next_stop_no].stopId
             new_location_eliminations = self.eliminate_stop_from_string(
                 next_stop_id, self.eliminate_stop_from_string(current_stop_id, location_status.unvisited)) if \
-                new_route_id in routes_to_solve else location_status.unvisited
+                route in routes_to_solve else location_status.unvisited
             h, m, s = trip_data.tripStops[next_stop_no].departureTime.split(':')
             trip_hms_duration = int(s) + int(m) * 60 + int(h) * 60 * 60
             start_day_midnight = datetime(year=progress.start_time.year, month=progress.start_time.month,
@@ -88,7 +88,7 @@ class Solver:
                       current_stop_id] if uneliminated_current_stop_name in location_status.unvisited else
                   timedelta(0)) + (self.data_munger.get_minimum_stop_times()[next_stop_id] if uneliminated_next_stop_name in
                                    location_status.unvisited else timedelta(
-                    0)) if new_route_id in routes_to_solve else timedelta(0))
+                    0)) if route in routes_to_solve else timedelta(0))
             # decrease_in_minimum_remaining_time = progress.minimum_remaining_time - new_minimum_remaining_time
             # new_non_necessary_time = progress.non_necessary_time + change_in_duration -
             # decrease_in_minimum_remaining_time
@@ -97,8 +97,7 @@ class Solver:
             # if next_stop_id in stop_locations_to_solve:
             #     print(new_location_eliminations)
             return [(
-                LocationStatusInfo(location=next_stop_id, arrival_route=new_route_id,
-                                   unvisited=new_location_eliminations),
+                LocationStatusInfo(location=next_stop_id, arrival_route=route, unvisited=new_location_eliminations),
                 ProgressInfo(start_time=progress.start_time, duration=new_duration, arrival_trip=new_trip_id,
                              trip_stop_no=next_stop_no, parent=location_status, start_location=progress.start_location,
                              start_route=progress.start_route, minimum_remaining_time=new_minimum_remaining_time,
