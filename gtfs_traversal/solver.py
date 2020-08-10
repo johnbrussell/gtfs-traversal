@@ -16,7 +16,6 @@ class Solver:
         self.MAX_PROGRESS_DICT = max_progress_dict
         self.MAX_EXPANSION_QUEUE = max_expansion_queue
         self.trip_schedules = None
-        self.stops_at_ends_of_solution_routes = None
         self.LOCATION_ROUTES = location_routes
         self.total_minimum_time = None
         self.ANALYSIS = analysis
@@ -25,6 +24,7 @@ class Solver:
         self._off_course_stop_locations = None
         self._route_trips = None
         self._stop_locations_to_solve = None
+        self._stops_at_ends_of_solution_routes = None
 
         self.data_munger = DataMunger(
             analysis=analysis,
@@ -155,10 +155,10 @@ class Solver:
         return self._stop_locations_to_solve
 
     def get_stops_at_ends_of_solution_routes(self):
-        if self.stops_at_ends_of_solution_routes is None:
-            self.stops_at_ends_of_solution_routes = self.data_munger.get_stops_at_ends_of_solution_routes()
+        if self._stops_at_ends_of_solution_routes is None:
+            self._stops_at_ends_of_solution_routes = self.data_munger.get_stops_at_ends_of_solution_routes()
 
-        return self.stops_at_ends_of_solution_routes
+        return self._stops_at_ends_of_solution_routes
 
     def get_total_minimum_time(self):
         if self.total_minimum_time is None:
