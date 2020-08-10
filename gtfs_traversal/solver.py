@@ -22,9 +22,9 @@ class Solver:
         self.total_minimum_time = None
         self.ANALYSIS = analysis
         self.stop_locations_to_solve = None
-        self.off_course_stop_locations = None
 
         self._initial_unsolved_string = None
+        self._off_course_stop_locations = None
 
         self.data_munger = DataMunger(
             analysis=analysis,
@@ -136,10 +136,10 @@ class Solver:
         return walking_data + new_route_data
 
     def get_off_course_stop_locations(self):
-        if self.off_course_stop_locations is None:
-            self.off_course_stop_locations = self.data_munger.get_off_course_stop_locations()
+        if self._off_course_stop_locations is None:
+            self._off_course_stop_locations = self.data_munger.get_off_course_stop_locations()
 
-        return self.off_course_stop_locations
+        return self._off_course_stop_locations
 
     def get_route_trips(self):
         if self.route_trips is not None:
