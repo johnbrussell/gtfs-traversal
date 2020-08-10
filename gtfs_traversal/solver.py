@@ -16,7 +16,6 @@ class Solver:
         self.MAX_PROGRESS_DICT = max_progress_dict
         self.MAX_EXPANSION_QUEUE = max_expansion_queue
         self.trip_schedules = None
-        self.route_trips = None
         self.stops_at_ends_of_solution_routes = None
         self.LOCATION_ROUTES = location_routes
         self.total_minimum_time = None
@@ -24,6 +23,7 @@ class Solver:
 
         self._initial_unsolved_string = None
         self._off_course_stop_locations = None
+        self._route_trips = None
         self._stop_locations_to_solve = None
 
         self.data_munger = DataMunger(
@@ -142,11 +142,11 @@ class Solver:
         return self._off_course_stop_locations
 
     def get_route_trips(self):
-        if self.route_trips is not None:
-            return self.route_trips
+        if self._route_trips is not None:
+            return self._route_trips
 
-        self.route_trips = self.data_munger.get_route_trips()
-        return self.route_trips
+        self._route_trips = self.data_munger.get_route_trips()
+        return self._route_trips
 
     def get_stop_locations_to_solve(self):
         if self._stop_locations_to_solve is None:
