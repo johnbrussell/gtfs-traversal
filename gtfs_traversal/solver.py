@@ -99,10 +99,10 @@ class Solver:
         new_unvisited_string = self.eliminate_stops_from_string(
             [current_stop_id, next_stop_id], location_status.unvisited) \
             if route in routes_to_solve else location_status.unvisited
+        start_day_midnight = datetime(year=self.data_munger.start_time.year, month=self.data_munger.start_time.month,
+                                      day=self.data_munger.start_time.day)
         h, m, s = trip_stops[next_stop_no].departureTime.split(':')
         trip_hms_duration = int(s) + int(m) * 60 + int(h) * 60 * 60
-        start_day_midnight = datetime(year=progress.start_time.year, month=progress.start_time.month,
-                                      day=progress.start_time.day)
         current_time = start_day_midnight + timedelta(seconds=trip_hms_duration)
         new_duration = current_time - progress.start_time
         new_minimum_remaining_time = self.get_new_minimum_remaining_time(progress.minimum_remaining_time,
