@@ -206,6 +206,13 @@ class TestDataMunger(unittest.TestCase):
         test_finds_midpoint_and_endpoint_transfers()
         test_memoizes()
 
+    def test_get_travel_time_between_stops(self):
+        subject = self.get_subject_with_mock_data(analysis=MockAnalysis(route_types_to_solve=[1, 2]))
+
+        self.assertEqual(subject.get_travel_time_between_stops('3-6AM', '1', '3'), timedelta(hours=4))
+        self.assertEqual(subject.get_travel_time_between_stops('3-7AM', '1', '2'), timedelta(hours=3))
+        self.assertEqual(subject.get_travel_time_between_stops('18-8AM', '2', '3'), timedelta(minutes=60))
+
     def test_get_unique_routes_to_solve(self):
         def test_returns_correct_result():
             analysis = MockAnalysis()
@@ -257,6 +264,7 @@ class TestDataMunger(unittest.TestCase):
 
         test_last_stop()
         test_not_last_stop()
+
 
 class MockData:
     def __init__(self):
