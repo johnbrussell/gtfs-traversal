@@ -78,7 +78,7 @@ class TestSolver(unittest.TestCase):
                     mock_after_service:
                 with patch.object(subject, 'get_transfer_data', return_value=['transfer data']) as mock_transfer_data:
                     actual = subject.get_new_nodes(location_status_info, progress_info)
-                    mock_after_service.assert_called_once_with('1', location_status_info, progress_info, None, None)
+                    mock_after_service.assert_called_once_with(location_status_info, progress_info)
                     mock_transfer_data.assert_called_once_with(location_status_info, progress_info)
 
             self.assertEqual(actual, expected)
