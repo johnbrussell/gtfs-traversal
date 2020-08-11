@@ -120,11 +120,11 @@ class Solver:
         transfer_data = self.get_transfer_data(location_status, progress)
 
         if location_status.arrival_route == self.WALK_ROUTE:
-            return [transfer_data]
+            return transfer_data
 
-        return [transfer_data] + self.get_next_stop_data_for_trip(location_status.arrival_route, location_status,
-                                                                  progress, progress.arrival_trip,
-                                                                  progress.trip_stop_no)
+        return transfer_data + self.get_next_stop_data_for_trip(location_status.arrival_route, location_status,
+                                                                progress, progress.arrival_trip,
+                                                                progress.trip_stop_no)
 
     def get_node_after_boarding_route(self, location_status, progress, route):
         departure_time, trip_id = self.data_munger.first_trip_after(
@@ -188,13 +188,13 @@ class Solver:
         return self._total_minimum_time
 
     def get_transfer_data(self, location_status, progress):
-        return (location_status._replace(arrival_route=self.TRANSFER_ROUTE),
-                ProgressInfo(start_time=progress.start_time,
-                             duration=progress.duration + timedelta(seconds=self.TRANSFER_DURATION_SECONDS),
-                             arrival_trip=self.TRANSFER_ROUTE, trip_stop_no=self.TRANSFER_ROUTE, parent=location_status,
-                             start_location=progress.start_location, start_route=progress.start_route,
-                             minimum_remaining_time=progress.minimum_remaining_time, depth=progress.depth + 1,
-                             expanded=False, eliminated=False))
+        return [(location_status._replace(arrival_route=self.TRANSFER_ROUTE),
+                 ProgressInfo(start_time=progress.start_time,
+                              duration=progress.duration + timedelta(seconds=self.TRANSFER_DURATION_SECONDS),
+                              arrival_trip=self.TRANSFER_ROUTE, trip_stop_no=self.TRANSFER_ROUTE, parent=location_status,
+                              start_location=progress.start_location, start_route=progress.start_route,
+                              minimum_remaining_time=progress.minimum_remaining_time, depth=progress.depth + 1,
+                              expanded=False, eliminated=False))]
 
     def get_trip_schedules(self):
         if self._trip_schedules is not None:
