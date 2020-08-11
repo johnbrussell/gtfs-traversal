@@ -144,13 +144,15 @@ class Solver:
                          depth=progress.depth + 1, expanded=False, eliminated=False)
         )
 
-    def get_nodes_after_transfer(self, location_status, progress):
+    def get_nodes_after_boarding_routes(self, location_status, progress):
         routes_at_location = self.data_munger.get_routes_at_stop(location_status.location)
-        walking_data = self.get_walking_data(location_status, progress)
+        return [self.get_node_after_boarding_route(location_status, progress, route)
+                for route in routes_at_location
+                if not self.data_munger.is_last_stop_on_route(location_status.location, route)]
 
-        new_route_data = [self.get_node_after_boarding_route(location_status, progress, route)
-                          for route in routes_at_location
-                          if not self.data_munger.is_last_stop_on_route(location_status.location, route)]
+    def get_nodes_after_transfer(self, location_status, progress):
+        walking_data = self.get_walking_data(location_status, progress)
+        new_route_data = self.get_nodes_after_boarding_routes(location_status, progress)
 
         return walking_data + new_route_data
 
