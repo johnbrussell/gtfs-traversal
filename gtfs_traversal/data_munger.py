@@ -261,7 +261,7 @@ class DataMunger:
         return self._transfer_stops
 
     def get_travel_time_between_stops(self, trip, on_stop_number, off_stop_number):
-        assert off_stop_number >= on_stop_number
+        assert float(off_stop_number) >= float(on_stop_number), 'cannot travel backwards along trip'
         trip_stops = self.get_stops_for_trip(trip)
         on_time_raw = trip_stops[on_stop_number].departureTime
         on_time_seconds_since_midnight = self.convert_to_seconds_since_midnight(on_time_raw)
