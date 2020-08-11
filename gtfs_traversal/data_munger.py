@@ -307,3 +307,6 @@ class DataMunger:
     def is_last_stop_on_route(self, stop_id, route):
         stop_number = self.get_stop_number_from_stop_id(stop_id, route)
         return str(int(stop_number) + 1) not in self.get_stops_for_route(route)
+
+    def is_solution_route(self, route_id):
+        return route_id in self.get_unique_routes_to_solve()
