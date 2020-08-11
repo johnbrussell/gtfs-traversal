@@ -212,50 +212,26 @@ class Solver:
         if progress.parent.arrival_route == self.WALK_ROUTE:
             return []
 
-        locations_to_solve = self.get_stop_locations_to_solve()
-        locations_to_not_solve = self.get_off_course_stop_locations()
-        if location_status.location in self.get_stop_locations_to_solve():
-            current_location = self.get_stop_locations_to_solve()[location_status.location]
-        else:
-            current_location = locations_to_not_solve[location_status.location]
+        all_coordinates = self.data_munger.get_all_stop_coordinates()
+        current_coordinates = all_coordinates[location_status.location]
 
-        other_location_status_infos = [
-            LocationStatusInfo(location=loc, arrival_route=self.WALK_ROUTE, unvisited=location_status.unvisited)
-            for loc in locations_to_not_solve.keys() if loc != location_status.location
+        walking_durations = [
+            self.walk_time_seconds(current_coordinates.lat, all_coordinates[location].lat,
+                                   current_coordinates.long, all_coordinates[location].long)
+            for location in all_coordinates
         ]
-        solution_location_status_infos = [
-            LocationStatusInfo(location=loc, arrival_route=self.WALK_ROUTE, unvisited=location_status.unvisited)
-            for loc in locations_to_solve.keys() if loc != location_status.location
-        ]
-
-        solution_walking_durations = [self.walk_time_seconds(current_location.lat, locations_to_solve[lsi.location].lat,
-                                                        current_location.long, locations_to_solve[lsi.location].long)
-                                      for
-                                      lsi in solution_location_status_infos]
-        max_walking_duration = max(solution_walking_durations)
-        other_walking_durations = [self.walk_time_seconds(current_location.lat, locations_to_not_solve[lsi.location].lat,
-                                                     current_location.long, locations_to_not_solve[lsi.location].long)
-                                   for
-                                   lsi in other_location_status_infos]
-
-        all_location_status_infos = other_location_status_infos + solution_location_status_infos
-        all_walking_durations = other_walking_durations + solution_walking_durations
-        assert len(all_location_status_infos) == len(all_walking_durations)
-
-        analysis_end = datetime.strptime(self.ANALYSIS.end_date, '%Y-%m-%d') + timedelta(days=1)
 
         to_return = [
             (
-                lsi,
+                LocationStatusInfo(location=loc, arrival_route=self.WALK_ROUTE, unvisited=location_status.unvisited),
                 ProgressInfo(start_time=progress.start_time, duration=progress.duration + timedelta(seconds=wts),
                              arrival_trip=self.WALK_ROUTE, trip_stop_no=self.WALK_ROUTE, parent=location_status,
                              start_location=progress.start_location, start_route=progress.start_route,
                              minimum_remaining_time=progress.minimum_remaining_time, depth=progress.depth + 1,
                              expanded=False, eliminated=False)
             )
-            for lsi, wts in zip(all_location_status_infos, all_walking_durations)
-            if wts <= max_walking_duration and
-               progress.start_time + progress.duration + timedelta(seconds=wts) < analysis_end
+            for loc, wts in zip(all_coordinates.keys(), walking_durations)
+            if loc != location_status.location
         ]
         return to_return
 
