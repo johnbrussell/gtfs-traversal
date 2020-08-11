@@ -80,8 +80,7 @@ class DataMunger:
                 # Currently, this function does not support the situation where one trip visits the same stop
                 #  multiple times.
                 # Currently, this function assumes that the first trip of the day along each route is the fastest.
-                best_departure_time, best_trip_id = self.first_trip_after(
-                    self.start_time, route, stop)
+                best_departure_time, best_trip_id = self.first_trip_after(self.start_time, route, stop)
                 if best_trip_id is None:
                     continue
                 best_stop_number = self.get_stop_number_from_stop_id(stop, route)
