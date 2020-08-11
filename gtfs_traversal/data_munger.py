@@ -104,11 +104,12 @@ class DataMunger:
         return self._minimum_stop_times
 
     def get_next_stop_id(self, stop_id, route):
+        if self.is_last_stop_on_route(stop_id, route):
+            return None
+
         stop_number = self.get_stop_number_from_stop_id(stop_id, route)
         next_stop_number = str(int(stop_number) + 1)
         stops_on_route = self.get_stops_for_route(route)
-        if next_stop_number not in stops_on_route:
-            return None
         return stops_on_route[next_stop_number].stopId
 
     def get_off_course_stop_locations(self):
