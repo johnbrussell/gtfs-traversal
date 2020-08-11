@@ -20,6 +20,7 @@ class Solver:
         self._initial_unsolved_string = None
         self._off_course_stop_locations = None
         self._route_trips = None
+        self._stop_locations = None
         self._stop_locations_to_solve = None
         self._stops_at_ends_of_solution_routes = None
         self._total_minimum_time = None
@@ -164,6 +165,12 @@ class Solver:
 
         self._route_trips = self.data_munger.get_route_trips()
         return self._route_trips
+
+    def get_stop_locations(self):
+        if self._stop_locations is None:
+            self._stop_locations = self.data_munger.get_all_stop_coordinates()
+
+        return self._stop_locations
 
     def get_stop_locations_to_solve(self):
         if self._stop_locations_to_solve is None:
