@@ -146,8 +146,7 @@ class Solver:
 
     def get_nodes_after_transfer(self, location_status, progress):
         routes_at_location = self.data_munger.get_routes_at_stop(location_status.location)
-        walking_data = self.get_walking_data(location_status, progress) \
-            if progress.parent is not None and progress.parent.arrival_route != self.WALK_ROUTE else []
+        walking_data = self.get_walking_data(location_status, progress)
 
         new_route_data = [self.get_node_after_boarding_route(location_status, progress, route)
                           for route in routes_at_location
@@ -203,6 +202,11 @@ class Solver:
         return self._trip_schedules
 
     def get_walking_data(self, location_status, progress):
+        if progress.parent is None:
+            return []
+        if progress.parent.arrival_route == self.WALK_ROUTE:
+            return []
+
         locations_to_solve = self.get_stop_locations_to_solve()
         locations_to_not_solve = self.get_off_course_stop_locations()
         if location_status.location in self.get_stop_locations_to_solve():
