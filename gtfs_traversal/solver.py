@@ -398,17 +398,6 @@ class Solver:
         #     return True
         return False  # TODO
 
-    def eliminate_nodes(self, key, progress_dict):
-        if key not in progress_dict:
-            return progress_dict
-        if key is None:
-            return progress_dict
-        if progress_dict[key].eliminated:
-            return progress_dict
-        progress_dict[key] = progress_dict[key]._replace(eliminated=True)
-        parent = progress_dict[key].parent
-        return self.eliminate_nodes(parent, progress_dict)
-
     def initialize_progress_dict(self, begin_time):
         progress_dict = dict()
         best_departure_time = None
@@ -466,7 +455,6 @@ class Solver:
             if expandee_progress.expanded or expandee.unvisited == self.STOP_JOIN_STRING:
                 continue
             if self.is_node_eliminated(progress_dict, expandee):
-                progress_dict = self.eliminate_nodes(expandee, progress_dict)
                 continue
 
             progress_dict[expandee] = progress_dict[expandee]._replace(expanded=True)
