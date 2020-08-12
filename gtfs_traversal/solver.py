@@ -459,10 +459,9 @@ class Solver:
         num_expansions = 1
         while not exp_queue.is_empty():
             if num_expansions % 10000 == 0:
-                if num_expansions % 10000 == 0:
-                    num_expansions = 0
-                    print('e', exp_queue.len())
-                    print("p", len(progress_dict))
+                num_expansions = 0
+                print('e', exp_queue.len())
+                print("p", len(progress_dict))
                 progress_dict, exp_queue = self.prune(progress_dict, exp_queue, known_best_time)
                 if exp_queue.len() == 0:
                     break
