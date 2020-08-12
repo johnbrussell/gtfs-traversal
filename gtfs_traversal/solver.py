@@ -246,17 +246,10 @@ class Solver:
         )
 
     def add_new_nodes_to_progress_dict(self, progress_dict, new_nodes_list, best_solution_duration, exp_queue):
-        nodes_to_add = [n for n in new_nodes_list if (n[0] not in progress_dict or
-                                                      progress_dict[n[0]].duration > n[1].duration or
-                                                      progress_dict[n[0]].start_route != n[1].start_route) and
-                        (best_solution_duration is None or
-                         n[1].duration + n[1].minimum_remaining_time < best_solution_duration) and
-                        n[0].unvisited != self.get_initial_unsolved_string()]
-
-        for node in nodes_to_add:
+        for node in new_nodes_list:
             progress_dict, best_solution_duration, exp_queue = self.add_new_node_to_progress_dict(
                 progress_dict, node, best_solution_duration, exp_queue)
-        return progress_dict, best_solution_duration, nodes_to_add, exp_queue
+        return progress_dict, best_solution_duration, new_nodes_list, exp_queue
 
     def add_new_node_to_progress_dict(self, progress_dict, new_node, best_solution_duration, exp_queue):
         new_location, new_progress = new_node
