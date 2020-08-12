@@ -221,7 +221,7 @@ class Solver:
             for location in all_coordinates
         ]
 
-        to_return = [
+        return [
             (
                 LocationStatusInfo(location=loc, arrival_route=self.WALK_ROUTE, unvisited=location_status.unvisited),
                 ProgressInfo(start_time=progress.start_time, duration=progress.duration + timedelta(seconds=wts),
@@ -233,7 +233,6 @@ class Solver:
             for loc, wts in zip(all_coordinates.keys(), walking_durations)
             if loc != location_status.location
         ]
-        return to_return
 
     @staticmethod
     def new_eliminated_node(location_status, progress):
