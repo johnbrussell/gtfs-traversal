@@ -4,6 +4,7 @@ from unittest.mock import patch
 
 from gtfs_traversal.data_structures import *
 from gtfs_traversal.solver import Solver
+from gtfs_parsing.data_structures.data_structures import stopLocation
 
 DEFAULT_START_DATE = '2020-01-01'
 DEFAULT_START_TIME = datetime.strptime(DEFAULT_START_DATE, '%Y-%m-%d')
@@ -218,6 +219,90 @@ class TestSolver(unittest.TestCase):
         expected = ['walking data', 'new route data', 'new route data']
         self.assertEqual(expected, actual)
 
+    def test_get_walking_data(self):
+        def test_after_walking_route():
+            analysis = MockAnalysis()
+            subject = Solver(analysis=analysis, data=MockData(), max_expansion_queue=None, max_progress_dict=None,
+                             start_time=DEFAULT_START_TIME, stop_join_string='~~', transfer_duration_seconds=None,
+                             transfer_route=DEFAULT_TRANSFER_ROUTE, walk_route='walk route', walk_speed_mph=3)
+
+            input_location_status = LocationStatusInfo(
+                location='Wonderland', arrival_route=DEFAULT_TRANSFER_ROUTE,
+                unvisited='~~Lynn~~')
+            input_progress_parent = LocationStatusInfo(
+                location='Wonderland', arrival_route='walk route', unvisited='~~Lynn~~'
+            )
+            input_progress = ProgressInfo(
+                start_time=DEFAULT_START_TIME + timedelta(minutes=418), duration=timedelta(minutes=20),
+                parent=input_progress_parent, arrival_trip=DEFAULT_TRANSFER_ROUTE, trip_stop_no='1',
+                start_location='Wonderland', start_route=1, minimum_remaining_time=timedelta(hours=1), depth=12,
+                expanded=False, eliminated=False)
+
+            expected = []
+            actual = subject.get_walking_data(input_location_status, input_progress)
+            self.assertListEqual(expected, actual)
+
+        def test_at_start():
+            analysis = MockAnalysis()
+            subject = Solver(analysis=analysis, data=MockData(), max_expansion_queue=None, max_progress_dict=None,
+                             start_time=DEFAULT_START_TIME, stop_join_string='~~', transfer_duration_seconds=None,
+                             transfer_route=DEFAULT_TRANSFER_ROUTE, walk_route='walk route', walk_speed_mph=3)
+
+            input_location_status = LocationStatusInfo(
+                location='Wonderland', arrival_route=DEFAULT_TRANSFER_ROUTE,
+                unvisited='~~Lynn~~')
+            input_progress_parent = None
+            input_progress = ProgressInfo(
+                start_time=DEFAULT_START_TIME + timedelta(minutes=418), duration=timedelta(minutes=20),
+                parent=input_progress_parent, arrival_trip=DEFAULT_TRANSFER_ROUTE, trip_stop_no='1',
+                start_location='Wonderland', start_route=1, minimum_remaining_time=timedelta(hours=1), depth=12,
+                expanded=False, eliminated=False)
+
+            expected = []
+            actual = subject.get_walking_data(input_location_status, input_progress)
+            self.assertListEqual(expected, actual)
+
+        def test_calculates_correct_result():
+            analysis = MockAnalysis()
+            subject = Solver(analysis=analysis, data=MockData(), max_expansion_queue=None, max_progress_dict=None,
+                             start_time=DEFAULT_START_TIME, stop_join_string='~~', transfer_duration_seconds=None,
+                             transfer_route=DEFAULT_TRANSFER_ROUTE, walk_route='walk route', walk_speed_mph=3)
+
+            input_location_status = LocationStatusInfo(
+                location='Wonderland', arrival_route=DEFAULT_TRANSFER_ROUTE,
+                unvisited='~~Lynn~~')
+            input_progress_parent = LocationStatusInfo(location='Wonderland', arrival_route=2,
+                                                       unvisited='~~Lynn~~')
+            input_progress = ProgressInfo(
+                start_time=DEFAULT_START_TIME + timedelta(minutes=418), duration=timedelta(minutes=20),
+                parent=input_progress_parent, arrival_trip=DEFAULT_TRANSFER_ROUTE, trip_stop_no='1',
+                start_location='Wonderland', start_route=1, minimum_remaining_time=timedelta(hours=1), depth=12,
+                expanded=False, eliminated=False)
+
+            stop_coordinates = subject.data_munger.get_all_stop_coordinates().copy()
+            wonderland_coordinates = stop_coordinates.pop('Wonderland')
+            walking_times = { (station, subject.walk_time_seconds(coordinates.lat, wonderland_coordinates.lat,
+                                                                  coordinates.long, wonderland_coordinates.long))
+                              for station, coordinates in stop_coordinates.items() }
+            expected = {
+                (
+                    LocationStatusInfo(location=station, arrival_route='walk route', unvisited='~~Lynn~~'),
+                    ProgressInfo(start_time=input_progress.start_time,
+                                 duration=input_progress.duration + timedelta(seconds=time),
+                                 parent=input_location_status, arrival_trip='walk route', trip_stop_no='walk route',
+                                 start_location=input_progress.start_location, start_route=input_progress.start_route,
+                                 minimum_remaining_time=input_progress.minimum_remaining_time,
+                                 depth=13, expanded=False, eliminated=False)
+                )
+                for station, time in walking_times
+            }
+            actual = set(subject.get_walking_data(input_location_status, input_progress))
+            self.assertSetEqual(expected, actual)
+
+        test_at_start()
+        test_after_walking_route()
+        test_calculates_correct_result()
+
     def test_initialize_progress_dict(self):
         def test_start_of_route():
             subject = Solver(analysis=MockAnalysis(), data=MockData(), max_expansion_queue=None, max_progress_dict=None,
@@ -356,6 +441,15 @@ class MockData:
             'Blue-7AM': MockTripInfo('Blue', 'Wonderland', 'Bowdoin', 'Lynn', 7),
             'Blue-8AM': MockTripInfo('Blue', 'Wonderland', 'Bowdoin', 'Lynn', 8),
         }
+        self.stopLocations = {
+            'Alewife': MockStopLocation(1, -2),
+            'Wonderland': MockStopLocation(2, -2.5),
+            'Back of the Hill': MockStopLocation(3, -2.75),
+            'Heath Street': MockStopLocation(-4, 3),
+            'Lechmere': MockStopLocation(-5, 3.75),
+            'Bowdoin': MockStopLocation(-6, -4),
+            'Lynn': MockStopLocation(7, 4.5),
+        }
 
 
 class MockUniqueRouteInfo:
@@ -385,6 +479,12 @@ class MockStopDeparture:
     def __init__(self, stop_id, departure_hour):
         self.stopId = stop_id
         self.departureTime = f'{departure_hour}:00:00'
+
+
+class MockStopLocation:
+    def __init__(self, lat, long):
+        self.lat = lat
+        self.long = long
 
 
 class MockAnalysis:
