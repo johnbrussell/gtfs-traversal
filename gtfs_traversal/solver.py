@@ -246,35 +246,16 @@ class Solver:
         )
 
     def add_new_nodes_to_progress_dict(self, progress_dict, new_nodes_list, best_solution_duration, exp_queue):
-        # print(new_nodes_list[0])
-        # new_nodes_list = sorted(new_nodes_list, key=lambda x: x[1].duration)
         nodes_to_add = [n for n in new_nodes_list if (n[0] not in progress_dict or
                                                       progress_dict[n[0]].duration > n[1].duration or
                                                       progress_dict[n[0]].start_route != n[1].start_route) and
                         (best_solution_duration is None or
                          n[1].duration + n[1].minimum_remaining_time < best_solution_duration) and
                         n[0].unvisited != self.get_initial_unsolved_string()]
-        # initial_len = len(nodes_to_add)
-        # solution_nodes = [n for n in nodes_to_add if n[0].unvisited == self.STOP_JOIN_STRING]
-        # temp_best_solution = min([n[1].duration for n in solution_nodes]) if len(solution_nodes) > 0 else \
-        #     best_solution_duration
-        # if len(solution_nodes) > 0:
-        #     print([n[1].minimum_remaining_time for n in solution_nodes])
-        # print("add")
-        # print(len(nodes_to_add))
-        # nodes_to_add = [n for n in nodes_to_add if not node_too_slow(n, temp_best_solution)]
-        # print(len(nodes_to_add))
 
-        # final_len = len(nodes_to_add)
-        # if final_len != initial_len:
-        #     print(initial_len, final_len)
         for node in nodes_to_add:
-            # print(node)
-            # print(len(node))
-            # print(len(progress_dictionary))
             progress_dict, best_solution_duration, exp_queue = self.add_new_node_to_progress_dict(
                 progress_dict, node, best_solution_duration, exp_queue)
-        # print(len(progress_dictionary))
         return progress_dict, best_solution_duration, nodes_to_add, exp_queue
 
     def add_new_node_to_progress_dict(self, progress_dict, new_node, best_solution_duration, exp_queue):
@@ -365,39 +346,6 @@ class Solver:
         #             print(key)
         return progress_dict, exp_queue
 
-    def is_node_eliminated(self, progress_dict, key):
-        while key is not None:
-            if key not in progress_dict or progress_dict[key].eliminated:
-                return True
-            if self.is_parent_replaced(progress_dict, key):
-                return True
-            key = progress_dict[key].parent
-
-    def is_parent_replaced(self, progress_dict, key):
-        if key.arrival_route == self.WALK_ROUTE:
-            return False  # TODO
-        parent = progress_dict[key].parent
-        if parent is None:
-            return False
-        if parent not in progress_dict:
-            return True
-        if key.arrival_route == self.TRANSFER_ROUTE:
-            if progress_dict[key].duration - progress_dict[parent].duration > \
-                    timedelta(seconds=self.TRANSFER_DURATION_SECONDS):
-                # print('failure due to excessive transfer duration')
-                # print(key, progress_dict[key].duration)
-                # print(parent, progress_dict[parent].duration)
-                return True
-            return False
-        # if parent.arrival_route != key.arrival_route:
-        #     return False
-        # _deptm, tripid, _stopno = first_trip_after(progress_dict[parent].start_time + progress_dict[parent].duration,
-        #                                            trips_data, analysis_data, routes_data, key.arrival_route,
-        #                                            parent.location)
-        # if tripid != progress_dict[key].arrival_trip:
-        #     return True
-        return False  # TODO
-
     def initialize_progress_dict(self, begin_time):
         progress_dict = dict()
         best_departure_time = None
@@ -426,8 +374,7 @@ class Solver:
         return progress_dict, best_departure_time
 
     def print_path(self, progress_dict):
-        solution_locations = [k for k in progress_dict.keys() if k.unvisited == self.STOP_JOIN_STRING and
-                              not self.is_node_eliminated(progress_dict, k)]
+        solution_locations = [k for k in progress_dict.keys() if k.unvisited == self.STOP_JOIN_STRING]
         for loca in solution_locations:
             path = list()
             locat = loca
@@ -453,8 +400,6 @@ class Solver:
             expandee_progress = progress_dict[expandee]
 
             if expandee_progress.expanded or expandee.unvisited == self.STOP_JOIN_STRING:
-                continue
-            if self.is_node_eliminated(progress_dict, expandee):
                 continue
 
             progress_dict[expandee] = progress_dict[expandee]._replace(expanded=True)
