@@ -245,8 +245,7 @@ class Solver:
                          expanded=False, eliminated=True)
         )
 
-    def add_new_nodes_to_progress_dict(self, progress_dict, new_nodes_list, best_solution_duration, exp_queue,
-                                       unnecessary_time):
+    def add_new_nodes_to_progress_dict(self, progress_dict, new_nodes_list, best_solution_duration, exp_queue):
         # print(new_nodes_list[0])
         # new_nodes_list = sorted(new_nodes_list, key=lambda x: x[1].duration)
         nodes_to_add = [n for n in new_nodes_list if (n[0] not in progress_dict or
@@ -490,7 +489,7 @@ class Solver:
                 continue
 
             progress_dict, known_best_time, new_nodes, exp_queue = \
-                self.add_new_nodes_to_progress_dict(progress_dict, new_nodes, known_best_time, exp_queue, best_nn_time)
+                self.add_new_nodes_to_progress_dict(progress_dict, new_nodes, known_best_time, exp_queue)
             if known_best_time is not None:
                 best_nn_time = known_best_time - self.get_total_minimum_time()
 
