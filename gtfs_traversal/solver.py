@@ -298,30 +298,6 @@ class Solver:
         # progress_dict = eliminate_nodes_from_progress_dict(progress_dict, children)
         return progress_dict
 
-    def prune(self, progress_dict, exp_queue, new_prog_dur):
-        # return progress_dict, exp_queue
-        if len(progress_dict) <= min(self.MAX_PROGRESS_DICT, self.MAX_EXPANSION_QUEUE):
-            return progress_dict, exp_queue
-
-        parents = set([va.parent for va in progress_dict.values()])
-        bad_keys = set([k for k, va in progress_dict.items() if
-                        (new_prog_dur is not None and
-                         va.duration + va.minimum_remaining_time > new_prog_dur) or
-                        va.eliminated or
-                        (va.expanded and k not in parents)])
-        exp_queue.remove_keys(bad_keys)
-
-        if len(progress_dict) <= self.MAX_PROGRESS_DICT:
-            return progress_dict, exp_queue
-
-        for key in bad_keys:
-            del progress_dict[key]
-        # for queue in exp_queue._order:
-        #     for key in queue:
-        #         if key not in progress_dict:
-        #             print(key)
-        return progress_dict, exp_queue
-
     def initialize_progress_dict(self, begin_time):
         progress_dict = dict()
         best_departure_time = None
