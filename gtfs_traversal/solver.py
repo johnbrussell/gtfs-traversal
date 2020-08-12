@@ -456,12 +456,8 @@ class Solver:
         if len(progress_dict) > 0:
             exp_queue.add(progress_dict.keys())
 
-        num_expansions = 1
+        num_expansions = 0
         while not exp_queue.is_empty():
-            if num_expansions % 10000 == 0:
-                num_expansions = 0
-                print('e', exp_queue.len())
-                print("p", len(progress_dict))
             num_expansions += 1
 
             expandee = exp_queue.pop()
