@@ -304,17 +304,17 @@ class Solver:
         return progress_dict, best_departure_time
 
     def print_path(self, progress_dict):
-        solution_locations = [k for k in progress_dict.keys() if k.unvisited == self.STOP_JOIN_STRING]
-        for loca in solution_locations:
+        solution_locations = [k for k in progress_dict if k.unvisited == self.STOP_JOIN_STRING]
+        for location in solution_locations:
             path = list()
-            locat = loca
-            while locat is not None:
-                path.append((locat.arrival_route, locat.location))
-                locat = progress_dict[locat].parent
+            _location = location
+            while _location is not None:
+                path.append((_location.arrival_route, _location.location))
+                _location = progress_dict[_location].parent
             path = reversed(path)
             print("solution:")
-            for locati in path:
-                print(locati)
+            for stop in path:
+                print(stop)
 
     def find_solution(self, begin_time, known_best_time):
         progress_dict, best_departure_time = self.initialize_progress_dict(begin_time)
