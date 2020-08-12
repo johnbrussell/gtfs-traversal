@@ -451,7 +451,7 @@ class Solver:
                 print(locati)
 
     def find_solution(self, begin_time, known_best_time):
-        progress_dict, best_dtime = self.initialize_progress_dict(begin_time)
+        progress_dict, best_departure_time = self.initialize_progress_dict(begin_time)
         exp_queue = ExpansionQueue(len(self.data_munger.get_unique_stops_to_solve()), self.STOP_JOIN_STRING)
         if len(progress_dict) > 0:
             exp_queue.add(progress_dict.keys())
@@ -494,4 +494,4 @@ class Solver:
             exp_queue.remove_keys(new_locs)
             exp_queue.add(new_locs)
 
-        return known_best_time, progress_dict, best_dtime
+        return known_best_time, progress_dict, best_departure_time
