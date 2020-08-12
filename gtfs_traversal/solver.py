@@ -253,43 +253,28 @@ class Solver:
 
     def add_new_node_to_progress_dict(self, progress_dict, new_node, best_solution_duration, exp_queue):
         new_location, new_progress = new_node
-        # print("adding node")
-        # print(new_node)
-        # print(new_location)
-        # print(len(new_location))
-        # print(len(new_progress))
-        # print(new_progress)
         new_duration = best_solution_duration
         is_solution = new_location.unvisited == self.STOP_JOIN_STRING
-        # print("solution", is_solution)
         if new_location not in progress_dict:
-            # print("new location not in dict")
             if is_solution:
                 if best_solution_duration is None:
                     best_solution_duration = new_progress.duration
                     new_duration = best_solution_duration
                     print('solution', new_duration, new_duration.total_seconds())
-                    # print(new_location.arrival_route, new_progress.start_location)
                 new_duration = min(best_solution_duration, new_progress.duration)
                 if best_solution_duration > new_duration:
                     print('solution', new_duration, new_duration.total_seconds())
-                    # print(new_location.arrival_route, new_progress.start_location)
                 progress_dict, exp_queue = self.prune(progress_dict, exp_queue, new_progress.duration)
             progress_dict[new_location] = new_progress
-            # print("have added new location to dict?:", new_location in progress_dict)
             return progress_dict, new_duration, exp_queue
-        # print("new location in dict")
         old_progress = progress_dict[new_location]
         if old_progress.duration <= new_progress.duration:
             return progress_dict, new_duration, exp_queue
-        # print(old_progress)
-        # print(new_progress)
         progress_dict = self.eliminate_node_from_progress_dict(progress_dict, new_location)
         if is_solution:
             new_duration = min(best_solution_duration, new_progress.duration)
             if best_solution_duration > new_duration:
                 print('solution', new_duration, new_duration.total_seconds())
-                # print(new_location.arrival_route, new_progress.start_location)
             progress_dict, exp_queue = self.prune(progress_dict, exp_queue, new_progress.duration)
         progress_dict[new_location] = new_progress
         return progress_dict, new_duration, exp_queue
