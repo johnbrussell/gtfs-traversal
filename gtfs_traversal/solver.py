@@ -457,7 +457,6 @@ class Solver:
             exp_queue.add(progress_dict.keys())
 
         num_expansions = 1
-        best_nn_time = None
         while not exp_queue.is_empty():
             if num_expansions % 10000 == 0:
                 if num_expansions % 10000 == 0:
@@ -487,8 +486,6 @@ class Solver:
 
             progress_dict, known_best_time, new_nodes, exp_queue = \
                 self.add_new_nodes_to_progress_dict(progress_dict, new_nodes, known_best_time, exp_queue)
-            if known_best_time is not None:
-                best_nn_time = known_best_time - self.get_total_minimum_time()
 
             if len(new_nodes) == 0:
                 continue
