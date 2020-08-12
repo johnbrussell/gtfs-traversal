@@ -276,27 +276,6 @@ class Solver:
 
         return progress_dict, best_solution_duration, exp_queue
 
-    @staticmethod
-    def mark_nodes_as_eliminated(progress_dict, eliminated_keys):
-        for k in eliminated_keys:
-            progress_dict[k] = progress_dict[k]._replace(eliminated=True)
-        return progress_dict
-
-    @staticmethod
-    def eliminate_node_from_progress_dict(progress_dict, eliminated_key):
-        # print("eliminating")
-        # print(eliminated_key)
-        # print(progress_dict[eliminated_key])
-        progress_dict[eliminated_key] = progress_dict[eliminated_key]._replace(eliminated=True)
-        # if not progress_dict[eliminated_key].expanded:
-        #     return progress_dict
-        # progress_dict = {k: (va._replace(eliminated=True) if
-        #                  not any(p.parent == k and not p.eliminated for p in progress_dict.values()) else va)
-        #                  for k, va in progress_dict.items()}
-        # children = [k for k, va in progress_dict.items() if va.parent == eliminated_key]
-        # progress_dict = eliminate_nodes_from_progress_dict(progress_dict, children)
-        return progress_dict
-
     def initialize_progress_dict(self, begin_time):
         progress_dict = dict()
         best_departure_time = None
