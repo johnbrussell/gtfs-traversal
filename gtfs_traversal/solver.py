@@ -253,14 +253,17 @@ class Solver:
 
     def add_new_node_to_progress_dict(self, progress_dict, new_node, best_solution_duration, exp_queue):
         new_location, new_progress = new_node
+
+        if new_progress.eliminated:
+            return progress_dict, best_solution_duration, best_solution_duration.total_seconds()
+
         new_duration = best_solution_duration
         is_solution = new_location.unvisited == self.STOP_JOIN_STRING
         if new_location not in progress_dict:
             if is_solution:
                 if best_solution_duration is None:
                     best_solution_duration = new_progress.duration
-                    new_duration = best_solution_duration
-                    print('solution', new_duration, new_duration.total_seconds())
+                    print('solution', best_solution_duration, best_solution_duration.total_seconds())
                 new_duration = min(best_solution_duration, new_progress.duration)
                 if best_solution_duration > new_duration:
                     print('solution', new_duration, new_duration.total_seconds())
