@@ -321,7 +321,7 @@ class Solver:
         return progress_dict, new_duration, exp_queue
 
     @staticmethod
-    def eliminate_nodes_from_progress_dict(progress_dict, eliminated_keys):
+    def mark_nodes_as_eliminated(progress_dict, eliminated_keys):
         for k in eliminated_keys:
             progress_dict[k] = progress_dict[k]._replace(eliminated=True)
         return progress_dict
