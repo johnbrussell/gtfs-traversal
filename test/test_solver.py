@@ -69,14 +69,14 @@ class TestSolver(unittest.TestCase):
             subject = Solver(analysis=MockAnalysis(), data=MockData(), max_expansion_queue=None, max_progress_dict=None,
                              start_time=DEFAULT_START_TIME, stop_join_string='~~', transfer_duration_seconds=None,
                              transfer_route=None, walk_route=None, walk_speed_mph=None)
-            location_status_info = LocationStatusInfo(location=None, arrival_route='1', unvisited=None)
+            location_status_info = LocationStatusInfo(location='Wonderland', arrival_route=1, unvisited=None)
             progress_info = ProgressInfo(start_time=None, duration=None, arrival_trip=None, trip_stop_no=None,
                                          parent=None, start_location=None, start_route=None,
                                          minimum_remaining_time=None, depth=None, expanded=None, eliminated=None)
             expected = ['transfer data', 'after service']
-            with patch.object(subject, 'get_next_stop_data_for_trip', return_value=['after service']) as \
+            with patch.object(subject, 'get_next_stop_data_for_trip', return_value='after service') as \
                     mock_after_service:
-                with patch.object(subject, 'get_transfer_data', return_value=['transfer data']) as mock_transfer_data:
+                with patch.object(subject, 'get_transfer_data', return_value='transfer data') as mock_transfer_data:
                     actual = subject.get_new_nodes(location_status_info, progress_info)
                     mock_after_service.assert_called_once_with(location_status_info, progress_info)
                     mock_transfer_data.assert_called_once_with(location_status_info, progress_info)
@@ -86,6 +86,54 @@ class TestSolver(unittest.TestCase):
         test_after_transfer()
         test_after_walk()
         test_after_service()
+
+    def test_get_next_stop_data_for_trip(self):
+        def test_last_stop():
+            subject = Solver(analysis=MockAnalysis(), data=MockData(), max_expansion_queue=None, max_progress_dict=None,
+                             start_time=DEFAULT_START_TIME, stop_join_string='~~', transfer_duration_seconds=None,
+                             transfer_route=DEFAULT_TRANSFER_ROUTE, walk_route=None, walk_speed_mph=None)
+
+            input_location_status = LocationStatusInfo(
+                location='Back of the Hill', arrival_route=1,
+                unvisited='~~Lynn~~Bowdoin~~Back of the Hill~~')
+            input_progress = ProgressInfo(
+                start_time=DEFAULT_START_TIME+timedelta(minutes=418), duration=timedelta(minutes=20), parent=None,
+                arrival_trip=DEFAULT_TRANSFER_ROUTE, trip_stop_no='1', start_location='Wonderland', start_route=1,
+                minimum_remaining_time=timedelta(hours=1), depth=12, expanded=False, eliminated=False)
+
+            expected = None
+            with patch.object(subject, 'new_eliminated_node', return_value=None):
+                actual = subject.get_next_stop_data_for_trip(input_location_status, input_progress)
+
+            self.assertEqual(expected, actual)
+
+        def test_not_last_stop():
+            subject = Solver(analysis=MockAnalysis(), data=MockData(), max_expansion_queue=None, max_progress_dict=None,
+                             start_time=DEFAULT_START_TIME, stop_join_string='~~', transfer_duration_seconds=None,
+                             transfer_route=DEFAULT_TRANSFER_ROUTE, walk_route=None, walk_speed_mph=None)
+
+            input_location_status = LocationStatusInfo(
+                location='Alewife', arrival_route=1,
+                unvisited='~~Lynn~~Bowdoin~~Wonderland~~Back of the Hill~~Alewife~~')
+            input_progress = ProgressInfo(
+                start_time=DEFAULT_START_TIME + timedelta(minutes=418), duration=timedelta(minutes=2), parent=None,
+                arrival_trip='3-7AM', trip_stop_no='1', start_location='Wonderland', start_route=1,
+                minimum_remaining_time=timedelta(hours=8), depth=12, expanded=False, eliminated=False)
+
+            expected = (
+                LocationStatusInfo(location='Wonderland', arrival_route=1,
+                                   unvisited='~~Lynn~~Bowdoin~~Back of the Hill~~'),
+                ProgressInfo(start_time=DEFAULT_START_TIME + timedelta(minutes=418), duration=timedelta(minutes=182),
+                             parent=input_location_status, arrival_trip='3-7AM', trip_stop_no='2',
+                             start_location='Wonderland', start_route=1, minimum_remaining_time=timedelta(hours=6),
+                             depth=13, expanded=False, eliminated=False)
+            )
+            actual = subject.get_next_stop_data_for_trip(input_location_status, input_progress)
+
+            self.assertEqual(expected, actual)
+
+        test_last_stop()
+        test_not_last_stop()
 
     def test_get_node_after_boarding_route(self):
         def test_not_last_stop():
