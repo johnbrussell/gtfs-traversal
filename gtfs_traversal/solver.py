@@ -462,9 +462,6 @@ class Solver:
                 num_expansions = 0
                 print('e', exp_queue.len())
                 print("p", len(progress_dict))
-                progress_dict, exp_queue = self.prune(progress_dict, exp_queue, known_best_time)
-                if exp_queue.len() == 0:
-                    break
             num_expansions += 1
 
             expandee = exp_queue.pop()
