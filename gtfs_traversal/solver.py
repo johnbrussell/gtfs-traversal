@@ -264,7 +264,6 @@ class Solver:
                 new_duration = min(best_solution_duration, new_progress.duration)
                 if best_solution_duration > new_duration:
                     print('solution', new_duration, new_duration.total_seconds())
-                progress_dict, exp_queue = self.prune(progress_dict, exp_queue, new_progress.duration)
             progress_dict[new_location] = new_progress
             return progress_dict, new_duration, exp_queue
         old_progress = progress_dict[new_location]
@@ -275,7 +274,6 @@ class Solver:
             new_duration = min(best_solution_duration, new_progress.duration)
             if best_solution_duration > new_duration:
                 print('solution', new_duration, new_duration.total_seconds())
-            progress_dict, exp_queue = self.prune(progress_dict, exp_queue, new_progress.duration)
         progress_dict[new_location] = new_progress
         return progress_dict, new_duration, exp_queue
 
