@@ -322,11 +322,8 @@ class Solver:
 
     @staticmethod
     def eliminate_nodes_from_progress_dict(progress_dict, eliminated_keys):
-        # if len(eliminated_keys) == 0:
-        #     return progress_dict
         for k in eliminated_keys:
             progress_dict[k] = progress_dict[k]._replace(eliminated=True)
-            # progress_dict = eliminate_node_from_progress_dict(progress_dict, k)
         return progress_dict
 
     @staticmethod
