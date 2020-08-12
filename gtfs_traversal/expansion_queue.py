@@ -7,9 +7,9 @@ class ExpansionQueue:
 
     def add(self, nodes):
         for node in nodes:
-            self._add_node(node)
+            self.add_node(node)
 
-    def _add_node(self, node):
+    def add_node(self, node):
         num_remaining_stops = len(node.unvisited.split(self._stop_join_string)) - 2
         if num_remaining_stops == 0:
             return
