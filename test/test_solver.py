@@ -44,7 +44,8 @@ class TestSolver(unittest.TestCase):
             expected = ['after transfer']
             with patch.object(subject, 'get_nodes_after_transfer', return_value=['after transfer']) as \
                     mock_after_transfer:
-                actual = subject.get_new_nodes(location_status_info, None)
+                subject._progress_dict[location_status_info] = None
+                actual = subject.get_new_nodes(location_status_info)
                 mock_after_transfer.assert_called_once_with(location_status_info, None)
 
             self.assertEqual(actual, expected)
@@ -57,12 +58,13 @@ class TestSolver(unittest.TestCase):
             progress_info = ProgressInfo(start_time=None, duration=timedelta(seconds=47), arrival_trip=None,
                                          trip_stop_no=None, parent=None, start_location=None, start_route=None,
                                          minimum_remaining_time=None, depth=4, expanded=None, eliminated=None)
+            subject._progress_dict[location_status_info] = progress_info
 
             expected = [(location_status_info._replace(arrival_route='transfer route'),
                          progress_info._replace(duration=timedelta(seconds=100), depth=5,
                                                 trip_stop_no='transfer route', arrival_trip='transfer route',
                                                 parent=location_status_info, expanded=False, eliminated=False))]
-            actual = subject.get_new_nodes(location_status_info, progress_info)
+            actual = subject.get_new_nodes(location_status_info)
 
             self.assertEqual(actual, expected)
 
@@ -78,7 +80,8 @@ class TestSolver(unittest.TestCase):
             with patch.object(subject, 'get_next_stop_data_for_trip', return_value='after service') as \
                     mock_after_service:
                 with patch.object(subject, 'get_transfer_data', return_value='transfer data') as mock_transfer_data:
-                    actual = subject.get_new_nodes(location_status_info, progress_info)
+                    subject._progress_dict[location_status_info] = progress_info
+                    actual = subject.get_new_nodes(location_status_info)
                     mock_after_service.assert_called_once_with(location_status_info, progress_info)
                     mock_transfer_data.assert_called_once_with(location_status_info, progress_info)
 

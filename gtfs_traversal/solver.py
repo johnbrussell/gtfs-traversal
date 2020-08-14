@@ -19,7 +19,7 @@ class Solver:
 
         self._initial_unsolved_string = None
         self._off_course_stop_locations = None
-        self._progress_dict = None
+        self._progress_dict = dict()
         self._route_trips = None
         self._stop_locations = None
         self._stop_locations_to_solve = None
@@ -110,7 +110,9 @@ class Solver:
                          depth=progress.depth + 1, expanded=False, eliminated=False)
         )
 
-    def get_new_nodes(self, location_status, progress):
+    def get_new_nodes(self, location_status):
+        progress = self._progress_dict[location_status]
+
         if location_status.arrival_route == self.TRANSFER_ROUTE:
             return self.get_nodes_after_transfer(location_status, progress)
 
@@ -334,7 +336,7 @@ class Solver:
 
             self._progress_dict[expandee] = self._progress_dict[expandee]._replace(expanded=True)
 
-            new_nodes = self.get_new_nodes(expandee, self._progress_dict[expandee])
+            new_nodes = self.get_new_nodes(expandee)
 
             self._progress_dict, known_best_time, exp_queue = \
                 self.add_new_nodes_to_progress_dict(self._progress_dict, new_nodes, known_best_time, exp_queue)
