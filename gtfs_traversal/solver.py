@@ -328,9 +328,8 @@ class Solver:
             num_expansions += 1
 
             expandee = exp_queue.pop()
-            expandee_progress = self._progress_dict[expandee]
 
-            if expandee_progress.expanded or expandee.unvisited == self.STOP_JOIN_STRING:
+            if expandee.unvisited == self.STOP_JOIN_STRING or self._progress_dict[expandee].expanded:
                 continue
 
             self._progress_dict[expandee] = self._progress_dict[expandee]._replace(expanded=True)
