@@ -19,6 +19,7 @@ class Solver:
 
         self._initial_unsolved_string = None
         self._off_course_stop_locations = None
+        self._progress_dict = None
         self._route_trips = None
         self._stop_locations = None
         self._stop_locations_to_solve = None
@@ -317,26 +318,26 @@ class Solver:
                 print(stop)
 
     def find_solution(self, begin_time, known_best_time):
-        progress_dict, best_departure_time = self.initialize_progress_dict(begin_time)
+        self._progress_dict, best_departure_time = self.initialize_progress_dict(begin_time)
         exp_queue = ExpansionQueue(len(self.data_munger.get_unique_stops_to_solve()), self.STOP_JOIN_STRING)
-        if len(progress_dict) > 0:
-            exp_queue.add(progress_dict.keys())
+        if len(self._progress_dict) > 0:
+            exp_queue.add(self._progress_dict.keys())
 
         num_expansions = 0
         while not exp_queue.is_empty():
             num_expansions += 1
 
             expandee = exp_queue.pop()
-            expandee_progress = progress_dict[expandee]
+            expandee_progress = self._progress_dict[expandee]
 
             if expandee_progress.expanded or expandee.unvisited == self.STOP_JOIN_STRING:
                 continue
 
-            progress_dict[expandee] = progress_dict[expandee]._replace(expanded=True)
+            self._progress_dict[expandee] = self._progress_dict[expandee]._replace(expanded=True)
 
-            new_nodes = self.get_new_nodes(expandee, progress_dict[expandee])
+            new_nodes = self.get_new_nodes(expandee, self._progress_dict[expandee])
 
-            progress_dict, known_best_time, exp_queue = \
-                self.add_new_nodes_to_progress_dict(progress_dict, new_nodes, known_best_time, exp_queue)
+            self._progress_dict, known_best_time, exp_queue = \
+                self.add_new_nodes_to_progress_dict(self._progress_dict, new_nodes, known_best_time, exp_queue)
 
-        return known_best_time, progress_dict, best_departure_time
+        return known_best_time, self._progress_dict, best_departure_time
