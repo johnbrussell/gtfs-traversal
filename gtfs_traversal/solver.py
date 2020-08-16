@@ -253,12 +253,12 @@ class Solver:
                          expanded=False, eliminated=True)
         )
 
-    def add_new_nodes_to_progress_dict(self, new_nodes_list, best_solution_duration):
+    def add_new_nodes_to_progress_dict(self, new_nodes_list, best_solution_duration, *, verbose=True):
         for node in new_nodes_list:
-            best_solution_duration = self.add_new_node_to_progress_dict(node, best_solution_duration)
+            best_solution_duration = self.add_new_node_to_progress_dict(node, best_solution_duration, verbose=verbose)
         return best_solution_duration
 
-    def add_new_node_to_progress_dict(self, new_node, best_solution_duration):
+    def add_new_node_to_progress_dict(self, new_node, best_solution_duration, *, verbose=True):
         new_location, new_progress = new_node
 
         if new_progress.eliminated:
@@ -269,14 +269,15 @@ class Solver:
                 return best_solution_duration
 
         if best_solution_duration is not None:
-            if new_progress.duration >= best_solution_duration:
+            if new_progress.duration + new_progress.minimum_remaining_time >= best_solution_duration:
                 return best_solution_duration
 
         self._progress_dict[new_location] = new_progress
 
         is_solution = new_location.unvisited == self.STOP_JOIN_STRING
         if is_solution:
-            print('solution', new_progress.duration)
+            if verbose:
+                print('solution', new_progress.duration)
             best_solution_duration = new_progress.duration
         else:
             self._exp_queue.add_node(new_location)
