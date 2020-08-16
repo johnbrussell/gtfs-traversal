@@ -116,7 +116,7 @@ class Solver:
         progress = self._progress_dict[location_status]
 
         if location_status.arrival_route == self.TRANSFER_ROUTE:
-            return self.get_nodes_after_transfer(location_status, progress)
+            return self.get_nodes_after_transfer(location_status)
 
         transfer_node = self.get_transfer_data(location_status, progress)
 
@@ -153,7 +153,8 @@ class Solver:
                 for route in routes_at_location
                 if not self.data_munger.is_last_stop_on_route(location_status.location, route)]
 
-    def get_nodes_after_transfer(self, location_status, progress):
+    def get_nodes_after_transfer(self, location_status):
+        progress = self._progress_dict[location_status]
         walking_data = self.get_walking_data(location_status, progress)
         new_route_data = self.get_nodes_after_boarding_routes(location_status)
 

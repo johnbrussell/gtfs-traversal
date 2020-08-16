@@ -46,7 +46,7 @@ class TestSolver(unittest.TestCase):
                     mock_after_transfer:
                 subject._progress_dict[location_status_info] = None
                 actual = subject.get_new_nodes(location_status_info)
-                mock_after_transfer.assert_called_once_with(location_status_info, None)
+                mock_after_transfer.assert_called_once_with(location_status_info)
 
             self.assertEqual(actual, expected)
 
@@ -213,11 +213,12 @@ class TestSolver(unittest.TestCase):
             parent=input_progress_parent, arrival_trip=DEFAULT_TRANSFER_ROUTE, trip_stop_no='1',
             start_location='Wonderland', start_route=1, minimum_remaining_time=timedelta(hours=1), depth=12,
             expanded=False, eliminated=False)
+        subject._progress_dict[input_location_status] = input_progress
 
         with patch.object(Solver, 'get_walking_data', return_value=['walking data']) as mock_walking_data:
             with patch.object(Solver, 'get_node_after_boarding_route', return_value='new route data') \
                     as mock_node_after_boarding_route:
-                actual = subject.get_nodes_after_transfer(input_location_status, input_progress)
+                actual = subject.get_nodes_after_transfer(input_location_status)
                 mock_walking_data.assert_called_once_with(input_location_status, input_progress)
                 self.assertEqual(mock_node_after_boarding_route.call_count, 2)
                 mock_node_after_boarding_route.assert_any_call(input_location_status, 1)
