@@ -85,7 +85,9 @@ class Solver:
                 new_minimum_remaining_time -= self.data_munger.get_minimum_stop_times()[stop]
         return new_minimum_remaining_time
 
-    def get_next_stop_data_for_trip(self, location_status, progress):
+    def get_next_stop_data_for_trip(self, location_status):
+        progress = self._progress_dict[location_status]
+
         if self.data_munger.is_last_stop_on_route(location_status.location, location_status.arrival_route):
             return self.new_eliminated_node(location_status, progress)
 
@@ -124,7 +126,7 @@ class Solver:
         if self.data_munger.is_last_stop_on_route(location_status.location, location_status.arrival_route):
             return [transfer_node]
 
-        return [transfer_node, self.get_next_stop_data_for_trip(location_status, progress)]
+        return [transfer_node, self.get_next_stop_data_for_trip(location_status)]
 
     def get_node_after_boarding_route(self, location_status, progress, route):
         departure_time, trip_id = self.data_munger.first_trip_after(

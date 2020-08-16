@@ -82,7 +82,7 @@ class TestSolver(unittest.TestCase):
                 with patch.object(subject, 'get_transfer_data', return_value='transfer data') as mock_transfer_data:
                     subject._progress_dict[location_status_info] = progress_info
                     actual = subject.get_new_nodes(location_status_info)
-                    mock_after_service.assert_called_once_with(location_status_info, progress_info)
+                    mock_after_service.assert_called_once_with(location_status_info)
                     mock_transfer_data.assert_called_once_with(location_status_info, progress_info)
 
             self.assertEqual(actual, expected)
@@ -104,10 +104,11 @@ class TestSolver(unittest.TestCase):
                 start_time=DEFAULT_START_TIME+timedelta(minutes=418), duration=timedelta(minutes=20), parent=None,
                 arrival_trip=DEFAULT_TRANSFER_ROUTE, trip_stop_no='1', start_location='Wonderland', start_route=1,
                 minimum_remaining_time=timedelta(hours=1), depth=12, expanded=False, eliminated=False)
+            subject._progress_dict[input_location_status] = input_progress
 
             expected = None
             with patch.object(subject, 'new_eliminated_node', return_value=None):
-                actual = subject.get_next_stop_data_for_trip(input_location_status, input_progress)
+                actual = subject.get_next_stop_data_for_trip(input_location_status)
 
             self.assertEqual(expected, actual)
 
@@ -123,6 +124,7 @@ class TestSolver(unittest.TestCase):
                 start_time=DEFAULT_START_TIME + timedelta(minutes=418), duration=timedelta(minutes=2), parent=None,
                 arrival_trip='3-7AM', trip_stop_no='1', start_location='Wonderland', start_route=1,
                 minimum_remaining_time=timedelta(hours=8), depth=12, expanded=False, eliminated=False)
+            subject._progress_dict[input_location_status] = input_progress
 
             expected = (
                 LocationStatusInfo(location='Wonderland', arrival_route=1,
@@ -132,7 +134,7 @@ class TestSolver(unittest.TestCase):
                              start_location='Wonderland', start_route=1, minimum_remaining_time=timedelta(hours=6),
                              depth=13, expanded=False, eliminated=False)
             )
-            actual = subject.get_next_stop_data_for_trip(input_location_status, input_progress)
+            actual = subject.get_next_stop_data_for_trip(input_location_status)
 
             self.assertEqual(expected, actual)
 
