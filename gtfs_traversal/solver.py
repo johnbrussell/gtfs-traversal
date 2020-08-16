@@ -257,9 +257,9 @@ class Solver:
     def add_new_nodes_to_progress_dict(self, new_nodes_list, best_solution_duration, exp_queue):
         progress_dict = self._progress_dict
         for node in new_nodes_list:
-            progress_dict, best_solution_duration, exp_queue = self.add_new_node_to_progress_dict(
+            self._progress_dict, best_solution_duration, exp_queue = self.add_new_node_to_progress_dict(
                 progress_dict, node, best_solution_duration, exp_queue)
-        return progress_dict, best_solution_duration, exp_queue
+        return self._progress_dict, best_solution_duration, exp_queue
 
     def add_new_node_to_progress_dict(self, progress_dict, new_node, best_solution_duration, exp_queue):
         new_location, new_progress = new_node
