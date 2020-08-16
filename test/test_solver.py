@@ -219,7 +219,7 @@ class TestSolver(unittest.TestCase):
             with patch.object(Solver, 'get_node_after_boarding_route', return_value='new route data') \
                     as mock_node_after_boarding_route:
                 actual = subject.get_nodes_after_transfer(input_location_status)
-                mock_walking_data.assert_called_once_with(input_location_status, input_progress)
+                mock_walking_data.assert_called_once_with(input_location_status)
                 self.assertEqual(mock_node_after_boarding_route.call_count, 2)
                 mock_node_after_boarding_route.assert_any_call(input_location_status, 1)
                 mock_node_after_boarding_route.assert_any_call(input_location_status, 3)
@@ -245,9 +245,10 @@ class TestSolver(unittest.TestCase):
                 parent=input_progress_parent, arrival_trip=DEFAULT_TRANSFER_ROUTE, trip_stop_no='1',
                 start_location='Wonderland', start_route=1, minimum_remaining_time=timedelta(hours=1), depth=12,
                 expanded=False, eliminated=False)
+            subject._progress_dict[input_location_status] = input_progress
 
             expected = []
-            actual = subject.get_walking_data(input_location_status, input_progress)
+            actual = subject.get_walking_data(input_location_status)
             self.assertListEqual(expected, actual)
 
         def test_at_start():
@@ -265,9 +266,10 @@ class TestSolver(unittest.TestCase):
                 parent=input_progress_parent, arrival_trip=DEFAULT_TRANSFER_ROUTE, trip_stop_no='1',
                 start_location='Wonderland', start_route=1, minimum_remaining_time=timedelta(hours=1), depth=12,
                 expanded=False, eliminated=False)
+            subject._progress_dict[input_location_status] = input_progress
 
             expected = []
-            actual = subject.get_walking_data(input_location_status, input_progress)
+            actual = subject.get_walking_data(input_location_status)
             self.assertListEqual(expected, actual)
 
         def test_calculates_correct_result():
@@ -286,6 +288,7 @@ class TestSolver(unittest.TestCase):
                 parent=input_progress_parent, arrival_trip=DEFAULT_TRANSFER_ROUTE, trip_stop_no='1',
                 start_location='Wonderland', start_route=1, minimum_remaining_time=timedelta(hours=1), depth=12,
                 expanded=False, eliminated=False)
+            subject._progress_dict[input_location_status] = input_progress
 
             stop_coordinates = subject.data_munger.get_all_stop_coordinates().copy()
             wonderland_coordinates = stop_coordinates.pop('Wonderland')
@@ -304,7 +307,7 @@ class TestSolver(unittest.TestCase):
                 )
                 for station, time in walking_times
             }
-            actual = set(subject.get_walking_data(input_location_status, input_progress))
+            actual = set(subject.get_walking_data(input_location_status))
             self.assertSetEqual(expected, actual)
 
         test_at_start()
