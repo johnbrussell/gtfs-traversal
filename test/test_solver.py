@@ -154,6 +154,7 @@ class TestSolver(unittest.TestCase):
                 start_time=DEFAULT_START_TIME+timedelta(minutes=418), duration=timedelta(minutes=20), parent=None,
                 arrival_trip=DEFAULT_TRANSFER_ROUTE, trip_stop_no='1', start_location='Wonderland', start_route=1,
                 minimum_remaining_time=timedelta(hours=1), depth=12, expanded=False, eliminated=False)
+            subject._progress_dict[input_location_status] = input_progress
             input_new_route = 3
 
             expected = (
@@ -164,7 +165,7 @@ class TestSolver(unittest.TestCase):
                              start_location='Wonderland', start_route=1, minimum_remaining_time=timedelta(hours=1),
                              depth=13, expanded=False, eliminated=False)
             )
-            actual = subject.get_node_after_boarding_route(input_location_status, input_progress, input_new_route)
+            actual = subject.get_node_after_boarding_route(input_location_status, input_new_route)
             self.assertEqual(expected, actual)
 
         def test_last_stop():
@@ -179,6 +180,7 @@ class TestSolver(unittest.TestCase):
                 start_time=DEFAULT_START_TIME+timedelta(minutes=418), duration=timedelta(minutes=20), parent=None,
                 arrival_trip=DEFAULT_TRANSFER_ROUTE, trip_stop_no='1', start_location='Wonderland', start_route=1,
                 minimum_remaining_time=timedelta(hours=1), depth=12, expanded=False, eliminated=False)
+            subject._progress_dict[input_location_status] = input_progress
             input_new_route = 2
 
             expected = (
@@ -189,7 +191,7 @@ class TestSolver(unittest.TestCase):
                              start_location='Wonderland', start_route=1, minimum_remaining_time=timedelta(hours=1),
                              depth=13, expanded=False, eliminated=True)
             )
-            actual = subject.get_node_after_boarding_route(input_location_status, input_progress, input_new_route)
+            actual = subject.get_node_after_boarding_route(input_location_status, input_new_route)
             self.assertEqual(expected, actual)
 
         test_not_last_stop()
@@ -218,8 +220,8 @@ class TestSolver(unittest.TestCase):
                 actual = subject.get_nodes_after_transfer(input_location_status, input_progress)
                 mock_walking_data.assert_called_once_with(input_location_status, input_progress)
                 self.assertEqual(mock_node_after_boarding_route.call_count, 2)
-                mock_node_after_boarding_route.assert_any_call(input_location_status, input_progress, 1)
-                mock_node_after_boarding_route.assert_any_call(input_location_status, input_progress, 3)
+                mock_node_after_boarding_route.assert_any_call(input_location_status, 1)
+                mock_node_after_boarding_route.assert_any_call(input_location_status, 3)
 
         expected = ['walking data', 'new route data', 'new route data']
         self.assertEqual(expected, actual)

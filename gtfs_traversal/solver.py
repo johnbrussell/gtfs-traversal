@@ -128,7 +128,8 @@ class Solver:
 
         return [transfer_node, self.get_next_stop_data_for_trip(location_status)]
 
-    def get_node_after_boarding_route(self, location_status, progress, route):
+    def get_node_after_boarding_route(self, location_status, route):
+        progress = self._progress_dict[location_status]
         departure_time, trip_id = self.data_munger.first_trip_after(
             progress.start_time + progress.duration, route, location_status.location)
 
@@ -148,7 +149,7 @@ class Solver:
 
     def get_nodes_after_boarding_routes(self, location_status, progress):
         routes_at_location = self.data_munger.get_routes_at_stop(location_status.location)
-        return [self.get_node_after_boarding_route(location_status, progress, route)
+        return [self.get_node_after_boarding_route(location_status, route)
                 for route in routes_at_location
                 if not self.data_munger.is_last_stop_on_route(location_status.location, route)]
 
