@@ -83,7 +83,7 @@ class TestSolver(unittest.TestCase):
                     subject._progress_dict[location_status_info] = progress_info
                     actual = subject.get_new_nodes(location_status_info)
                     mock_after_service.assert_called_once_with(location_status_info)
-                    mock_transfer_data.assert_called_once_with(location_status_info, progress_info)
+                    mock_transfer_data.assert_called_once_with(location_status_info)
 
             self.assertEqual(actual, expected)
 

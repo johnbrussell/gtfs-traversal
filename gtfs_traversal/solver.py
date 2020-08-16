@@ -118,7 +118,7 @@ class Solver:
         if location_status.arrival_route == self.TRANSFER_ROUTE:
             return self.get_nodes_after_transfer(location_status)
 
-        transfer_node = self.get_transfer_data(location_status, progress)
+        transfer_node = self.get_transfer_data(location_status)
 
         if location_status.arrival_route == self.WALK_ROUTE:
             return [transfer_node]
@@ -197,7 +197,8 @@ class Solver:
 
         return self._total_minimum_time
 
-    def get_transfer_data(self, location_status, progress):
+    def get_transfer_data(self, location_status):
+        progress = self._progress_dict[location_status]
         return (location_status._replace(arrival_route=self.TRANSFER_ROUTE),
                 ProgressInfo(start_time=progress.start_time,
                              duration=progress.duration + timedelta(seconds=self.TRANSFER_DURATION_SECONDS),
