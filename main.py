@@ -83,5 +83,5 @@ if __name__ == "__main__":
 
     print('best start time:', best_start_time)
     print('best time:', best_time)
-    solver.print_path(best_progress_dictionary)
+    solver.print_path()
     print("finished successfully.")

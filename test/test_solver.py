@@ -4,7 +4,7 @@ from unittest.mock import patch
 
 from gtfs_traversal.data_structures import *
 from gtfs_traversal.solver import Solver
-from gtfs_parsing.data_structures.data_structures import stopLocation
+from gtfs_traversal.expansion_queue import ExpansionQueue
 
 DEFAULT_START_DATE = '2020-01-01'
 DEFAULT_START_TIME = datetime.strptime(DEFAULT_START_DATE, '%Y-%m-%d')
@@ -12,6 +12,117 @@ DEFAULT_TRANSFER_ROUTE = 'transfer route'
 
 
 class TestSolver(unittest.TestCase):
+    def test_add_new_nodes_to_progress_dict(self):
+        def test_improvement():
+            subject = Solver(analysis=MockAnalysis(), data=MockData(), max_expansion_queue=None, max_progress_dict=None,
+                             start_time=None, stop_join_string='~~', transfer_duration_seconds=None,
+                             transfer_route=None, walk_route=None, walk_speed_mph=None)
+            new_location = LocationStatusInfo(location='Wonderland', arrival_route=1, unvisited='~~Lynn~~')
+            subject._progress_dict = {
+                new_location:
+                    ProgressInfo(start_time=DEFAULT_START_TIME, duration=timedelta(minutes=30), arrival_trip='3-6AM',
+                                 trip_stop_no='2', parent=None, start_location='Lynn', start_route=3,
+                                 minimum_remaining_time=timedelta(hours=1), depth=6, expanded=False, eliminated=False)
+            }
+            subject._exp_queue = ExpansionQueue(4, '~~')
+
+            input_best_duration = timedelta(minutes=130)
+            new_progress_eliminated = ProgressInfo(start_time=None, duration=None, arrival_trip=None,
+                                                   trip_stop_no=None, parent=None, start_location=None,
+                                                   start_route=None, minimum_remaining_time=None, depth=None,
+                                                   expanded=None, eliminated=True)
+            new_progress_slower_than_old_progress = ProgressInfo(start_time=None, duration=timedelta(minutes=30.1),
+                                                                 arrival_trip=None, trip_stop_no=None, parent=None,
+                                                                 start_location=None, start_route=None,
+                                                                 minimum_remaining_time=None, depth=None, expanded=None,
+                                                                 eliminated=False)
+            new_progress_slower_than_max_time = ProgressInfo(start_time=None, duration=timedelta(minutes=29),
+                                                             arrival_trip=None, trip_stop_no=None, parent=None,
+                                                             start_location=None, start_route=None,
+                                                             minimum_remaining_time=timedelta(minutes=102),
+                                                             depth=None, expanded=None, eliminated=False)
+            new_progress_improvement = ProgressInfo(start_time=None, duration=timedelta(minutes=29),
+                                                    arrival_trip=None, trip_stop_no=None, parent=None,
+                                                    start_location=None, start_route=None,
+                                                    minimum_remaining_time=timedelta(minutes=100),
+                                                    depth=None, expanded=None, eliminated=False)
+            new_nodes = [
+                (new_location, new_progress_eliminated),
+                (new_location, new_progress_slower_than_old_progress),
+                (new_location, new_progress_slower_than_max_time),
+                (new_location, new_progress_improvement)
+            ]
+
+            expected_duration = input_best_duration
+            expected_dictionary = {
+                new_location: new_progress_improvement
+            }
+            actual_duration = subject.add_new_nodes_to_progress_dict(new_nodes, input_best_duration)
+            actual_dictionary = subject._progress_dict
+            self.assertEqual(expected_duration, actual_duration)
+            self.assertDictEqual(expected_dictionary, actual_dictionary)
+
+        def test_solution():
+            subject = Solver(analysis=MockAnalysis(), data=MockData(), max_expansion_queue=None, max_progress_dict=None,
+                             start_time=None, stop_join_string='~~', transfer_duration_seconds=None,
+                             transfer_route=None, walk_route=None, walk_speed_mph=None)
+            new_location = LocationStatusInfo(location='Wonderland', arrival_route=1, unvisited='~~')
+            other_location = LocationStatusInfo(location='Lynn', arrival_route=3, unvisited='~~')
+            subject._progress_dict = {
+                new_location:
+                    ProgressInfo(start_time=DEFAULT_START_TIME, duration=timedelta(minutes=30), arrival_trip='3-6AM',
+                                 trip_stop_no='2', parent=None, start_location='Lynn', start_route=3,
+                                 minimum_remaining_time=timedelta(hours=1), depth=6, expanded=False, eliminated=False),
+                other_location:
+                    ProgressInfo(start_time=DEFAULT_START_TIME, duration=timedelta(minutes=30), arrival_trip='3-6AM',
+                                 trip_stop_no='2', parent=None, start_location='Lynn', start_route=3,
+                                 minimum_remaining_time=timedelta(hours=1), depth=6, expanded=False, eliminated=False),
+            }
+            subject._exp_queue = ExpansionQueue(4, '~~')
+
+            input_best_duration = timedelta(minutes=130)
+            new_progress_eliminated = ProgressInfo(start_time=None, duration=None, arrival_trip=None,
+                                                   trip_stop_no=None, parent=None, start_location=None,
+                                                   start_route=None, minimum_remaining_time=None, depth=None,
+                                                   expanded=None, eliminated=True)
+            new_progress_slower_than_old_progress = ProgressInfo(start_time=None, duration=timedelta(minutes=30.1),
+                                                                 arrival_trip=None, trip_stop_no=None, parent=None,
+                                                                 start_location=None, start_route=None,
+                                                                 minimum_remaining_time=None, depth=None, expanded=None,
+                                                                 eliminated=False)
+            new_progress_slower_than_max_time = ProgressInfo(start_time=None, duration=timedelta(minutes=29),
+                                                             arrival_trip=None, trip_stop_no=None, parent=None,
+                                                             start_location=None, start_route=None,
+                                                             minimum_remaining_time=timedelta(minutes=102),
+                                                             depth=None, expanded=None, eliminated=False)
+            new_progress_solution = ProgressInfo(start_time=None, duration=timedelta(minutes=29),
+                                                 arrival_trip=None, trip_stop_no=None, parent=None,
+                                                 start_location=None, start_route=None,
+                                                 minimum_remaining_time=timedelta(minutes=0),
+                                                 depth=None, expanded=None, eliminated=False)
+            new_nodes = [
+                (new_location, new_progress_eliminated),
+                (new_location, new_progress_slower_than_old_progress),
+                (new_location, new_progress_slower_than_max_time),
+                (new_location, new_progress_solution)
+            ]
+
+            expected_duration = timedelta(minutes=29)
+            expected_dictionary = {
+                new_location: new_progress_solution,
+                other_location:
+                    ProgressInfo(start_time=DEFAULT_START_TIME, duration=timedelta(minutes=30), arrival_trip='3-6AM',
+                                 trip_stop_no='2', parent=None, start_location='Lynn', start_route=3,
+                                 minimum_remaining_time=timedelta(hours=1), depth=6, expanded=False, eliminated=True),
+            }
+            actual_duration = subject.add_new_nodes_to_progress_dict(new_nodes, input_best_duration, verbose=False)
+            actual_dictionary = subject._progress_dict
+            self.assertEqual(expected_duration, actual_duration)
+            self.assertDictEqual(expected_dictionary, actual_dictionary)
+
+        test_improvement()
+        test_solution()
+
     def test_get_new_minimum_remaining_time(self):
         def test_route_not_on_solution_set():
             subject = Solver(analysis=MockAnalysis(), data=MockData(), max_expansion_queue=None, max_progress_dict=None,
@@ -44,8 +155,9 @@ class TestSolver(unittest.TestCase):
             expected = ['after transfer']
             with patch.object(subject, 'get_nodes_after_transfer', return_value=['after transfer']) as \
                     mock_after_transfer:
-                actual = subject.get_new_nodes(location_status_info, None)
-                mock_after_transfer.assert_called_once_with(location_status_info, None)
+                subject._progress_dict[location_status_info] = None
+                actual = subject.get_new_nodes(location_status_info)
+                mock_after_transfer.assert_called_once_with(location_status_info)
 
             self.assertEqual(actual, expected)
 
@@ -57,12 +169,13 @@ class TestSolver(unittest.TestCase):
             progress_info = ProgressInfo(start_time=None, duration=timedelta(seconds=47), arrival_trip=None,
                                          trip_stop_no=None, parent=None, start_location=None, start_route=None,
                                          minimum_remaining_time=None, depth=4, expanded=None, eliminated=None)
+            subject._progress_dict[location_status_info] = progress_info
 
             expected = [(location_status_info._replace(arrival_route='transfer route'),
                          progress_info._replace(duration=timedelta(seconds=100), depth=5,
                                                 trip_stop_no='transfer route', arrival_trip='transfer route',
                                                 parent=location_status_info, expanded=False, eliminated=False))]
-            actual = subject.get_new_nodes(location_status_info, progress_info)
+            actual = subject.get_new_nodes(location_status_info)
 
             self.assertEqual(actual, expected)
 
@@ -78,9 +191,10 @@ class TestSolver(unittest.TestCase):
             with patch.object(subject, 'get_next_stop_data_for_trip', return_value='after service') as \
                     mock_after_service:
                 with patch.object(subject, 'get_transfer_data', return_value='transfer data') as mock_transfer_data:
-                    actual = subject.get_new_nodes(location_status_info, progress_info)
-                    mock_after_service.assert_called_once_with(location_status_info, progress_info)
-                    mock_transfer_data.assert_called_once_with(location_status_info, progress_info)
+                    subject._progress_dict[location_status_info] = progress_info
+                    actual = subject.get_new_nodes(location_status_info)
+                    mock_after_service.assert_called_once_with(location_status_info)
+                    mock_transfer_data.assert_called_once_with(location_status_info)
 
             self.assertEqual(actual, expected)
 
@@ -101,10 +215,11 @@ class TestSolver(unittest.TestCase):
                 start_time=DEFAULT_START_TIME+timedelta(minutes=418), duration=timedelta(minutes=20), parent=None,
                 arrival_trip=DEFAULT_TRANSFER_ROUTE, trip_stop_no='1', start_location='Wonderland', start_route=1,
                 minimum_remaining_time=timedelta(hours=1), depth=12, expanded=False, eliminated=False)
+            subject._progress_dict[input_location_status] = input_progress
 
             expected = None
             with patch.object(subject, 'new_eliminated_node', return_value=None):
-                actual = subject.get_next_stop_data_for_trip(input_location_status, input_progress)
+                actual = subject.get_next_stop_data_for_trip(input_location_status)
 
             self.assertEqual(expected, actual)
 
@@ -120,6 +235,7 @@ class TestSolver(unittest.TestCase):
                 start_time=DEFAULT_START_TIME + timedelta(minutes=418), duration=timedelta(minutes=2), parent=None,
                 arrival_trip='3-7AM', trip_stop_no='1', start_location='Wonderland', start_route=1,
                 minimum_remaining_time=timedelta(hours=8), depth=12, expanded=False, eliminated=False)
+            subject._progress_dict[input_location_status] = input_progress
 
             expected = (
                 LocationStatusInfo(location='Wonderland', arrival_route=1,
@@ -129,7 +245,7 @@ class TestSolver(unittest.TestCase):
                              start_location='Wonderland', start_route=1, minimum_remaining_time=timedelta(hours=6),
                              depth=13, expanded=False, eliminated=False)
             )
-            actual = subject.get_next_stop_data_for_trip(input_location_status, input_progress)
+            actual = subject.get_next_stop_data_for_trip(input_location_status)
 
             self.assertEqual(expected, actual)
 
@@ -149,6 +265,7 @@ class TestSolver(unittest.TestCase):
                 start_time=DEFAULT_START_TIME+timedelta(minutes=418), duration=timedelta(minutes=20), parent=None,
                 arrival_trip=DEFAULT_TRANSFER_ROUTE, trip_stop_no='1', start_location='Wonderland', start_route=1,
                 minimum_remaining_time=timedelta(hours=1), depth=12, expanded=False, eliminated=False)
+            subject._progress_dict[input_location_status] = input_progress
             input_new_route = 3
 
             expected = (
@@ -159,7 +276,7 @@ class TestSolver(unittest.TestCase):
                              start_location='Wonderland', start_route=1, minimum_remaining_time=timedelta(hours=1),
                              depth=13, expanded=False, eliminated=False)
             )
-            actual = subject.get_node_after_boarding_route(input_location_status, input_progress, input_new_route)
+            actual = subject.get_node_after_boarding_route(input_location_status, input_new_route)
             self.assertEqual(expected, actual)
 
         def test_last_stop():
@@ -174,6 +291,7 @@ class TestSolver(unittest.TestCase):
                 start_time=DEFAULT_START_TIME+timedelta(minutes=418), duration=timedelta(minutes=20), parent=None,
                 arrival_trip=DEFAULT_TRANSFER_ROUTE, trip_stop_no='1', start_location='Wonderland', start_route=1,
                 minimum_remaining_time=timedelta(hours=1), depth=12, expanded=False, eliminated=False)
+            subject._progress_dict[input_location_status] = input_progress
             input_new_route = 2
 
             expected = (
@@ -184,7 +302,7 @@ class TestSolver(unittest.TestCase):
                              start_location='Wonderland', start_route=1, minimum_remaining_time=timedelta(hours=1),
                              depth=13, expanded=False, eliminated=True)
             )
-            actual = subject.get_node_after_boarding_route(input_location_status, input_progress, input_new_route)
+            actual = subject.get_node_after_boarding_route(input_location_status, input_new_route)
             self.assertEqual(expected, actual)
 
         test_not_last_stop()
@@ -206,15 +324,16 @@ class TestSolver(unittest.TestCase):
             parent=input_progress_parent, arrival_trip=DEFAULT_TRANSFER_ROUTE, trip_stop_no='1',
             start_location='Wonderland', start_route=1, minimum_remaining_time=timedelta(hours=1), depth=12,
             expanded=False, eliminated=False)
+        subject._progress_dict[input_location_status] = input_progress
 
         with patch.object(Solver, 'get_walking_data', return_value=['walking data']) as mock_walking_data:
             with patch.object(Solver, 'get_node_after_boarding_route', return_value='new route data') \
                     as mock_node_after_boarding_route:
-                actual = subject.get_nodes_after_transfer(input_location_status, input_progress)
-                mock_walking_data.assert_called_once_with(input_location_status, input_progress)
+                actual = subject.get_nodes_after_transfer(input_location_status)
+                mock_walking_data.assert_called_once_with(input_location_status)
                 self.assertEqual(mock_node_after_boarding_route.call_count, 2)
-                mock_node_after_boarding_route.assert_any_call(input_location_status, input_progress, 1)
-                mock_node_after_boarding_route.assert_any_call(input_location_status, input_progress, 3)
+                mock_node_after_boarding_route.assert_any_call(input_location_status, 1)
+                mock_node_after_boarding_route.assert_any_call(input_location_status, 3)
 
         expected = ['walking data', 'new route data', 'new route data']
         self.assertEqual(expected, actual)
@@ -237,9 +356,10 @@ class TestSolver(unittest.TestCase):
                 parent=input_progress_parent, arrival_trip=DEFAULT_TRANSFER_ROUTE, trip_stop_no='1',
                 start_location='Wonderland', start_route=1, minimum_remaining_time=timedelta(hours=1), depth=12,
                 expanded=False, eliminated=False)
+            subject._progress_dict[input_location_status] = input_progress
 
             expected = []
-            actual = subject.get_walking_data(input_location_status, input_progress)
+            actual = subject.get_walking_data(input_location_status)
             self.assertListEqual(expected, actual)
 
         def test_at_start():
@@ -257,9 +377,10 @@ class TestSolver(unittest.TestCase):
                 parent=input_progress_parent, arrival_trip=DEFAULT_TRANSFER_ROUTE, trip_stop_no='1',
                 start_location='Wonderland', start_route=1, minimum_remaining_time=timedelta(hours=1), depth=12,
                 expanded=False, eliminated=False)
+            subject._progress_dict[input_location_status] = input_progress
 
             expected = []
-            actual = subject.get_walking_data(input_location_status, input_progress)
+            actual = subject.get_walking_data(input_location_status)
             self.assertListEqual(expected, actual)
 
         def test_calculates_correct_result():
@@ -278,12 +399,13 @@ class TestSolver(unittest.TestCase):
                 parent=input_progress_parent, arrival_trip=DEFAULT_TRANSFER_ROUTE, trip_stop_no='1',
                 start_location='Wonderland', start_route=1, minimum_remaining_time=timedelta(hours=1), depth=12,
                 expanded=False, eliminated=False)
+            subject._progress_dict[input_location_status] = input_progress
 
             stop_coordinates = subject.data_munger.get_all_stop_coordinates().copy()
             wonderland_coordinates = stop_coordinates.pop('Wonderland')
-            walking_times = { (station, subject.walk_time_seconds(coordinates.lat, wonderland_coordinates.lat,
-                                                                  coordinates.long, wonderland_coordinates.long))
-                              for station, coordinates in stop_coordinates.items() }
+            walking_times = {(station, subject.walk_time_seconds(coordinates.lat, wonderland_coordinates.lat,
+                                                                 coordinates.long, wonderland_coordinates.long))
+                             for station, coordinates in stop_coordinates.items()}
             expected = {
                 (
                     LocationStatusInfo(location=station, arrival_route='walk route', unvisited='~~Lynn~~'),
@@ -296,7 +418,7 @@ class TestSolver(unittest.TestCase):
                 )
                 for station, time in walking_times
             }
-            actual = set(subject.get_walking_data(input_location_status, input_progress))
+            actual = set(subject.get_walking_data(input_location_status))
             self.assertSetEqual(expected, actual)
 
         test_at_start()
@@ -396,6 +518,38 @@ class TestSolver(unittest.TestCase):
         test_start_of_route()
         test_middle_of_route()
         test_no_valid_departures()
+
+    def test_mark_slow_nodes_as_eliminated(self):
+        new_duration = timedelta(minutes=10)
+        valid_progress_info = ProgressInfo(start_time=None, duration=timedelta(minutes=8), arrival_trip=None,
+                                           trip_stop_no=None, parent=None, start_location=None, start_route=None,
+                                           minimum_remaining_time=timedelta(minutes=1), depth=None, expanded=None,
+                                           eliminated=False)
+        invalid_progress_info = ProgressInfo(start_time=None, duration=timedelta(minutes=9.1), arrival_trip=None,
+                                             trip_stop_no=None, parent=None, start_location=None, start_route=None,
+                                             minimum_remaining_time=timedelta(minutes=1), depth=None, expanded=None,
+                                             eliminated=False)
+        input_progress_dict = {
+            1: valid_progress_info,
+            2: invalid_progress_info,
+            3: invalid_progress_info
+        }
+        expected = {
+            1: valid_progress_info,
+            2: ProgressInfo(start_time=None, duration=timedelta(minutes=9.1), arrival_trip=None, trip_stop_no=None,
+                            parent=None, start_location=None, start_route=None,
+                            minimum_remaining_time=timedelta(minutes=1), depth=None, expanded=None, eliminated=True),
+            3: invalid_progress_info
+        }
+        subject = Solver(analysis=None, data=None, max_expansion_queue=None, max_progress_dict=None, start_time=None,
+                         stop_join_string=None, transfer_duration_seconds=None, transfer_route=None, walk_route=None,
+                         walk_speed_mph=None)
+        subject._progress_dict = input_progress_dict
+        to_preserve = set()
+        to_preserve.add(3)
+        subject.mark_slow_nodes_as_eliminated(new_duration, preserve=to_preserve)
+        actual = subject._progress_dict
+        self.assertDictEqual(expected, actual)
 
     def test_walk_time_seconds(self):
         def get_solver_with_speed(*, mph):

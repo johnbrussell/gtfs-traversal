@@ -2,7 +2,7 @@ from gtfs_traversal.data_munger import DataMunger
 from gtfs_traversal.expansion_queue import ExpansionQueue
 from gtfs_traversal.data_structures import *
 import math
-from datetime import datetime, timedelta
+from datetime import timedelta
 
 
 class Solver:
@@ -17,8 +17,10 @@ class Solver:
         self.MAX_EXPANSION_QUEUE = max_expansion_queue
         self.ANALYSIS = analysis
 
+        self._exp_queue = None
         self._initial_unsolved_string = None
         self._off_course_stop_locations = None
+        self._progress_dict = dict()
         self._route_trips = None
         self._stop_locations = None
         self._stop_locations_to_solve = None
@@ -84,9 +86,11 @@ class Solver:
                 new_minimum_remaining_time -= self.data_munger.get_minimum_stop_times()[stop]
         return new_minimum_remaining_time
 
-    def get_next_stop_data_for_trip(self, location_status, progress):
+    def get_next_stop_data_for_trip(self, location_status):
+        progress = self._progress_dict[location_status]
+
         if self.data_munger.is_last_stop_on_route(location_status.location, location_status.arrival_route):
-            return self.new_eliminated_node(location_status, progress)
+            return self.new_eliminated_node(location_status)
 
         stop_number = progress.trip_stop_no
         next_stop_no = str(int(stop_number) + 1)
@@ -109,11 +113,11 @@ class Solver:
                          depth=progress.depth + 1, expanded=False, eliminated=False)
         )
 
-    def get_new_nodes(self, location_status, progress):
+    def get_new_nodes(self, location_status):
         if location_status.arrival_route == self.TRANSFER_ROUTE:
-            return self.get_nodes_after_transfer(location_status, progress)
+            return self.get_nodes_after_transfer(location_status)
 
-        transfer_node = self.get_transfer_data(location_status, progress)
+        transfer_node = self.get_transfer_data(location_status)
 
         if location_status.arrival_route == self.WALK_ROUTE:
             return [transfer_node]
@@ -121,14 +125,15 @@ class Solver:
         if self.data_munger.is_last_stop_on_route(location_status.location, location_status.arrival_route):
             return [transfer_node]
 
-        return [transfer_node, self.get_next_stop_data_for_trip(location_status, progress)]
+        return [transfer_node, self.get_next_stop_data_for_trip(location_status)]
 
-    def get_node_after_boarding_route(self, location_status, progress, route):
+    def get_node_after_boarding_route(self, location_status, route):
+        progress = self._progress_dict[location_status]
         departure_time, trip_id = self.data_munger.first_trip_after(
             progress.start_time + progress.duration, route, location_status.location)
 
         if trip_id is None:
-            return self.new_eliminated_node(location_status, progress)
+            return self.new_eliminated_node(location_status)
 
         stop_number = self.data_munger.get_stop_number_from_stop_id(location_status.location, route)
         new_duration = departure_time - progress.start_time
@@ -141,15 +146,15 @@ class Solver:
                          depth=progress.depth + 1, expanded=False, eliminated=False)
         )
 
-    def get_nodes_after_boarding_routes(self, location_status, progress):
+    def get_nodes_after_boarding_routes(self, location_status):
         routes_at_location = self.data_munger.get_routes_at_stop(location_status.location)
-        return [self.get_node_after_boarding_route(location_status, progress, route)
+        return [self.get_node_after_boarding_route(location_status, route)
                 for route in routes_at_location
                 if not self.data_munger.is_last_stop_on_route(location_status.location, route)]
 
-    def get_nodes_after_transfer(self, location_status, progress):
-        walking_data = self.get_walking_data(location_status, progress)
-        new_route_data = self.get_nodes_after_boarding_routes(location_status, progress)
+    def get_nodes_after_transfer(self, location_status):
+        walking_data = self.get_walking_data(location_status)
+        new_route_data = self.get_nodes_after_boarding_routes(location_status)
 
         return walking_data + new_route_data
 
@@ -190,7 +195,8 @@ class Solver:
 
         return self._total_minimum_time
 
-    def get_transfer_data(self, location_status, progress):
+    def get_transfer_data(self, location_status):
+        progress = self._progress_dict[location_status]
         return (location_status._replace(arrival_route=self.TRANSFER_ROUTE),
                 ProgressInfo(start_time=progress.start_time,
                              duration=progress.duration + timedelta(seconds=self.TRANSFER_DURATION_SECONDS),
@@ -206,7 +212,9 @@ class Solver:
         self._trip_schedules = self.data_munger.get_trip_schedules()
         return self._trip_schedules
 
-    def get_walking_data(self, location_status, progress):
+    def get_walking_data(self, location_status):
+        progress = self._progress_dict[location_status]
+
         if progress.parent is None:
             return []
         if progress.parent.arrival_route == self.WALK_ROUTE:
@@ -234,8 +242,20 @@ class Solver:
             if loc != location_status.location
         ]
 
+    def mark_slow_nodes_as_eliminated(self, best_solution_duration, *, preserve):
+        self._progress_dict = {
+            k: v._replace(eliminated=self.is_too_slow(k, v, best_solution_duration, preserve))
+            for k, v in self._progress_dict.items()
+        }
+
     @staticmethod
-    def new_eliminated_node(location_status, progress):
+    def is_too_slow(location, progress_info, best_duration, preserve):
+        if location in preserve:
+            return False
+        return progress_info.duration + progress_info.minimum_remaining_time >= best_duration
+
+    def new_eliminated_node(self, location_status):
+        progress = self._progress_dict[location_status]
         return (
             location_status,
             ProgressInfo(start_time=progress.start_time, duration=progress.duration, arrival_trip=progress.arrival_trip,
@@ -245,36 +265,39 @@ class Solver:
                          expanded=False, eliminated=True)
         )
 
-    def add_new_nodes_to_progress_dict(self, progress_dict, new_nodes_list, best_solution_duration, exp_queue):
+    def add_new_nodes_to_progress_dict(self, new_nodes_list, best_solution_duration, *, verbose=True):
         for node in new_nodes_list:
-            progress_dict, best_solution_duration, exp_queue = self.add_new_node_to_progress_dict(
-                progress_dict, node, best_solution_duration, exp_queue)
-        return progress_dict, best_solution_duration, new_nodes_list, exp_queue
+            best_solution_duration = self.add_new_node_to_progress_dict(node, best_solution_duration, verbose=verbose)
+        return best_solution_duration
 
-    def add_new_node_to_progress_dict(self, progress_dict, new_node, best_solution_duration, exp_queue):
+    def add_new_node_to_progress_dict(self, new_node, best_solution_duration, *, verbose=True):
         new_location, new_progress = new_node
 
         if new_progress.eliminated:
-            return progress_dict, best_solution_duration, exp_queue
+            return best_solution_duration
 
-        if progress_dict.get(new_location, None) is not None:
-            if progress_dict[new_location].duration <= new_progress.duration:
-                return progress_dict, best_solution_duration, exp_queue
+        if self._progress_dict.get(new_location, None) is not None:
+            if self._progress_dict[new_location].duration <= new_progress.duration:
+                return best_solution_duration
 
         if best_solution_duration is not None:
-            if new_progress.duration >= best_solution_duration:
-                return progress_dict, best_solution_duration, exp_queue
+            if new_progress.duration + new_progress.minimum_remaining_time >= best_solution_duration:
+                return best_solution_duration
 
-        progress_dict[new_location] = new_progress
+        self._progress_dict[new_location] = new_progress
 
         is_solution = new_location.unvisited == self.STOP_JOIN_STRING
         if is_solution:
-            print('solution', new_progress.duration)
+            if verbose:
+                print('solution', new_progress.duration)
             best_solution_duration = new_progress.duration
+            to_preserve = set()
+            to_preserve.add(new_location)
+            self.mark_slow_nodes_as_eliminated(best_solution_duration, preserve=to_preserve)
         else:
-            exp_queue.add_node(new_location)
+            self._exp_queue.add_node(new_location)
 
-        return progress_dict, best_solution_duration, exp_queue
+        return best_solution_duration
 
     def initialize_progress_dict(self, begin_time):
         progress_dict = dict()
@@ -303,40 +326,38 @@ class Solver:
                          progress.start_time == best_departure_time}
         return progress_dict, best_departure_time
 
-    def print_path(self, progress_dict):
-        solution_locations = [k for k in progress_dict if k.unvisited == self.STOP_JOIN_STRING]
+    def print_path(self):
+        solution_locations = [k for k in self._progress_dict if k.unvisited == self.STOP_JOIN_STRING]
         for location in solution_locations:
             path = list()
             _location = location
             while _location is not None:
                 path.append((_location.arrival_route, _location.location))
-                _location = progress_dict[_location].parent
+                _location = self._progress_dict[_location].parent
             path = reversed(path)
             print("solution:")
             for stop in path:
                 print(stop)
 
     def find_solution(self, begin_time, known_best_time):
-        progress_dict, best_departure_time = self.initialize_progress_dict(begin_time)
-        exp_queue = ExpansionQueue(len(self.data_munger.get_unique_stops_to_solve()), self.STOP_JOIN_STRING)
-        if len(progress_dict) > 0:
-            exp_queue.add(progress_dict.keys())
+        self._progress_dict, best_departure_time = self.initialize_progress_dict(begin_time)
+        self._exp_queue = ExpansionQueue(len(self.data_munger.get_unique_stops_to_solve()), self.STOP_JOIN_STRING)
+        if len(self._progress_dict) > 0:
+            self._exp_queue.add(self._progress_dict.keys())
 
         num_expansions = 0
-        while not exp_queue.is_empty():
+        while not self._exp_queue.is_empty():
             num_expansions += 1
 
-            expandee = exp_queue.pop()
-            expandee_progress = progress_dict[expandee]
+            expandee = self._exp_queue.pop()
 
-            if expandee_progress.expanded or expandee.unvisited == self.STOP_JOIN_STRING:
+            if expandee.unvisited == self.STOP_JOIN_STRING or self._progress_dict[expandee].expanded:
                 continue
 
-            progress_dict[expandee] = progress_dict[expandee]._replace(expanded=True)
+            self._progress_dict[expandee] = self._progress_dict[expandee]._replace(expanded=True)
 
-            new_nodes = self.get_new_nodes(expandee, progress_dict[expandee])
+            new_nodes = self.get_new_nodes(expandee)
 
-            progress_dict, known_best_time, new_nodes, exp_queue = \
-                self.add_new_nodes_to_progress_dict(progress_dict, new_nodes, known_best_time, exp_queue)
+            known_best_time = self.add_new_nodes_to_progress_dict(new_nodes, known_best_time)
 
-        return known_best_time, progress_dict, best_departure_time
+        return known_best_time, self._progress_dict, best_departure_time
