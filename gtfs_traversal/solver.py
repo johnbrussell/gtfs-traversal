@@ -17,6 +17,7 @@ class Solver:
         self.MAX_EXPANSION_QUEUE = max_expansion_queue
         self.ANALYSIS = analysis
 
+        self._exp_queue = None
         self._initial_unsolved_string = None
         self._off_course_stop_locations = None
         self._progress_dict = dict()
@@ -325,15 +326,15 @@ class Solver:
 
     def find_solution(self, begin_time, known_best_time):
         self._progress_dict, best_departure_time = self.initialize_progress_dict(begin_time)
-        exp_queue = ExpansionQueue(len(self.data_munger.get_unique_stops_to_solve()), self.STOP_JOIN_STRING)
+        self._exp_queue = ExpansionQueue(len(self.data_munger.get_unique_stops_to_solve()), self.STOP_JOIN_STRING)
         if len(self._progress_dict) > 0:
-            exp_queue.add(self._progress_dict.keys())
+            self._exp_queue.add(self._progress_dict.keys())
 
         num_expansions = 0
-        while not exp_queue.is_empty():
+        while not self._exp_queue.is_empty():
             num_expansions += 1
 
-            expandee = exp_queue.pop()
+            expandee = self._exp_queue.pop()
 
             if expandee.unvisited == self.STOP_JOIN_STRING or self._progress_dict[expandee].expanded:
                 continue
@@ -342,6 +343,7 @@ class Solver:
 
             new_nodes = self.get_new_nodes(expandee)
 
-            known_best_time, exp_queue = self.add_new_nodes_to_progress_dict(new_nodes, known_best_time, exp_queue)
+            known_best_time, exp_queue = self.add_new_nodes_to_progress_dict(
+                new_nodes, known_best_time, self._exp_queue)
 
         return known_best_time, self._progress_dict, best_departure_time
