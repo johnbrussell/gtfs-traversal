@@ -89,7 +89,7 @@ class Solver:
         progress = self._progress_dict[location_status]
 
         if self.data_munger.is_last_stop_on_route(location_status.location, location_status.arrival_route):
-            return self.new_eliminated_node(location_status, progress)
+            return self.new_eliminated_node(location_status)
 
         stop_number = progress.trip_stop_no
         next_stop_no = str(int(stop_number) + 1)
@@ -134,7 +134,7 @@ class Solver:
             progress.start_time + progress.duration, route, location_status.location)
 
         if trip_id is None:
-            return self.new_eliminated_node(location_status, progress)
+            return self.new_eliminated_node(location_status)
 
         stop_number = self.data_munger.get_stop_number_from_stop_id(location_status.location, route)
         new_duration = departure_time - progress.start_time
@@ -243,8 +243,8 @@ class Solver:
             if loc != location_status.location
         ]
 
-    @staticmethod
-    def new_eliminated_node(location_status, progress):
+    def new_eliminated_node(self, location_status):
+        progress = self._progress_dict[location_status]
         return (
             location_status,
             ProgressInfo(start_time=progress.start_time, duration=progress.duration, arrival_trip=progress.arrival_trip,
