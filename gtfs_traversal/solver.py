@@ -2,7 +2,7 @@ from gtfs_traversal.data_munger import DataMunger
 from gtfs_traversal.expansion_queue import ExpansionQueue
 from gtfs_traversal.data_structures import *
 import math
-from datetime import datetime, timedelta
+from datetime import timedelta
 
 
 class Solver:
@@ -113,8 +113,6 @@ class Solver:
         )
 
     def get_new_nodes(self, location_status):
-        progress = self._progress_dict[location_status]
-
         if location_status.arrival_route == self.TRANSFER_ROUTE:
             return self.get_nodes_after_transfer(location_status)
 
