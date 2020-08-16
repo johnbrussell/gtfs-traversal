@@ -4,7 +4,6 @@ from unittest.mock import patch
 
 from gtfs_traversal.data_structures import *
 from gtfs_traversal.solver import Solver
-from gtfs_parsing.data_structures.data_structures import stopLocation
 
 DEFAULT_START_DATE = '2020-01-01'
 DEFAULT_START_TIME = datetime.strptime(DEFAULT_START_DATE, '%Y-%m-%d')
@@ -292,9 +291,9 @@ class TestSolver(unittest.TestCase):
 
             stop_coordinates = subject.data_munger.get_all_stop_coordinates().copy()
             wonderland_coordinates = stop_coordinates.pop('Wonderland')
-            walking_times = { (station, subject.walk_time_seconds(coordinates.lat, wonderland_coordinates.lat,
-                                                                  coordinates.long, wonderland_coordinates.long))
-                              for station, coordinates in stop_coordinates.items() }
+            walking_times = {(station, subject.walk_time_seconds(coordinates.lat, wonderland_coordinates.lat,
+                                                                 coordinates.long, wonderland_coordinates.long))
+                             for station, coordinates in stop_coordinates.items()}
             expected = {
                 (
                     LocationStatusInfo(location=station, arrival_route='walk route', unvisited='~~Lynn~~'),
