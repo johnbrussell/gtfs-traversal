@@ -258,24 +258,24 @@ class Solver:
         progress_dict = self._progress_dict
         for node in new_nodes_list:
             self._progress_dict, best_solution_duration, exp_queue = self.add_new_node_to_progress_dict(
-                progress_dict, node, best_solution_duration, exp_queue)
+                node, best_solution_duration, exp_queue)
         return best_solution_duration, exp_queue
 
-    def add_new_node_to_progress_dict(self, progress_dict, new_node, best_solution_duration, exp_queue):
+    def add_new_node_to_progress_dict(self, new_node, best_solution_duration, exp_queue):
         new_location, new_progress = new_node
 
         if new_progress.eliminated:
-            return progress_dict, best_solution_duration, exp_queue
+            return self._progress_dict, best_solution_duration, exp_queue
 
-        if progress_dict.get(new_location, None) is not None:
-            if progress_dict[new_location].duration <= new_progress.duration:
-                return progress_dict, best_solution_duration, exp_queue
+        if self._progress_dict.get(new_location, None) is not None:
+            if self._progress_dict[new_location].duration <= new_progress.duration:
+                return self._progress_dict, best_solution_duration, exp_queue
 
         if best_solution_duration is not None:
             if new_progress.duration >= best_solution_duration:
-                return progress_dict, best_solution_duration, exp_queue
+                return self._progress_dict, best_solution_duration, exp_queue
 
-        progress_dict[new_location] = new_progress
+        self._progress_dict[new_location] = new_progress
 
         is_solution = new_location.unvisited == self.STOP_JOIN_STRING
         if is_solution:
@@ -284,7 +284,7 @@ class Solver:
         else:
             exp_queue.add_node(new_location)
 
-        return progress_dict, best_solution_duration, exp_queue
+        return self._progress_dict, best_solution_duration, exp_queue
 
     def initialize_progress_dict(self, begin_time):
         progress_dict = dict()
