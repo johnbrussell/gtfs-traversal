@@ -255,23 +255,22 @@ class Solver:
 
     def add_new_nodes_to_progress_dict(self, new_nodes_list, best_solution_duration):
         for node in new_nodes_list:
-            best_solution_duration, self._exp_queue = self.add_new_node_to_progress_dict(
-                node, best_solution_duration, self._exp_queue)
+            best_solution_duration = self.add_new_node_to_progress_dict(node, best_solution_duration)
         return best_solution_duration
 
-    def add_new_node_to_progress_dict(self, new_node, best_solution_duration, exp_queue):
+    def add_new_node_to_progress_dict(self, new_node, best_solution_duration):
         new_location, new_progress = new_node
 
         if new_progress.eliminated:
-            return best_solution_duration, exp_queue
+            return best_solution_duration
 
         if self._progress_dict.get(new_location, None) is not None:
             if self._progress_dict[new_location].duration <= new_progress.duration:
-                return best_solution_duration, exp_queue
+                return best_solution_duration
 
         if best_solution_duration is not None:
             if new_progress.duration >= best_solution_duration:
-                return best_solution_duration, exp_queue
+                return best_solution_duration
 
         self._progress_dict[new_location] = new_progress
 
@@ -280,9 +279,9 @@ class Solver:
             print('solution', new_progress.duration)
             best_solution_duration = new_progress.duration
         else:
-            exp_queue.add_node(new_location)
+            self._exp_queue.add_node(new_location)
 
-        return best_solution_duration, exp_queue
+        return best_solution_duration
 
     def initialize_progress_dict(self, begin_time):
         progress_dict = dict()
