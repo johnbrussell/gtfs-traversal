@@ -242,6 +242,16 @@ class Solver:
             if loc != location_status.location
         ]
 
+    def mark_slow_nodes_as_eliminated(self, best_solution_duration):
+        self._progress_dict = {
+            k: v._replace(eliminated=self.is_too_slow(v, best_solution_duration))
+            for k, v in self._progress_dict.items()
+        }
+
+    @staticmethod
+    def is_too_slow(progress_info, best_duration):
+        return progress_info.duration + progress_info.minimum_remaining_time >= best_duration
+
     def new_eliminated_node(self, location_status):
         progress = self._progress_dict[location_status]
         return (

@@ -510,6 +510,32 @@ class TestSolver(unittest.TestCase):
         test_middle_of_route()
         test_no_valid_departures()
 
+    def test_mark_slow_nodes_as_eliminated(self):
+        new_duration = timedelta(minutes=10)
+        valid_progress_info = ProgressInfo(start_time=None, duration=timedelta(minutes=8), arrival_trip=None,
+                                           trip_stop_no=None, parent=None, start_location=None, start_route=None,
+                                           minimum_remaining_time=timedelta(minutes=1), depth=None, expanded=None,
+                                           eliminated=False)
+        input_progress_dict = {
+            1: valid_progress_info,
+            2: ProgressInfo(start_time=None, duration=timedelta(minutes=9.1), arrival_trip=None, trip_stop_no=None,
+                            parent=None, start_location=None, start_route=None,
+                            minimum_remaining_time=timedelta(minutes=1), depth=None, expanded=None, eliminated=False)
+        }
+        expected = {
+            1: valid_progress_info,
+            2: ProgressInfo(start_time=None, duration=timedelta(minutes=9.1), arrival_trip=None, trip_stop_no=None,
+                            parent=None, start_location=None, start_route=None,
+                            minimum_remaining_time=timedelta(minutes=1), depth=None, expanded=None, eliminated=True)
+        }
+        subject = Solver(analysis=None, data=None, max_expansion_queue=None, max_progress_dict=None, start_time=None,
+                         stop_join_string=None, transfer_duration_seconds=None, transfer_route=None, walk_route=None,
+                         walk_speed_mph=None)
+        subject._progress_dict = input_progress_dict
+        subject.mark_slow_nodes_as_eliminated(new_duration)
+        actual = subject._progress_dict
+        self.assertDictEqual(expected, actual)
+
     def test_walk_time_seconds(self):
         def get_solver_with_speed(*, mph):
             return Solver(analysis=None, data=None, max_expansion_queue=None, max_progress_dict=None, start_time=None,
