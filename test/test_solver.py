@@ -14,9 +14,9 @@ DEFAULT_TRANSFER_ROUTE = 'transfer route'
 class TestSolver(unittest.TestCase):
     def test_add_new_nodes_to_progress_dict(self):
         def test_improvement():
-            subject = Solver(analysis=MockAnalysis(), data=MockData(), max_expansion_queue=None, max_progress_dict=None,
-                             start_time=None, stop_join_string='~~', transfer_duration_seconds=None,
-                             transfer_route=None, walk_route=None, walk_speed_mph=None)
+            subject = Solver(analysis=MockAnalysis(), data=MockData(), max_progress_dict=None, start_time=None,
+                             stop_join_string='~~', transfer_duration_seconds=None, transfer_route=None,
+                             walk_route=None, walk_speed_mph=None)
             new_location = LocationStatusInfo(location='Wonderland', arrival_route=1, unvisited='~~Lynn~~')
             subject._progress_dict = {
                 new_location:
@@ -58,9 +58,9 @@ class TestSolver(unittest.TestCase):
             self.assertDictEqual(expected_dictionary, actual_dictionary)
 
         def test_solution():
-            subject = Solver(analysis=MockAnalysis(), data=MockData(), max_expansion_queue=None, max_progress_dict=None,
-                             start_time=None, stop_join_string='~~', transfer_duration_seconds=None,
-                             transfer_route=None, walk_route=None, walk_speed_mph=None)
+            subject = Solver(analysis=MockAnalysis(), data=MockData(), max_progress_dict=None, start_time=None,
+                             stop_join_string='~~', transfer_duration_seconds=None, transfer_route=None,
+                             walk_route=None, walk_speed_mph=None)
             new_location = LocationStatusInfo(location='Wonderland', arrival_route=1, unvisited='~~')
             other_location = LocationStatusInfo(location='Lynn', arrival_route=3, unvisited='~~')
             subject._progress_dict = {
@@ -114,16 +114,16 @@ class TestSolver(unittest.TestCase):
 
     def test_get_new_minimum_remaining_time(self):
         def test_route_not_on_solution_set():
-            subject = Solver(analysis=MockAnalysis(), data=MockData(), max_expansion_queue=None, max_progress_dict=None,
-                             start_time=None, stop_join_string=None, transfer_duration_seconds=None,
-                             transfer_route=None, walk_route=None, walk_speed_mph=None)
+            subject = Solver(analysis=MockAnalysis(), data=MockData(), max_progress_dict=None, start_time=None,
+                             stop_join_string=None, transfer_duration_seconds=None, transfer_route=None,
+                             walk_route=None, walk_speed_mph=None)
             input_time = timedelta(seconds=400)
             expected = input_time
             actual = subject.get_new_minimum_remaining_time(input_time, None, None, 'not a route')
             self.assertEqual(expected, actual)
 
         def test_route_on_solution_set():
-            subject = Solver(analysis=MockAnalysis(), data=MockData(), max_expansion_queue=None, max_progress_dict=None,
+            subject = Solver(analysis=MockAnalysis(), data=MockData(), max_progress_dict=None,
                              start_time=DEFAULT_START_TIME, stop_join_string='##', transfer_duration_seconds=None,
                              transfer_route=None, walk_route=None, walk_speed_mph=None)
             input_time = timedelta(minutes=400)
@@ -137,7 +137,7 @@ class TestSolver(unittest.TestCase):
 
     def test_get_new_nodes(self):
         def test_after_transfer():
-            subject = Solver(analysis=MockAnalysis(), data=MockData(), max_expansion_queue=None, max_progress_dict=None,
+            subject = Solver(analysis=MockAnalysis(), data=MockData(), max_progress_dict=None,
                              start_time=DEFAULT_START_TIME, stop_join_string='~~', transfer_duration_seconds=None,
                              transfer_route='transfer route', walk_route=None, walk_speed_mph=None)
             location_status_info = LocationStatusInfo(location=None, arrival_route='transfer route', unvisited=None)
@@ -151,7 +151,7 @@ class TestSolver(unittest.TestCase):
             self.assertEqual(actual, expected)
 
         def test_after_walk():
-            subject = Solver(analysis=MockAnalysis(), data=MockData(), max_expansion_queue=None, max_progress_dict=None,
+            subject = Solver(analysis=MockAnalysis(), data=MockData(), max_progress_dict=None,
                              start_time=DEFAULT_START_TIME, stop_join_string='~~', transfer_duration_seconds=53,
                              transfer_route='transfer route', walk_route='walk route', walk_speed_mph=None)
             location_status_info = LocationStatusInfo(location=None, arrival_route='walk route', unvisited=None)
@@ -169,7 +169,7 @@ class TestSolver(unittest.TestCase):
             self.assertEqual(actual, expected)
 
         def test_after_service():
-            subject = Solver(analysis=MockAnalysis(), data=MockData(), max_expansion_queue=None, max_progress_dict=None,
+            subject = Solver(analysis=MockAnalysis(), data=MockData(), max_progress_dict=None,
                              start_time=DEFAULT_START_TIME, stop_join_string='~~', transfer_duration_seconds=None,
                              transfer_route=None, walk_route=None, walk_speed_mph=None)
             location_status_info = LocationStatusInfo(location='Wonderland', arrival_route=1, unvisited=None)
@@ -192,7 +192,7 @@ class TestSolver(unittest.TestCase):
 
     def test_get_next_stop_data_for_trip(self):
         def test_last_stop():
-            subject = Solver(analysis=MockAnalysis(), data=MockData(), max_expansion_queue=None, max_progress_dict=None,
+            subject = Solver(analysis=MockAnalysis(), data=MockData(), max_progress_dict=None,
                              start_time=DEFAULT_START_TIME, stop_join_string='~~', transfer_duration_seconds=None,
                              transfer_route=DEFAULT_TRANSFER_ROUTE, walk_route=None, walk_speed_mph=None)
 
@@ -212,7 +212,7 @@ class TestSolver(unittest.TestCase):
             self.assertEqual(expected, actual)
 
         def test_not_last_stop():
-            subject = Solver(analysis=MockAnalysis(), data=MockData(), max_expansion_queue=None, max_progress_dict=None,
+            subject = Solver(analysis=MockAnalysis(), data=MockData(), max_progress_dict=None,
                              start_time=DEFAULT_START_TIME, stop_join_string='~~', transfer_duration_seconds=None,
                              transfer_route=DEFAULT_TRANSFER_ROUTE, walk_route=None, walk_speed_mph=None)
 
@@ -242,7 +242,7 @@ class TestSolver(unittest.TestCase):
 
     def test_get_node_after_boarding_route(self):
         def test_not_last_stop():
-            subject = Solver(analysis=MockAnalysis(), data=MockData(), max_expansion_queue=None, max_progress_dict=None,
+            subject = Solver(analysis=MockAnalysis(), data=MockData(), max_progress_dict=None,
                              start_time=DEFAULT_START_TIME, stop_join_string='~~', transfer_duration_seconds=None,
                              transfer_route=DEFAULT_TRANSFER_ROUTE, walk_route=None, walk_speed_mph=None)
 
@@ -268,7 +268,7 @@ class TestSolver(unittest.TestCase):
             self.assertEqual(expected, actual)
 
         def test_last_stop():
-            subject = Solver(analysis=MockAnalysis(), data=MockData(), max_expansion_queue=None, max_progress_dict=None,
+            subject = Solver(analysis=MockAnalysis(), data=MockData(), max_progress_dict=None,
                              start_time=DEFAULT_START_TIME, stop_join_string='~~', transfer_duration_seconds=None,
                              transfer_route=DEFAULT_TRANSFER_ROUTE, walk_route=None, walk_speed_mph=None)
 
@@ -298,9 +298,9 @@ class TestSolver(unittest.TestCase):
 
     def test_get_nodes_after_transfer(self):
         analysis = MockAnalysis()
-        subject = Solver(analysis=analysis, data=MockData(), max_expansion_queue=None, max_progress_dict=None,
-                         start_time=DEFAULT_START_TIME, stop_join_string='~~', transfer_duration_seconds=None,
-                         transfer_route=DEFAULT_TRANSFER_ROUTE, walk_route=None, walk_speed_mph=None)
+        subject = Solver(analysis=analysis, data=MockData(), max_progress_dict=None, start_time=DEFAULT_START_TIME,
+                         stop_join_string='~~', transfer_duration_seconds=None, transfer_route=DEFAULT_TRANSFER_ROUTE,
+                         walk_route=None, walk_speed_mph=None)
 
         input_location_status = LocationStatusInfo(
             location='Wonderland', arrival_route=DEFAULT_TRANSFER_ROUTE,
@@ -328,8 +328,8 @@ class TestSolver(unittest.TestCase):
     def test_get_walking_data(self):
         def test_after_walking_route():
             analysis = MockAnalysis()
-            subject = Solver(analysis=analysis, data=MockData(), max_expansion_queue=None, max_progress_dict=None,
-                             start_time=DEFAULT_START_TIME, stop_join_string='~~', transfer_duration_seconds=None,
+            subject = Solver(analysis=analysis, data=MockData(), max_progress_dict=None, start_time=DEFAULT_START_TIME,
+                             stop_join_string='~~', transfer_duration_seconds=None,
                              transfer_route=DEFAULT_TRANSFER_ROUTE, walk_route='walk route', walk_speed_mph=3)
 
             input_location_status = LocationStatusInfo(
@@ -350,8 +350,8 @@ class TestSolver(unittest.TestCase):
 
         def test_at_start():
             analysis = MockAnalysis()
-            subject = Solver(analysis=analysis, data=MockData(), max_expansion_queue=None, max_progress_dict=None,
-                             start_time=DEFAULT_START_TIME, stop_join_string='~~', transfer_duration_seconds=None,
+            subject = Solver(analysis=analysis, data=MockData(), max_progress_dict=None, start_time=DEFAULT_START_TIME,
+                             stop_join_string='~~', transfer_duration_seconds=None,
                              transfer_route=DEFAULT_TRANSFER_ROUTE, walk_route='walk route', walk_speed_mph=3)
 
             input_location_status = LocationStatusInfo(
@@ -370,8 +370,8 @@ class TestSolver(unittest.TestCase):
 
         def test_calculates_correct_result():
             analysis = MockAnalysis()
-            subject = Solver(analysis=analysis, data=MockData(), max_expansion_queue=None, max_progress_dict=None,
-                             start_time=DEFAULT_START_TIME, stop_join_string='~~', transfer_duration_seconds=None,
+            subject = Solver(analysis=analysis, data=MockData(), max_progress_dict=None, start_time=DEFAULT_START_TIME,
+                             stop_join_string='~~', transfer_duration_seconds=None,
                              transfer_route=DEFAULT_TRANSFER_ROUTE, walk_route='walk route', walk_speed_mph=3)
 
             input_location_status = LocationStatusInfo(
@@ -410,7 +410,7 @@ class TestSolver(unittest.TestCase):
 
     def test_initialize_progress_dict(self):
         def test_start_of_route():
-            subject = Solver(analysis=MockAnalysis(), data=MockData(), max_expansion_queue=None, max_progress_dict=None,
+            subject = Solver(analysis=MockAnalysis(), data=MockData(), max_progress_dict=None,
                              start_time=DEFAULT_START_TIME, stop_join_string='~~', transfer_duration_seconds=None,
                              transfer_route=None, walk_route=None, walk_speed_mph=None)
             actual_dict, actual_start_time = subject.initialize_progress_dict(DEFAULT_START_TIME +
@@ -448,7 +448,7 @@ class TestSolver(unittest.TestCase):
             self.assertEqual(expected_start_time, actual_start_time)
 
         def test_middle_of_route():
-            subject = Solver(analysis=MockAnalysis(), data=MockData(), max_expansion_queue=None, max_progress_dict=None,
+            subject = Solver(analysis=MockAnalysis(), data=MockData(), max_progress_dict=None,
                              start_time=DEFAULT_START_TIME, stop_join_string='~~', transfer_duration_seconds=None,
                              transfer_route=None, walk_route=None, walk_speed_mph=None)
             actual_dict, actual_start_time = subject.initialize_progress_dict(DEFAULT_START_TIME +
@@ -486,7 +486,7 @@ class TestSolver(unittest.TestCase):
             self.assertEqual(expected_start_time, actual_start_time)
 
         def test_no_valid_departures():
-            subject = Solver(analysis=MockAnalysis(), data=MockData(), max_expansion_queue=None, max_progress_dict=None,
+            subject = Solver(analysis=MockAnalysis(), data=MockData(), max_progress_dict=None,
                              start_time=DEFAULT_START_TIME, stop_join_string='~~', transfer_duration_seconds=None,
                              transfer_route=None, walk_route=None, walk_speed_mph=None)
             actual_dict, actual_start_time = subject.initialize_progress_dict(DEFAULT_START_TIME +
@@ -523,9 +523,8 @@ class TestSolver(unittest.TestCase):
                             minimum_remaining_time=timedelta(minutes=1), expanded=None, eliminated=True),
             3: invalid_progress_info
         }
-        subject = Solver(analysis=None, data=None, max_expansion_queue=None, max_progress_dict=None, start_time=None,
-                         stop_join_string=None, transfer_duration_seconds=None, transfer_route=None, walk_route=None,
-                         walk_speed_mph=None)
+        subject = Solver(analysis=None, data=None, max_progress_dict=None, start_time=None, stop_join_string=None,
+                         transfer_duration_seconds=None, transfer_route=None, walk_route=None, walk_speed_mph=None)
         subject._progress_dict = input_progress_dict
         to_preserve = set()
         to_preserve.add(3)
@@ -535,9 +534,8 @@ class TestSolver(unittest.TestCase):
 
     def test_walk_time_seconds(self):
         def get_solver_with_speed(*, mph):
-            return Solver(analysis=None, data=None, max_expansion_queue=None, max_progress_dict=None, start_time=None,
-                          stop_join_string=None, transfer_duration_seconds=None, transfer_route=None, walk_route=None,
-                          walk_speed_mph=mph)
+            return Solver(analysis=None, data=None, max_progress_dict=None, start_time=None, stop_join_string=None,
+                          transfer_duration_seconds=None, transfer_route=None, walk_route=None, walk_speed_mph=mph)
 
         def test_zero_time_at_any_speed_for_no_distance():
             self.assertEqual(get_solver_with_speed(mph=0.5).walk_time_seconds(2, 2, -40, -40), 0)
