@@ -344,10 +344,7 @@ class Solver:
         if len(self._progress_dict) > 0:
             self._exp_queue.add(self._progress_dict.keys())
 
-        num_expansions = 0
         while not self._exp_queue.is_empty():
-            num_expansions += 1
-
             expandee = self._exp_queue.pop()
 
             if expandee.unvisited == self.STOP_JOIN_STRING \
