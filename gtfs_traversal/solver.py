@@ -351,7 +351,9 @@ class Solver:
 
             expandee = self._exp_queue.pop()
 
-            if expandee.unvisited == self.STOP_JOIN_STRING or self._progress_dict[expandee].expanded:
+            if expandee.unvisited == self.STOP_JOIN_STRING \
+                    or self._progress_dict[expandee].expanded \
+                    or self._progress_dict[expandee].eliminated:
                 continue
 
             self._progress_dict[expandee] = self._progress_dict[expandee]._replace(expanded=True)
