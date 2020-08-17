@@ -67,6 +67,18 @@ class Solver:
     def eliminate_stop_from_string(self, name, uneliminated):
         return uneliminated.replace(self.add_separators_to_stop_name(name), self.STOP_JOIN_STRING)
 
+    def expand(self, location_status, known_best_time):
+        if location_status.unvisited == self.STOP_JOIN_STRING \
+                or self._progress_dict[location_status].expanded \
+                or self._progress_dict[location_status].eliminated:
+            return known_best_time
+
+        self._progress_dict[location_status] = self._progress_dict[location_status]._replace(expanded=True)
+
+        new_nodes = self.get_new_nodes(location_status)
+
+        return self.add_new_nodes_to_progress_dict(new_nodes, known_best_time)
+
     def get_initial_unsolved_string(self):
         if self._initial_unsolved_string is not None:
             return self._initial_unsolved_string
@@ -346,16 +358,6 @@ class Solver:
 
         while not self._exp_queue.is_empty():
             expandee = self._exp_queue.pop()
-
-            if expandee.unvisited == self.STOP_JOIN_STRING \
-                    or self._progress_dict[expandee].expanded \
-                    or self._progress_dict[expandee].eliminated:
-                continue
-
-            self._progress_dict[expandee] = self._progress_dict[expandee]._replace(expanded=True)
-
-            new_nodes = self.get_new_nodes(expandee)
-
-            known_best_time = self.add_new_nodes_to_progress_dict(new_nodes, known_best_time)
+            known_best_time = self.expand(expandee, known_best_time)
 
         return known_best_time, self._progress_dict, best_departure_time
