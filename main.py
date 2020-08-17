@@ -56,10 +56,9 @@ if __name__ == "__main__":
         stop_join_string=STOP_JOIN_STRING,
     )
 
-    solver = Solver(analysis=analysis, data=data, max_expansion_queue=MAX_EXPANSION_QUEUE,
-                    max_progress_dict=MAX_PROGRESS_DICT, start_time=start_time, stop_join_string=STOP_JOIN_STRING,
-                    transfer_duration_seconds=TRANSFER_DURATION_SECONDS, transfer_route=TRANSFER_ROUTE,
-                    walk_route=WALK_ROUTE, walk_speed_mph=WALK_SPEED_MPH)
+    solver = Solver(analysis=analysis, data=data, max_progress_dict=MAX_PROGRESS_DICT, start_time=start_time,
+                    stop_join_string=STOP_JOIN_STRING, transfer_duration_seconds=TRANSFER_DURATION_SECONDS,
+                    transfer_route=TRANSFER_ROUTE, walk_route=WALK_ROUTE, walk_speed_mph=WALK_SPEED_MPH)
 
     # end_date_midnight
     best_time = None
