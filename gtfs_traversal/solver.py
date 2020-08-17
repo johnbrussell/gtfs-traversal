@@ -17,6 +17,7 @@ class Solver:
         self.MAX_EXPANSION_QUEUE = max_expansion_queue
         self.ANALYSIS = analysis
 
+        self._best_duration = None
         self._exp_queue = None
         self._initial_unsolved_string = None
         self._off_course_stop_locations = None
@@ -291,9 +292,7 @@ class Solver:
             if verbose:
                 print('solution', new_progress.duration)
             best_solution_duration = new_progress.duration
-            to_preserve = set()
-            to_preserve.add(new_location)
-            self.mark_slow_nodes_as_eliminated(best_solution_duration, preserve=to_preserve)
+            self.mark_slow_nodes_as_eliminated(best_solution_duration, preserve={new_location})
         else:
             self._exp_queue.add_node(new_location)
 
