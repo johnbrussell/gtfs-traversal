@@ -124,7 +124,7 @@ class Solver:
             ProgressInfo(duration=new_duration, arrival_trip=progress.arrival_trip,
                          trip_stop_no=next_stop_no, parent=location_status,
                          minimum_remaining_time=new_minimum_remaining_time,
-                         depth=progress.depth + 1, expanded=False, eliminated=False)
+                         expanded=False, eliminated=False)
         )
 
     def get_new_nodes(self, location_status):
@@ -157,7 +157,7 @@ class Solver:
             ProgressInfo(duration=new_duration, arrival_trip=trip_id,
                          trip_stop_no=stop_number, parent=location_status,
                          minimum_remaining_time=progress.minimum_remaining_time,
-                         depth=progress.depth + 1, expanded=False, eliminated=False)
+                         expanded=False, eliminated=False)
         )
 
     def get_nodes_after_boarding_routes(self, location_status):
@@ -214,7 +214,7 @@ class Solver:
         return (location_status._replace(arrival_route=self.TRANSFER_ROUTE),
                 ProgressInfo(duration=progress.duration + timedelta(seconds=self.TRANSFER_DURATION_SECONDS),
                              arrival_trip=self.TRANSFER_ROUTE, trip_stop_no=self.TRANSFER_ROUTE, parent=location_status,
-                             minimum_remaining_time=progress.minimum_remaining_time, depth=progress.depth + 1,
+                             minimum_remaining_time=progress.minimum_remaining_time,
                              expanded=False, eliminated=False))
 
     def get_trip_schedules(self):
@@ -246,7 +246,7 @@ class Solver:
                 LocationStatusInfo(location=loc, arrival_route=self.WALK_ROUTE, unvisited=location_status.unvisited),
                 ProgressInfo(duration=progress.duration + timedelta(seconds=wts),
                              arrival_trip=self.WALK_ROUTE, trip_stop_no=self.WALK_ROUTE, parent=location_status,
-                             minimum_remaining_time=progress.minimum_remaining_time, depth=progress.depth + 1,
+                             minimum_remaining_time=progress.minimum_remaining_time,
                              expanded=False, eliminated=False)
             )
             for loc, wts in zip(all_coordinates.keys(), walking_durations)
@@ -271,7 +271,7 @@ class Solver:
             location_status,
             ProgressInfo(duration=progress.duration, arrival_trip=progress.arrival_trip,
                          trip_stop_no=progress.trip_stop_no, parent=location_status,
-                         minimum_remaining_time=progress.minimum_remaining_time, depth=progress.depth + 1,
+                         minimum_remaining_time=progress.minimum_remaining_time,
                          expanded=False, eliminated=True)
         )
 
@@ -327,7 +327,7 @@ class Solver:
                                                    unvisited=self.get_initial_unsolved_string())
                 progress_info = ProgressInfo(duration=timedelta(seconds=0), parent=None,
                                              arrival_trip=trip, trip_stop_no=stop_number,
-                                             minimum_remaining_time=self.get_total_minimum_time(), depth=0,
+                                             minimum_remaining_time=self.get_total_minimum_time(),
                                              expanded=False, eliminated=False)
                 progress_dict[location_info] = progress_info
                 if departure_time <= best_departure_time:
