@@ -122,7 +122,7 @@ class Solver:
             LocationStatusInfo(location=next_stop_id, arrival_route=location_status.arrival_route,
                                unvisited=new_unvisited_string),
             ProgressInfo(duration=new_duration, arrival_trip=progress.arrival_trip,
-                         trip_stop_no=next_stop_no, parent=location_status, start_location=progress.start_location,
+                         trip_stop_no=next_stop_no, parent=location_status,
                          start_route=progress.start_route, minimum_remaining_time=new_minimum_remaining_time,
                          depth=progress.depth + 1, expanded=False, eliminated=False)
         )
@@ -155,7 +155,7 @@ class Solver:
         return (
             location_status._replace(arrival_route=route),
             ProgressInfo(duration=new_duration, arrival_trip=trip_id,
-                         trip_stop_no=stop_number, parent=location_status, start_location=progress.start_location,
+                         trip_stop_no=stop_number, parent=location_status,
                          start_route=progress.start_route, minimum_remaining_time=progress.minimum_remaining_time,
                          depth=progress.depth + 1, expanded=False, eliminated=False)
         )
@@ -214,7 +214,7 @@ class Solver:
         return (location_status._replace(arrival_route=self.TRANSFER_ROUTE),
                 ProgressInfo(duration=progress.duration + timedelta(seconds=self.TRANSFER_DURATION_SECONDS),
                              arrival_trip=self.TRANSFER_ROUTE, trip_stop_no=self.TRANSFER_ROUTE, parent=location_status,
-                             start_location=progress.start_location, start_route=progress.start_route,
+                             start_route=progress.start_route,
                              minimum_remaining_time=progress.minimum_remaining_time, depth=progress.depth + 1,
                              expanded=False, eliminated=False))
 
@@ -247,7 +247,7 @@ class Solver:
                 LocationStatusInfo(location=loc, arrival_route=self.WALK_ROUTE, unvisited=location_status.unvisited),
                 ProgressInfo(duration=progress.duration + timedelta(seconds=wts),
                              arrival_trip=self.WALK_ROUTE, trip_stop_no=self.WALK_ROUTE, parent=location_status,
-                             start_location=progress.start_location, start_route=progress.start_route,
+                             start_route=progress.start_route,
                              minimum_remaining_time=progress.minimum_remaining_time, depth=progress.depth + 1,
                              expanded=False, eliminated=False)
             )
@@ -273,7 +273,7 @@ class Solver:
             location_status,
             ProgressInfo(duration=progress.duration, arrival_trip=progress.arrival_trip,
                          trip_stop_no=progress.trip_stop_no, parent=location_status,
-                         start_location=progress.start_location, start_route=progress.start_route,
+                         start_route=progress.start_route,
                          minimum_remaining_time=progress.minimum_remaining_time, depth=progress.depth + 1,
                          expanded=False, eliminated=True)
         )
@@ -329,8 +329,7 @@ class Solver:
                 location_info = LocationStatusInfo(location=stop, arrival_route=route,
                                                    unvisited=self.get_initial_unsolved_string())
                 progress_info = ProgressInfo(duration=timedelta(seconds=0), parent=None,
-                                             arrival_trip=trip, trip_stop_no=stop_number,
-                                             start_location=stop, start_route=route,
+                                             arrival_trip=trip, trip_stop_no=stop_number, start_route=route,
                                              minimum_remaining_time=self.get_total_minimum_time(), depth=0,
                                              expanded=False, eliminated=False)
                 progress_dict[location_info] = progress_info
