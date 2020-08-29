@@ -577,13 +577,11 @@ class TestSolver(unittest.TestCase):
 
     def test_mark_slow_nodes_as_eliminated(self):
         new_duration = timedelta(minutes=10)
-        valid_progress_info = ProgressInfo(duration=timedelta(minutes=8), arrival_trip=None,
-                                           trip_stop_no=None, parent=None,
-                                           minimum_remaining_time=timedelta(minutes=1), expanded=None,
+        valid_progress_info = ProgressInfo(duration=timedelta(minutes=8), arrival_trip=None, trip_stop_no=None,
+                                           parent=None, minimum_remaining_time=timedelta(minutes=1), expanded=None,
                                            eliminated=False)
-        invalid_progress_info = ProgressInfo(duration=timedelta(minutes=9.1), arrival_trip=None,
-                                             trip_stop_no=None, parent=None,
-                                             minimum_remaining_time=timedelta(minutes=1), expanded=None,
+        invalid_progress_info = ProgressInfo(duration=timedelta(minutes=9.1), arrival_trip=None, trip_stop_no=None,
+                                             parent=None, minimum_remaining_time=timedelta(minutes=1), expanded=None,
                                              eliminated=False)
         input_progress_dict = {
             1: valid_progress_info,
