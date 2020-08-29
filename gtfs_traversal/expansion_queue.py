@@ -19,6 +19,11 @@ class ExpansionQueue:
                 self._num_remaining_stops_to_pop = num_remaining_stops
         self._queue[num_remaining_stops].append(node)
 
+    def _handle_empty_queue_at_key(self, key):
+        if self.is_list_empty(self._queue[key]):
+            del self._queue[key]
+            self._reset_num_remaining_stops_to_pop()
+
     def is_empty(self):
         return self._num_remaining_stops_to_pop >= self._one_more_than_number_of_solution_stops
 
@@ -32,11 +37,12 @@ class ExpansionQueue:
             length += len(l)
         return length
 
+    def _num_remaining_stops(self, stops_string):
+        return len(stops_string.split(self._stop_join_string)) - 2
+
     def pop(self):
         to_return = self._queue[self._num_remaining_stops_to_pop].pop(0)
-        if self.is_list_empty(self._queue[self._num_remaining_stops_to_pop]):
-            del self._queue[self._num_remaining_stops_to_pop]
-            self._reset_num_remaining_stops_to_pop()
+        self._handle_empty_queue_at_key(self._num_remaining_stops_to_pop)
         return to_return
 
     def remove_keys(self, bad_keys):
@@ -44,14 +50,9 @@ class ExpansionQueue:
             self._remove_key(key)
 
     def _remove_key(self, bad_key):
-        queue_keys_to_remove = set()
-        for num_remaining_stops in self._queue.keys():
-            while bad_key in self._queue[num_remaining_stops]:
-                self._queue[num_remaining_stops].remove(bad_key)
-            if not self._queue[num_remaining_stops]:
-                queue_keys_to_remove.add(num_remaining_stops)
-        for queue_key_to_remove in queue_keys_to_remove:
-            del self._queue[queue_key_to_remove]
+        num_stops_at_key = self._num_remaining_stops(bad_key.unvisited)
+        self._queue[num_stops_at_key].remove(bad_key)
+        self._handle_empty_queue_at_key(num_stops_at_key)
         self._reset_num_remaining_stops_to_pop()
 
     def _reset_num_remaining_stops_to_pop(self):
