@@ -112,6 +112,79 @@ class TestSolver(unittest.TestCase):
         test_improvement()
         test_solution()
 
+    def test_expand(self):
+        def test_solved():
+            subject = Solver(analysis=MockAnalysis(), data=MockData(), max_progress_dict=None, start_time=None,
+                             stop_join_string='~~', transfer_duration_seconds=None, transfer_route=None,
+                             walk_route=None, walk_speed_mph=None)
+            location_status = LocationStatusInfo(location=1, arrival_route=2, unvisited='~~')
+            progress = ProgressInfo(duration=None, arrival_trip=None, trip_stop_no=None, parent=None,
+                                    minimum_remaining_time=None, expanded=False, eliminated=False)
+            subject._progress_dict[location_status] = progress
+
+            expected = None
+            actual = subject.expand(location_status, None)
+
+            self.assertEqual(expected, actual)
+            self.assertEqual(subject._progress_dict[location_status], progress)
+
+        def test_expanded():
+            subject = Solver(analysis=MockAnalysis(), data=MockData(), max_progress_dict=None, start_time=None,
+                             stop_join_string='~~', transfer_duration_seconds=None, transfer_route=None,
+                             walk_route=None, walk_speed_mph=None)
+            location_status = LocationStatusInfo(location=1, arrival_route=2, unvisited='~~stop~~')
+            progress = ProgressInfo(duration=None, arrival_trip=None, trip_stop_no=None, parent=None,
+                                    minimum_remaining_time=None, expanded=True, eliminated=False)
+            subject._progress_dict[location_status] = progress
+
+            expected = None
+            actual = subject.expand(location_status, None)
+
+            self.assertEqual(expected, actual)
+            self.assertEqual(subject._progress_dict[location_status], progress)
+
+        def test_eliminated():
+            subject = Solver(analysis=MockAnalysis(), data=MockData(), max_progress_dict=None, start_time=None,
+                             stop_join_string='~~', transfer_duration_seconds=None, transfer_route=None,
+                             walk_route=None, walk_speed_mph=None)
+            location_status = LocationStatusInfo(location=1, arrival_route=2, unvisited='~~stop~~')
+            progress = ProgressInfo(duration=None, arrival_trip=None, trip_stop_no=None, parent=None,
+                                    minimum_remaining_time=None, expanded=False, eliminated=True)
+            subject._progress_dict[location_status] = progress
+
+            expected = None
+            actual = subject.expand(location_status, None)
+
+            self.assertEqual(expected, actual)
+            self.assertEqual(subject._progress_dict[location_status], progress)
+
+        def test_calculate_expansion():
+            subject = Solver(analysis=MockAnalysis(), data=MockData(), max_progress_dict=None, start_time=None,
+                             stop_join_string='~~', transfer_duration_seconds=None, transfer_route=None,
+                             walk_route=None, walk_speed_mph=None)
+            location_status = LocationStatusInfo(location=1, arrival_route=2, unvisited='~~stop~~')
+            progress = ProgressInfo(duration=None, arrival_trip=None, trip_stop_no=None, parent=None,
+                                    minimum_remaining_time=None, expanded=False, eliminated=False)
+            subject._progress_dict[location_status] = progress
+            expanded_progress = ProgressInfo(duration=None, arrival_trip=None, trip_stop_no=None, parent=None,
+                                             minimum_remaining_time=None, expanded=True, eliminated=False)
+
+            expected = 3
+
+            with patch.object(subject, 'get_new_nodes') as get_new_nodes_patch:
+                with patch.object(subject, 'add_new_nodes_to_progress_dict', return_value=3) as add_new_nodes_patch:
+                    actual = subject.expand(location_status, None)
+                    get_new_nodes_patch.assert_called_once()
+                    add_new_nodes_patch.assert_called_once()
+
+            self.assertEqual(expected, actual)
+            self.assertEqual(subject._progress_dict[location_status], expanded_progress)
+
+        test_solved()
+        test_eliminated()
+        test_expanded()
+        test_calculate_expansion()
+
     def test_get_new_minimum_remaining_time(self):
         def test_route_not_on_solution_set():
             subject = Solver(analysis=MockAnalysis(), data=MockData(), max_progress_dict=None, start_time=None,
@@ -504,13 +577,11 @@ class TestSolver(unittest.TestCase):
 
     def test_mark_slow_nodes_as_eliminated(self):
         new_duration = timedelta(minutes=10)
-        valid_progress_info = ProgressInfo(duration=timedelta(minutes=8), arrival_trip=None,
-                                           trip_stop_no=None, parent=None,
-                                           minimum_remaining_time=timedelta(minutes=1), expanded=None,
+        valid_progress_info = ProgressInfo(duration=timedelta(minutes=8), arrival_trip=None, trip_stop_no=None,
+                                           parent=None, minimum_remaining_time=timedelta(minutes=1), expanded=None,
                                            eliminated=False)
-        invalid_progress_info = ProgressInfo(duration=timedelta(minutes=9.1), arrival_trip=None,
-                                             trip_stop_no=None, parent=None,
-                                             minimum_remaining_time=timedelta(minutes=1), expanded=None,
+        invalid_progress_info = ProgressInfo(duration=timedelta(minutes=9.1), arrival_trip=None, trip_stop_no=None,
+                                             parent=None, minimum_remaining_time=timedelta(minutes=1), expanded=None,
                                              eliminated=False)
         input_progress_dict = {
             1: valid_progress_info,
