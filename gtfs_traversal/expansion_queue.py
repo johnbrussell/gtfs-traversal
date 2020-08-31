@@ -10,7 +10,7 @@ class ExpansionQueue:
             self.add_node(node)
 
     def add_node(self, node):
-        num_remaining_stops = len(node.unvisited.split(self._stop_join_string)) - 2
+        num_remaining_stops = self._num_remaining_stops(node.unvisited)
         if num_remaining_stops == 0:
             return
         if num_remaining_stops not in self._queue:
