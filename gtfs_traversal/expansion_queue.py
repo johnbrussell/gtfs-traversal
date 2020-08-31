@@ -51,7 +51,8 @@ class ExpansionQueue:
 
     def _remove_key(self, bad_key):
         num_stops_at_key = self._num_remaining_stops(bad_key.unvisited)
-        self._queue[num_stops_at_key].remove(bad_key)
+        if bad_key in self._queue[num_stops_at_key]:
+            self._queue[num_stops_at_key].remove(bad_key)
         self._handle_empty_queue_at_key(num_stops_at_key)
         self._reset_num_remaining_stops_to_pop()
 
