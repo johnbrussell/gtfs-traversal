@@ -19,6 +19,10 @@ class DataMunger:
     def first_trip_after(self, earliest_departure_time, route_number, origin_stop_id):
         # hmmm, what is earliest_departure_time, and what if it's after midnight toward the end of the service day?
 
+        # handle case where the origin stop is the last stop on the route
+        if self.is_last_stop_on_route(origin_stop_id, route_number):
+            return None, None
+
         # Currently, this function does not work on routes that visit one stop multiple times in a trip.  To fix,
         #  can pass the origin_stop_number to the function, instead of origin_stop_id
         date_at_midnight = datetime(year=earliest_departure_time.year, month=earliest_departure_time.month,
@@ -26,10 +30,6 @@ class DataMunger:
 
         # GTFS uses days longer than 24 hours, so need to add a buffer to the end date to allow 25+ hour trips
         latest_departure_time = self.get_buffered_analysis_end_time()
-
-        # handle case where the origin stop is the last stop on the route
-        if self.is_last_stop_on_route(origin_stop_id, route_number):
-            return None, None
 
         origin_stop_number = self.get_stop_number_from_stop_id(origin_stop_id, route_number)
 
