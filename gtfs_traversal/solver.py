@@ -6,8 +6,8 @@ from datetime import timedelta
 
 
 class Solver:
-    def __init__(self, analysis, data, max_progress_dict, start_time, stop_join_string, transfer_duration_seconds,
-                 transfer_route, walk_route, walk_speed_mph):
+    def __init__(self, analysis, data, max_progress_dict, progress_between_pruning_progress_dict, prune_thoroughness,
+                 start_time, stop_join_string, transfer_duration_seconds, transfer_route, walk_route, walk_speed_mph):
         self.walk_speed_mph = walk_speed_mph
         self.STOP_JOIN_STRING = stop_join_string
         self.TRANSFER_ROUTE = transfer_route
@@ -15,6 +15,8 @@ class Solver:
         self.TRANSFER_DURATION_SECONDS = transfer_duration_seconds
         self.MAX_PROGRESS_DICT = max_progress_dict
         self.ANALYSIS = analysis
+        self.expansions_to_prune = progress_between_pruning_progress_dict
+        self.prune_severity = prune_thoroughness
 
         self._best_duration = None
         self._exp_queue = None
@@ -336,6 +338,28 @@ class Solver:
                          location in optimal_start_locations}
         return progress_dict, best_departure_time
 
+    def prune_progress_dict(self):
+        def ineffectiveness(node):
+            return len(node.unvisited.split(self.STOP_JOIN_STRING))
+
+        prunable_nodes = set([k for k, v in self._progress_dict.items() if v.eliminated])
+        num_nodes_to_prune = math.floor(self.prune_severity * float(len(prunable_nodes)))
+        if num_nodes_to_prune == 0:
+            return
+
+        node_ineffectiveness = [ineffectiveness(k) for k in prunable_nodes]
+        node_ineffectiveness_order = sorted(list(set(node_ineffectiveness)))
+        pruned_nodes = set()
+        while len(pruned_nodes) < num_nodes_to_prune and node_ineffectiveness_order:
+            node_ineffectiveness_to_prune = node_ineffectiveness_order.pop()
+            nodes_to_prune = set([n for n in prunable_nodes if ineffectiveness(n) == node_ineffectiveness_to_prune])
+            pruned_nodes = pruned_nodes.union(nodes_to_prune)
+            self._progress_dict = {
+                k: v for k, v in self._progress_dict.items()
+                if k not in nodes_to_prune
+            }
+        self._exp_queue.remove_keys(pruned_nodes)
+
     def print_path(self):
         solution_locations = [k for k in self._progress_dict if k.unvisited == self.STOP_JOIN_STRING]
         for location in solution_locations:
@@ -355,8 +379,13 @@ class Solver:
         if len(self._progress_dict) > 0:
             self._exp_queue.add(self._progress_dict.keys())
 
+        num_expansions = 0
         while not self._exp_queue.is_empty():
+            num_expansions += 1
             expandee = self._exp_queue.pop()
             known_best_time = self.expand(expandee, known_best_time)
+            if num_expansions % self.expansions_to_prune == 0:
+                num_expansions = 0
+                self.prune_progress_dict()
 
         return known_best_time, self._progress_dict, self._start_time
