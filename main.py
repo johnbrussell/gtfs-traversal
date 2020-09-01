@@ -56,7 +56,8 @@ if __name__ == "__main__":
         stop_join_string=STOP_JOIN_STRING,
     )
 
-    solver = Solver(analysis=analysis, data=data, max_progress_dict=MAX_PROGRESS_DICT, start_time=start_time,
+    solver = Solver(analysis=analysis, data=data, max_progress_dict=MAX_PROGRESS_DICT,
+                    progress_between_pruning_progress_dict=100, prune_thoroughness=.1, start_time=start_time,
                     stop_join_string=STOP_JOIN_STRING, transfer_duration_seconds=TRANSFER_DURATION_SECONDS,
                     transfer_route=TRANSFER_ROUTE, walk_route=WALK_ROUTE, walk_speed_mph=WALK_SPEED_MPH)
 

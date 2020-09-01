@@ -6,8 +6,8 @@ from datetime import timedelta
 
 
 class Solver:
-    def __init__(self, analysis, data, max_progress_dict, start_time, stop_join_string, transfer_duration_seconds,
-                 transfer_route, walk_route, walk_speed_mph):
+    def __init__(self, analysis, data, max_progress_dict, progress_between_pruning_progress_dict, prune_thoroughness,
+                 start_time, stop_join_string, transfer_duration_seconds, transfer_route, walk_route, walk_speed_mph):
         self.walk_speed_mph = walk_speed_mph
         self.STOP_JOIN_STRING = stop_join_string
         self.TRANSFER_ROUTE = transfer_route
@@ -15,6 +15,8 @@ class Solver:
         self.TRANSFER_DURATION_SECONDS = transfer_duration_seconds
         self.MAX_PROGRESS_DICT = max_progress_dict
         self.ANALYSIS = analysis
+        self.expansions_to_prune = progress_between_pruning_progress_dict
+        self.prune_severity = prune_thoroughness
 
         self._best_duration = None
         self._exp_queue = None
@@ -121,7 +123,7 @@ class Solver:
             LocationStatusInfo(location=next_stop_id, arrival_route=location_status.arrival_route,
                                unvisited=new_unvisited_string),
             ProgressInfo(duration=new_duration, arrival_trip=progress.arrival_trip,
-                         trip_stop_no=next_stop_no, parent=location_status,
+                         trip_stop_no=next_stop_no, parent=location_status, children=None,
                          minimum_remaining_time=new_minimum_remaining_time,
                          expanded=False, eliminated=False)
         )
@@ -154,7 +156,7 @@ class Solver:
         return (
             location_status._replace(arrival_route=route),
             ProgressInfo(duration=new_duration, arrival_trip=trip_id,
-                         trip_stop_no=stop_number, parent=location_status,
+                         trip_stop_no=stop_number, parent=location_status, children=None,
                          minimum_remaining_time=progress.minimum_remaining_time,
                          expanded=False, eliminated=False)
         )
@@ -213,7 +215,7 @@ class Solver:
         return (location_status._replace(arrival_route=self.TRANSFER_ROUTE),
                 ProgressInfo(duration=progress.duration + timedelta(seconds=self.TRANSFER_DURATION_SECONDS),
                              arrival_trip=self.TRANSFER_ROUTE, trip_stop_no=self.TRANSFER_ROUTE, parent=location_status,
-                             minimum_remaining_time=progress.minimum_remaining_time,
+                             minimum_remaining_time=progress.minimum_remaining_time, children=None,
                              expanded=False, eliminated=False))
 
     def get_trip_schedules(self):
@@ -245,7 +247,7 @@ class Solver:
                 LocationStatusInfo(location=loc, arrival_route=self.WALK_ROUTE, unvisited=location_status.unvisited),
                 ProgressInfo(duration=progress.duration + timedelta(seconds=wts),
                              arrival_trip=self.WALK_ROUTE, trip_stop_no=self.WALK_ROUTE, parent=location_status,
-                             minimum_remaining_time=progress.minimum_remaining_time,
+                             minimum_remaining_time=progress.minimum_remaining_time, children=None,
                              expanded=False, eliminated=False)
             )
             for loc, wts in zip(all_coordinates.keys(), walking_durations)
@@ -270,7 +272,7 @@ class Solver:
             location_status,
             ProgressInfo(duration=progress.duration, arrival_trip=progress.arrival_trip,
                          trip_stop_no=progress.trip_stop_no, parent=location_status,
-                         minimum_remaining_time=progress.minimum_remaining_time,
+                         minimum_remaining_time=progress.minimum_remaining_time, children=None,
                          expanded=False, eliminated=True)
         )
 
@@ -294,6 +296,7 @@ class Solver:
                 return best_solution_duration
 
         self._progress_dict[new_location] = new_progress
+        self.add_child_to_parent(new_progress.parent, new_location)
 
         is_solution = new_location.unvisited == self.STOP_JOIN_STRING
         if is_solution:
@@ -305,6 +308,11 @@ class Solver:
             self._exp_queue.add_node(new_location)
 
         return best_solution_duration
+
+    def add_child_to_parent(self, parent, child):
+        if self._progress_dict[parent].children is None:
+            self._progress_dict[parent] = self._progress_dict[parent]._replace(children=set())
+        self._progress_dict[parent].children.add(child)
 
     def initialize_progress_dict(self, begin_time):
         progress_dict = dict()
@@ -324,7 +332,7 @@ class Solver:
                 stop_number = self.data_munger.get_stop_number_from_stop_id(stop, route)
                 location_info = LocationStatusInfo(location=stop, arrival_route=route,
                                                    unvisited=self.get_initial_unsolved_string())
-                progress_info = ProgressInfo(duration=timedelta(seconds=0), parent=None,
+                progress_info = ProgressInfo(duration=timedelta(seconds=0), parent=None, children=None,
                                              arrival_trip=trip, trip_stop_no=stop_number,
                                              minimum_remaining_time=self.get_total_minimum_time(),
                                              expanded=False, eliminated=False)
@@ -335,6 +343,28 @@ class Solver:
         progress_dict = {location: progress for location, progress in progress_dict.items() if
                          location in optimal_start_locations}
         return progress_dict, best_departure_time
+
+    def prune_progress_dict(self):
+        def ineffectiveness(node):
+            return len(node.unvisited.split(self.STOP_JOIN_STRING))
+
+        prunable_nodes = set([k for k, v in self._progress_dict.items() if v.eliminated])
+        num_nodes_to_prune = math.floor(self.prune_severity * float(len(prunable_nodes)))
+        if num_nodes_to_prune == 0:
+            return
+
+        node_ineffectiveness = [ineffectiveness(k) for k in prunable_nodes]
+        node_ineffectiveness_order = sorted(list(set(node_ineffectiveness)))
+        pruned_nodes = set()
+        while len(pruned_nodes) < num_nodes_to_prune and node_ineffectiveness_order:
+            node_ineffectiveness_to_prune = node_ineffectiveness_order.pop()
+            nodes_to_prune = set([n for n in prunable_nodes if ineffectiveness(n) == node_ineffectiveness_to_prune])
+            pruned_nodes = pruned_nodes.union(nodes_to_prune)
+            self._progress_dict = {
+                k: v for k, v in self._progress_dict.items()
+                if k not in nodes_to_prune
+            }
+        self._exp_queue.remove_keys(pruned_nodes)
 
     def print_path(self):
         solution_locations = [k for k in self._progress_dict if k.unvisited == self.STOP_JOIN_STRING]
@@ -355,8 +385,13 @@ class Solver:
         if len(self._progress_dict) > 0:
             self._exp_queue.add(self._progress_dict.keys())
 
+        num_expansions = 0
         while not self._exp_queue.is_empty():
+            num_expansions += 1
             expandee = self._exp_queue.pop()
             known_best_time = self.expand(expandee, known_best_time)
+            if num_expansions % self.expansions_to_prune == 0:
+                num_expansions = 0
+                self.prune_progress_dict()
 
         return known_best_time, self._progress_dict, self._start_time

@@ -10,7 +10,7 @@ class ExpansionQueue:
             self.add_node(node)
 
     def add_node(self, node):
-        num_remaining_stops = len(node.unvisited.split(self._stop_join_string)) - 2
+        num_remaining_stops = self._num_remaining_stops(node.unvisited)
         if num_remaining_stops == 0:
             return
         if num_remaining_stops not in self._queue:
@@ -51,7 +51,8 @@ class ExpansionQueue:
 
     def _remove_key(self, bad_key):
         num_stops_at_key = self._num_remaining_stops(bad_key.unvisited)
-        self._queue[num_stops_at_key].remove(bad_key)
+        if bad_key in self._queue[num_stops_at_key]:
+            self._queue[num_stops_at_key].remove(bad_key)
         self._handle_empty_queue_at_key(num_stops_at_key)
         self._reset_num_remaining_stops_to_pop()
 
