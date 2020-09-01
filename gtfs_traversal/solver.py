@@ -255,10 +255,33 @@ class Solver:
         ]
 
     def mark_slow_nodes_as_eliminated(self, best_solution_duration, *, preserve):
-        self._progress_dict = {
-            k: v._replace(eliminated=self.is_too_slow(k, v, best_solution_duration, preserve))
-            for k, v in self._progress_dict.items()
-        }
+        nodes_to_eliminate = {k for k, v in self._progress_dict.items() if
+                              self.is_too_slow(k, v, best_solution_duration, preserve)}
+        self.mark_nodes_as_eliminated(nodes_to_eliminate)
+
+    def mark_nodes_as_eliminated(self, nodes_to_eliminate):
+        while len(nodes_to_eliminate) > 0:
+            node_to_eliminate = nodes_to_eliminate.pop()
+
+            # Sometimes, you might reasonably try to eliminate an eliminated node.
+            if self._progress_dict[node_to_eliminate].eliminated:
+                continue
+
+            # eliminate node
+            self._progress_dict[node_to_eliminate] = self._progress_dict[node_to_eliminate]._replace(eliminated=True)
+
+            # eliminate node's children
+            if self._progress_dict[node_to_eliminate].children is not None:
+                nodes_to_eliminate = nodes_to_eliminate.union(self._progress_dict[node_to_eliminate].children)
+                self._progress_dict[node_to_eliminate] = self._progress_dict[node_to_eliminate]._replace(children=set())
+
+            # eliminate node's parent (if it hasn't already been eliminated)
+            parent = self._progress_dict[node_to_eliminate].parent
+            self._progress_dict[node_to_eliminate] = self._progress_dict[node_to_eliminate]._replace(parent=None)
+            if parent and not self._progress_dict[parent].eliminated:
+                self._progress_dict[parent].children.remove(node_to_eliminate)
+                if len(self._progress_dict[parent].children) == 0:
+                    nodes_to_eliminate.add(parent)
 
     @staticmethod
     def is_too_slow(location, progress_info, best_duration, preserve):
@@ -295,6 +318,8 @@ class Solver:
             if new_progress.duration + new_progress.minimum_remaining_time >= best_solution_duration:
                 return best_solution_duration
 
+        if new_location in self._progress_dict and not self._progress_dict[new_location].eliminated:
+            self.mark_nodes_as_eliminated({new_location})
         self._progress_dict[new_location] = new_progress
         self.add_child_to_parent(new_progress.parent, new_location)
 

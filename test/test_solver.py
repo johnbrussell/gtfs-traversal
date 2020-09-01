@@ -110,15 +110,15 @@ class TestSolver(unittest.TestCase):
                              walk_route=None, walk_speed_mph=None)
             new_location = LocationStatusInfo(location='Wonderland', arrival_route=1, unvisited='~~')
             other_location = LocationStatusInfo(location='Lynn', arrival_route=3, unvisited='~~')
+            other_location_progress = ProgressInfo(
+                duration=timedelta(minutes=30), arrival_trip='3-6AM', trip_stop_no='2', parent=None, children=None,
+                minimum_remaining_time=timedelta(hours=1), expanded=False, eliminated=False),
             subject._progress_dict = {
                 new_location:
                     ProgressInfo(duration=timedelta(minutes=30), arrival_trip='3-6AM',
                                  trip_stop_no='2', parent=None, children=None,
                                  minimum_remaining_time=timedelta(hours=1), expanded=False, eliminated=False),
-                other_location:
-                    ProgressInfo(duration=timedelta(minutes=30), arrival_trip='3-6AM',
-                                 trip_stop_no='2', parent=None, children=None,
-                                 minimum_remaining_time=timedelta(hours=1), expanded=False, eliminated=False),
+                other_location: other_location_progress,
             }
             subject._exp_queue = ExpansionQueue(4, '~~')
 
@@ -148,14 +148,14 @@ class TestSolver(unittest.TestCase):
             expected_duration = timedelta(minutes=29)
             expected_dictionary = {
                 new_location: new_progress_solution,
-                other_location:
-                    ProgressInfo(duration=timedelta(minutes=30), arrival_trip='3-6AM', trip_stop_no='2', parent=None,
-                                 children=None,
-                                 minimum_remaining_time=timedelta(hours=1), expanded=False, eliminated=True),
+                other_location: other_location_progress,
             }
             with patch.object(subject, 'add_child_to_parent') as child_patch:
-                actual_duration = subject.add_new_nodes_to_progress_dict(new_nodes, input_best_duration, verbose=False)
-                child_patch.assert_called_once()
+                with patch.object(subject, 'mark_slow_nodes_as_eliminated') as elimination_patch:
+                    actual_duration = subject.add_new_nodes_to_progress_dict(new_nodes, input_best_duration,
+                                                                             verbose=False)
+                    child_patch.assert_called_once()
+                    elimination_patch.assert_called_once()
             actual_dictionary = subject._progress_dict
             self.assertEqual(expected_duration, actual_duration)
             self.assertDictEqual(expected_dictionary, actual_dictionary)
@@ -655,20 +655,41 @@ class TestSolver(unittest.TestCase):
                                            parent=None, minimum_remaining_time=timedelta(minutes=1), expanded=None,
                                            eliminated=False)
         invalid_progress_info = ProgressInfo(duration=timedelta(minutes=9.1), arrival_trip=None, trip_stop_no=None,
-                                             children=None,
-                                             parent=None, minimum_remaining_time=timedelta(minutes=1), expanded=None,
+                                             children={6},
+                                             parent=4, minimum_remaining_time=timedelta(minutes=1), expanded=None,
                                              eliminated=False)
+        valid_progress_info_parent = ProgressInfo(duration=timedelta(minutes=8), arrival_trip=None, trip_stop_no=None,
+                                                  children={2},
+                                                  parent=5, minimum_remaining_time=timedelta(minutes=1), expanded=None,
+                                                  eliminated=False)
+        valid_progress_info_grandparent = ProgressInfo(duration=timedelta(minutes=8), arrival_trip=None,
+                                                       trip_stop_no=None, children={3, 4},
+                                                       parent=None, minimum_remaining_time=timedelta(minutes=1),
+                                                       expanded=None, eliminated=False)
+        child_progress_info = ProgressInfo(duration=timedelta(minutes=10), arrival_trip=None, trip_stop_no=None,
+                                           children={7}, parent=2, minimum_remaining_time=timedelta(minutes=1),
+                                           expanded=None, eliminated=False)
+        grandchild_progress_info = ProgressInfo(duration=timedelta(minutes=11), arrival_trip=None, trip_stop_no=None,
+                                                children=None, parent=6, minimum_remaining_time=timedelta(minutes=1),
+                                                expanded=None, eliminated=False)
+
         input_progress_dict = {
             1: valid_progress_info,
             2: invalid_progress_info,
-            3: invalid_progress_info
+            3: invalid_progress_info,
+            4: valid_progress_info_parent,
+            5: valid_progress_info_grandparent,
+            6: child_progress_info,
+            7: grandchild_progress_info,
         }
         expected = {
             1: valid_progress_info,
-            2: ProgressInfo(duration=timedelta(minutes=9.1), arrival_trip=None, trip_stop_no=None, parent=None,
-                            children=None,
-                            minimum_remaining_time=timedelta(minutes=1), expanded=None, eliminated=True),
-            3: invalid_progress_info
+            2: invalid_progress_info._replace(children=set(), eliminated=True, parent=None),
+            3: invalid_progress_info,
+            4: valid_progress_info_parent._replace(eliminated=True, children=set(), parent=None),
+            5: valid_progress_info_grandparent._replace(children={3}, parent=None),
+            6: child_progress_info._replace(children=set(), eliminated=True, parent=None),
+            7: grandchild_progress_info._replace(eliminated=True, parent=None)
         }
         subject = Solver(analysis=None, data=None, max_progress_dict=None, progress_between_pruning_progress_dict=None,
                          prune_thoroughness=None, start_time=None, stop_join_string=None,
