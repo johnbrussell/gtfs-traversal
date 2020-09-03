@@ -415,7 +415,7 @@ class Solver:
             num_expansions += 1
             expandee = self._exp_queue.pop()
             known_best_time = self.expand(expandee, known_best_time)
-            if num_expansions % self.expansions_to_prune == 0:
+            if known_best_time is not None and num_expansions % self.expansions_to_prune == 0:
                 num_expansions = 0
                 self.prune_progress_dict()
 
