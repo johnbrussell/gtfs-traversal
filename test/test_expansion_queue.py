@@ -1,4 +1,4 @@
-from gtfs_traversal.data_structures import LocationStatusInfo
+from gtfs_traversal.data_structures import LocationStatusInfo, ProgressInfo
 from gtfs_traversal.expansion_queue import ExpansionQueue
 import unittest
 
@@ -72,6 +72,29 @@ class TestExpansionQueue(unittest.TestCase):
         self.assertEqual(expected_node, actual_node)
         self.assertDictEqual(expected_queue, actual_queue)
         self.assertEqual(expected_stop_to_pop, actual_stop_to_pop)
+
+    def test_sort_latest_nodes(self):
+        def progress_info_with_duration(duration):
+            return ProgressInfo(arrival_trip=None, duration=duration, trip_stop_no=None, expanded=None, eliminated=None,
+                                children=None, parent=None, minimum_remaining_time=None)
+
+        location_b = LocationStatusInfo(location='b', arrival_route=None, unvisited="~~a~~b~~")
+        location_c = LocationStatusInfo(location='c', arrival_route=None, unvisited="~~a~~b~~")
+        location_d = LocationStatusInfo(location='d', arrival_route=None, unvisited="~~a~~b~~")
+        location_e = LocationStatusInfo(location='e', arrival_route=None, unvisited="~~a~~b~~")
+        solver_progress_dict = {
+            location_b: progress_info_with_duration(1),
+            location_c: progress_info_with_duration(2),
+            location_d: progress_info_with_duration(3),
+            location_e: progress_info_with_duration(4),
+        }
+        subject = ExpansionQueue(num_solution_stops=6, stop_join_string='~~')
+        subject.add([location_d, location_e, location_b, location_c])
+        subject.sort_latest_nodes(solver_progress_dict)
+
+        expected = [location_b, location_c, location_d, location_e]
+        actual = subject._queue[2]
+        self.assertListEqual(expected, actual)
 
     def test_remove_keys(self):
         location_a = LocationStatusInfo(location='a', arrival_route=None, unvisited="~~a~~")

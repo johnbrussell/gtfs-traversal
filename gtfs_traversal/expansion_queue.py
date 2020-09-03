@@ -45,6 +45,12 @@ class ExpansionQueue:
         self._handle_empty_queue_at_key(self._num_remaining_stops_to_pop)
         return to_return
 
+    def sort_latest_nodes(self, solver_progress_dict):
+        if self._num_remaining_stops_to_pop == self._one_more_than_number_of_solution_stops:
+            return
+        self._queue[self._num_remaining_stops_to_pop] = sorted(self._queue[self._num_remaining_stops_to_pop],
+                                                               key=lambda x: solver_progress_dict[x].duration)
+
     def remove_keys(self, bad_keys):
         for key in bad_keys:
             self._remove_key(key)
