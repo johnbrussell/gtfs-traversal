@@ -302,6 +302,7 @@ class Solver:
     def add_new_nodes_to_progress_dict(self, new_nodes_list, best_solution_duration, *, verbose=True):
         for node in new_nodes_list:
             best_solution_duration = self.add_new_node_to_progress_dict(node, best_solution_duration, verbose=verbose)
+        self._exp_queue.sort_latest_nodes(self._progress_dict)
         return best_solution_duration
 
     def add_new_node_to_progress_dict(self, new_node, best_solution_duration, *, verbose=True):
