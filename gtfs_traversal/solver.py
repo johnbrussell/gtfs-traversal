@@ -302,6 +302,7 @@ class Solver:
     def add_new_nodes_to_progress_dict(self, new_nodes_list, best_solution_duration, *, verbose=True):
         for node in new_nodes_list:
             best_solution_duration = self.add_new_node_to_progress_dict(node, best_solution_duration, verbose=verbose)
+        self._exp_queue.sort_latest_nodes(self._progress_dict)
         return best_solution_duration
 
     def add_new_node_to_progress_dict(self, new_node, best_solution_duration, *, verbose=True):
@@ -380,16 +381,14 @@ class Solver:
 
         node_ineffectiveness = [ineffectiveness(k) for k in prunable_nodes]
         node_ineffectiveness_order = sorted(list(set(node_ineffectiveness)))
-        pruned_nodes = set()
-        while len(pruned_nodes) < num_nodes_to_prune and node_ineffectiveness_order:
+        num_pruned_nodes = 0
+        while num_pruned_nodes < num_nodes_to_prune and node_ineffectiveness_order:
             node_ineffectiveness_to_prune = node_ineffectiveness_order.pop()
             nodes_to_prune = set([n for n in prunable_nodes if ineffectiveness(n) == node_ineffectiveness_to_prune])
-            pruned_nodes = pruned_nodes.union(nodes_to_prune)
-            self._progress_dict = {
-                k: v for k, v in self._progress_dict.items()
-                if k not in nodes_to_prune
-            }
-        self._exp_queue.remove_keys(pruned_nodes)
+            for node in nodes_to_prune:
+                del self._progress_dict[node]
+            self._exp_queue.remove_keys(nodes_to_prune)
+            num_pruned_nodes += len(nodes_to_prune)
 
     def print_path(self):
         solution_locations = [k for k in self._progress_dict if k.unvisited == self.STOP_JOIN_STRING]
@@ -415,7 +414,7 @@ class Solver:
             num_expansions += 1
             expandee = self._exp_queue.pop()
             known_best_time = self.expand(expandee, known_best_time)
-            if num_expansions % self.expansions_to_prune == 0:
+            if known_best_time is not None and num_expansions % self.expansions_to_prune == 0:
                 num_expansions = 0
                 self.prune_progress_dict()
 
