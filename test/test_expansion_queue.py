@@ -101,10 +101,12 @@ class TestExpansionQueue(unittest.TestCase):
         location_b = LocationStatusInfo(location='b', arrival_route=None, unvisited="~~a~~b~~")
         location_c = LocationStatusInfo(location='c', arrival_route=None, unvisited="~~a~~b~~")
         location_d = LocationStatusInfo(location='d', arrival_route=None, unvisited="~~a~~b~~")
+        location_e = LocationStatusInfo(location='e', arrival_route=None, unvisited="~~a~~b~~c~~")
+        location_f = LocationStatusInfo(location='f', arrival_route=None, unvisited="~~a~~c~~")
         subject = ExpansionQueue(num_solution_stops=2, stop_join_string="~~")
         subject.add([location_a, location_b, location_c, location_c])
 
-        subject.remove_keys([location_a, location_c, location_d])
+        subject.remove_keys([location_a, location_c, location_d, location_e, location_f])
         expected_queue = {
             2: [location_b]
         }
