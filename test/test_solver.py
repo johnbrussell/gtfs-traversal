@@ -459,11 +459,14 @@ class TestSolver(unittest.TestCase):
         with patch.object(Solver, 'get_walking_data', return_value=['walking data']) as mock_walking_data:
             with patch.object(Solver, 'get_node_after_boarding_route', return_value='new route data') \
                     as mock_node_after_boarding_route:
-                actual = subject.get_nodes_after_transfer(input_location_status)
-                mock_walking_data.assert_called_once_with(input_location_status)
-                self.assertEqual(mock_node_after_boarding_route.call_count, 2)
-                mock_node_after_boarding_route.assert_any_call(input_location_status, 1)
-                mock_node_after_boarding_route.assert_any_call(input_location_status, 3)
+                with patch.object(Solver, 'new_node_is_inefficient_walk', return_value=False) \
+                        as mock_node_check:
+                    actual = subject.get_nodes_after_transfer(input_location_status)
+                    mock_walking_data.assert_called_once_with(input_location_status)
+                    self.assertEqual(mock_node_after_boarding_route.call_count, 2)
+                    mock_node_after_boarding_route.assert_any_call(input_location_status, 1)
+                    mock_node_after_boarding_route.assert_any_call(input_location_status, 3)
+                    self.assertEqual(mock_node_check.call_count, 2)
 
         expected = ['walking data', 'new route data', 'new route data']
         self.assertEqual(expected, actual)
