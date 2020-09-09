@@ -2,7 +2,7 @@ from gtfs_traversal.data_munger import DataMunger
 from gtfs_traversal.expansion_queue import ExpansionQueue
 from gtfs_traversal.data_structures import *
 import math
-from datetime import timedelta
+from datetime import timedelta, datetime
 
 
 class Solver:
@@ -465,13 +465,30 @@ class Solver:
         if len(self._progress_dict) > 0:
             self._exp_queue.add(self._progress_dict.keys())
 
+        num_stations = len(self.data_munger.get_unique_stops_to_solve())
+        num_start_points = self._exp_queue.len()
+        num_completed_stations = 0
+        num_initial_start_points = num_start_points
+        stations_denominator = num_initial_start_points * num_stations
+        best_progress = 0
+        start_time = datetime.now()
+
         num_expansions = 0
         while not self._exp_queue.is_empty():
             num_expansions += 1
+            if self._exp_queue._num_remaining_stops_to_pop == num_stations:
+                num_completed_stations = min(num_initial_start_points - 1, num_initial_start_points - num_start_points)
+                num_start_points = max(num_start_points - 1, 0)
             expandee = self._exp_queue.pop()
             known_best_time = self.expand(expandee, known_best_time)
-            if known_best_time is not None and num_expansions % self.expansions_to_prune == 0:
-                num_expansions = 0
-                self.prune_progress_dict()
+            if known_best_time is not None:
+                if int((num_stations * num_completed_stations +
+                        self._exp_queue._num_remaining_stops_to_pop) / stations_denominator * 100.0) > best_progress:
+                    best_progress = int((num_stations * num_completed_stations +
+                        self._exp_queue._num_remaining_stops_to_pop) / stations_denominator * 100.0)
+                    print(best_progress, datetime.now() - start_time)
+                if num_expansions % self.expansions_to_prune == 0:
+                    num_expansions = 0
+                    self.prune_progress_dict()
 
         return known_best_time, self._progress_dict, self._start_time
