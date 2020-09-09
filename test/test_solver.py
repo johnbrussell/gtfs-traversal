@@ -89,7 +89,8 @@ class TestSolver(unittest.TestCase):
                 (new_location, new_progress_eliminated),
                 (new_location, new_progress_slower_than_old_progress),
                 (new_location, new_progress_slower_than_max_time),
-                (new_location, new_progress_improvement)
+                (new_location, new_progress_improvement),
+                None
             ]
 
             expected_duration = input_best_duration
@@ -144,7 +145,8 @@ class TestSolver(unittest.TestCase):
                 (new_location, new_progress_eliminated),
                 (new_location, new_progress_slower_than_old_progress),
                 (new_location, new_progress_slower_than_max_time),
-                (new_location, new_progress_solution)
+                (new_location, new_progress_solution),
+                None
             ]
 
             expected_duration = timedelta(minutes=29)

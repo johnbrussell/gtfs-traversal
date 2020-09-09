@@ -147,7 +147,7 @@ class Solver:
         if self.data_munger.is_last_stop_on_route(location_status.location, location_status.arrival_route):
             return [transfer_node]
 
-        return [n for n in [transfer_node, self.get_next_stop_data_for_trip(location_status)] if n is not None]
+        return [transfer_node, self.get_next_stop_data_for_trip(location_status)]
 
     def get_node_after_boarding_route(self, location_status, route):
         progress = self._progress_dict[location_status]
@@ -353,6 +353,9 @@ class Solver:
         return best_solution_duration
 
     def add_new_node_to_progress_dict(self, new_node, best_solution_duration, *, verbose=True):
+        if new_node is None:
+            return best_solution_duration
+
         new_location, new_progress = new_node
 
         if new_progress.eliminated:
