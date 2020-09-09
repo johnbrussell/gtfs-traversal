@@ -257,7 +257,7 @@ class TestSolver(unittest.TestCase):
         def test_route_on_solution_set():
             subject = Solver(analysis=MockAnalysis(), data=MockData(), max_progress_dict=None,
                              progress_between_pruning_progress_dict=None, prune_thoroughness=None,
-                             start_time=DEFAULT_START_TIME, stop_join_string='##', transfer_duration_seconds=None,
+                             start_time=DEFAULT_START_TIME, stop_join_string='##', transfer_duration_seconds=5,
                              transfer_route=None, walk_route=None, walk_speed_mph=None)
             input_time = timedelta(minutes=400)
             expected = timedelta(minutes=60)
@@ -292,13 +292,14 @@ class TestSolver(unittest.TestCase):
             location_status_info = LocationStatusInfo(location=None, arrival_route='walk route', unvisited=None)
             progress_info = ProgressInfo(duration=timedelta(seconds=47), arrival_trip=None,
                                          trip_stop_no=None, parent=None, children=None,
-                                         minimum_remaining_time=None, expanded=None, eliminated=None)
+                                         minimum_remaining_time=timedelta(minutes=1), expanded=None, eliminated=None)
             subject._progress_dict[location_status_info] = progress_info
 
             expected = [(location_status_info._replace(arrival_route='transfer route'),
                          progress_info._replace(duration=timedelta(seconds=100),
                                                 trip_stop_no='transfer route', arrival_trip='transfer route',
-                                                parent=location_status_info, expanded=False, eliminated=False))]
+                                                parent=location_status_info, expanded=False, eliminated=False,
+                                                minimum_remaining_time=timedelta(seconds=7)))]
             actual = subject.get_new_nodes(location_status_info)
 
             self.assertEqual(actual, expected)
@@ -352,7 +353,7 @@ class TestSolver(unittest.TestCase):
         def test_not_last_stop():
             subject = Solver(analysis=MockAnalysis(), data=MockData(), max_progress_dict=None,
                              progress_between_pruning_progress_dict=None, prune_thoroughness=None,
-                             start_time=DEFAULT_START_TIME, stop_join_string='~~', transfer_duration_seconds=None,
+                             start_time=DEFAULT_START_TIME, stop_join_string='~~', transfer_duration_seconds=4,
                              transfer_route=DEFAULT_TRANSFER_ROUTE, walk_route=None, walk_speed_mph=None)
 
             input_location_status = LocationStatusInfo(
@@ -370,7 +371,7 @@ class TestSolver(unittest.TestCase):
                                    unvisited='~~Lynn~~Bowdoin~~Back of the Hill~~'),
                 ProgressInfo(duration=timedelta(minutes=182), children=None,
                              parent=input_location_status, arrival_trip='3-7AM', trip_stop_no='2',
-                             minimum_remaining_time=timedelta(hours=2), expanded=False, eliminated=False)
+                             minimum_remaining_time=timedelta(hours=2, seconds=4), expanded=False, eliminated=False)
             )
             actual = subject.get_next_stop_data_for_trip(input_location_status)
 

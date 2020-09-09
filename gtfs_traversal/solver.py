@@ -95,14 +95,18 @@ class Solver:
         if route not in routes_to_solve:
             return old_minimum_remaining_time
 
-        new_minimum_remaining_time = old_minimum_remaining_time
+        new_minimum_remaining_travel_time = old_minimum_remaining_time
+        new_unvisited_stops = unvisited_stops_string.strip(self.STOP_JOIN_STRING).split(self.STOP_JOIN_STRING)
         if any(self.add_separators_to_stop_name(stop) in unvisited_stops_string for stop in stops_ids_to_eliminate):
-            new_unvisited_stops = unvisited_stops_string.strip(self.STOP_JOIN_STRING).split(self.STOP_JOIN_STRING)
             for stop in stops_ids_to_eliminate:
                 if stop in new_unvisited_stops:
                     new_unvisited_stops.remove(stop)
-            new_minimum_remaining_time = self.data_munger.get_minimum_remaining_time(new_unvisited_stops)
-        return new_minimum_remaining_time
+            new_minimum_remaining_travel_time = self.data_munger.get_minimum_remaining_time(new_unvisited_stops)
+
+        new_minimum_remaining_transfer_time = \
+            self.data_munger.get_minimum_remaining_transfers(route, new_unvisited_stops) * \
+            timedelta(seconds=self.TRANSFER_DURATION_SECONDS)
+        return new_minimum_remaining_travel_time + new_minimum_remaining_transfer_time
 
     def get_next_stop_data_for_trip(self, location_status):
         progress = self._progress_dict[location_status]
@@ -215,10 +219,12 @@ class Solver:
 
     def get_transfer_data(self, location_status):
         progress = self._progress_dict[location_status]
+        minimum_remaining_time = max(
+            timedelta(minutes=0), progress.minimum_remaining_time - timedelta(seconds=self.TRANSFER_DURATION_SECONDS))
         return (location_status._replace(arrival_route=self.TRANSFER_ROUTE),
                 ProgressInfo(duration=progress.duration + timedelta(seconds=self.TRANSFER_DURATION_SECONDS),
                              arrival_trip=self.TRANSFER_ROUTE, trip_stop_no=self.TRANSFER_ROUTE, parent=location_status,
-                             minimum_remaining_time=progress.minimum_remaining_time, children=None,
+                             minimum_remaining_time=minimum_remaining_time, children=None,
                              expanded=False, eliminated=False))
 
     def get_trip_schedules(self):

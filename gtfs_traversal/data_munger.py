@@ -100,7 +100,7 @@ class DataMunger:
         return self._minimum_stop_times
 
     def get_minimum_remaining_time(self, unvisited_stops):
-        total_minimum_remaining_time = None
+        total_minimum_remaining_time = timedelta(minutes=0)
         for stop in unvisited_stops:
             routes_at_stop = self.get_routes_at_stop(stop)
             best_time_at_stop = timedelta(hours=24)
@@ -140,10 +140,7 @@ class DataMunger:
                         best_time_at_stop = min(best_time_at_stop, travel_time_from_previous_stop / 2)
                     else:
                         best_time_at_stop = min(best_time_at_stop, travel_time_from_previous_stop)
-            if total_minimum_remaining_time is None:
-                total_minimum_remaining_time = best_time_at_stop
-            else:
-                total_minimum_remaining_time += best_time_at_stop
+            total_minimum_remaining_time += best_time_at_stop
         return total_minimum_remaining_time
 
     def get_minimum_remaining_transfers(self, current_route, unvisited_stops):
@@ -159,7 +156,9 @@ class DataMunger:
                 continue
             minimum_remaining_transfers += 1
             routes_accounted_for.add(route)
-        return max(0, minimum_remaining_transfers - 1)
+        if current_route in routes_accounted_for:
+            minimum_remaining_transfers -= 1
+        return max(0, minimum_remaining_transfers)
 
     def get_next_stop_id(self, stop_id, route):
         if self.is_last_stop_on_route(stop_id, route):
