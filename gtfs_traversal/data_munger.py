@@ -13,6 +13,7 @@ class DataMunger:
         self._minimum_stop_times = None
         self._stops_by_route_in_solution_set = None
         self._transfer_stops = None
+        self._trip_time_cache = {}
         self._unique_routes_to_solve = None
         self._unique_stops_to_solve = None
 
@@ -23,11 +24,6 @@ class DataMunger:
         if self.is_last_stop_on_route(origin_stop_id, route_number):
             return None, None
 
-        # Currently, this function does not work on routes that visit one stop multiple times in a trip.  To fix,
-        #  can pass the origin_stop_number to the function, instead of origin_stop_id
-        date_at_midnight = datetime(year=earliest_departure_time.year, month=earliest_departure_time.month,
-                                    day=earliest_departure_time.day)
-
         # GTFS uses days longer than 24 hours, so need to add a buffer to the end date to allow 25+ hour trips
         latest_departure_time = self.get_buffered_analysis_end_time()
 
@@ -36,7 +32,15 @@ class DataMunger:
         solution_trip_id = None
         for trip_id in self.get_trips_for_route(route_number):
             raw_departure_time = self.get_stops_for_trip(trip_id)[origin_stop_number].departureTime
-            time = self.get_datetime_from_raw_string_time(date_at_midnight, raw_departure_time)
+            if (earliest_departure_time, raw_departure_time) in self._trip_time_cache:
+                time = self._trip_time_cache[(earliest_departure_time, raw_departure_time)]
+            else:
+                # Currently, this function does not work on routes that visit one stop multiple times in a trip.
+                #  To fix, can pass the origin_stop_number to the function, instead of origin_stop_id
+                date_at_midnight = datetime(year=earliest_departure_time.year, month=earliest_departure_time.month,
+                                            day=earliest_departure_time.day)
+                time = self.get_datetime_from_raw_string_time(date_at_midnight, raw_departure_time)
+                self._trip_time_cache[(earliest_departure_time, raw_departure_time)] = time
             if earliest_departure_time <= time < latest_departure_time:
                 latest_departure_time = time
                 solution_trip_id = trip_id
