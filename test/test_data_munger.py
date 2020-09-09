@@ -94,6 +94,14 @@ class TestDataMunger(unittest.TestCase):
         actual = subject.get_minimum_remaining_time(unvisited_stops)
         self.assertEqual(expected, actual)
 
+    def test_get_minimum_remaining_transfers(self):
+        subject = self.get_subject_with_mock_data(analysis=MockAnalysis(route_types_to_solve=[1, 2]))
+        unvisited_stops = ['Alewife', 'Wonderland', 'Lechmere', 'Back of the Hill', 'Heath Street']
+        current_route = 2
+        expected = 1
+        actual = subject.get_minimum_remaining_transfers(current_route, unvisited_stops)
+        self.assertEqual(expected, actual)
+
     def test_get_minimum_stop_times(self):
         def test_calculates_correct_result():
             subject = self.get_subject_with_mock_data(analysis=MockAnalysis(route_types_to_solve=[1, 2]))
