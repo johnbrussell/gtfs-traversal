@@ -345,8 +345,7 @@ class TestSolver(unittest.TestCase):
             subject._progress_dict[input_location_status] = input_progress
 
             expected = None
-            with patch.object(subject, 'new_eliminated_node', return_value=None):
-                actual = subject.get_next_stop_data_for_trip(input_location_status)
+            actual = subject.get_next_stop_data_for_trip(input_location_status)
 
             self.assertEqual(expected, actual)
 
@@ -425,13 +424,7 @@ class TestSolver(unittest.TestCase):
             subject._start_time = DEFAULT_START_TIME+timedelta(minutes=418)
             input_new_route = 2
 
-            expected = (
-                LocationStatusInfo(location='Back of the Hill', arrival_route=DEFAULT_TRANSFER_ROUTE,
-                                   unvisited='~~Lynn~~Bowdoin~~Back of the Hill~~'),
-                ProgressInfo(duration=timedelta(minutes=20), children=None,
-                             parent=input_location_status, arrival_trip=DEFAULT_TRANSFER_ROUTE, trip_stop_no='1',
-                             minimum_remaining_time=timedelta(hours=1), expanded=False, eliminated=True)
-            )
+            expected = None
             actual = subject.get_node_after_boarding_route(input_location_status, input_new_route)
             self.assertEqual(expected, actual)
 
@@ -845,6 +838,36 @@ class TestSolver(unittest.TestCase):
         test_off_course_great_great_grandparent()
         test_inefficient_walk()
         test_efficient_walk()
+
+    def test_new_node_is_reasonable(self):
+        def test_none():
+            subject = Solver(analysis=None, data=None, max_progress_dict=None,
+                             progress_between_pruning_progress_dict=None, prune_thoroughness=.5, start_time=None,
+                             stop_join_string='~~', transfer_duration_seconds=None, transfer_route=None,
+                             walk_route=None, walk_speed_mph=None)
+            self.assertFalse(subject.new_node_is_reasonable(None))
+
+        def test_inefficient_walk():
+            subject = Solver(analysis=None, data=None, max_progress_dict=None,
+                             progress_between_pruning_progress_dict=None, prune_thoroughness=.5, start_time=None,
+                             stop_join_string='~~', transfer_duration_seconds=None, transfer_route=None,
+                             walk_route=None, walk_speed_mph=None)
+            with patch.object(subject, 'new_node_is_inefficient_walk', return_value=True) as inefficient_walk_patch:
+                self.assertFalse(subject.new_node_is_reasonable('anything'))
+                inefficient_walk_patch.assert_called_once_with('anything')
+
+        def test_valid_node():
+            subject = Solver(analysis=None, data=None, max_progress_dict=None,
+                             progress_between_pruning_progress_dict=None, prune_thoroughness=.5, start_time=None,
+                             stop_join_string='~~', transfer_duration_seconds=None, transfer_route=None,
+                             walk_route=None, walk_speed_mph=None)
+            with patch.object(subject, 'new_node_is_inefficient_walk', return_value=False) as inefficient_walk_patch:
+                self.assertTrue(subject.new_node_is_reasonable('anything'))
+                inefficient_walk_patch.assert_called_once_with('anything')
+
+        test_none()
+        test_inefficient_walk()
+        test_valid_node()
 
     def test_prune_progress_dict(self):
         subject = Solver(analysis=None, data=None, max_progress_dict=None, progress_between_pruning_progress_dict=None,

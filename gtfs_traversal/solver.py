@@ -112,7 +112,7 @@ class Solver:
         progress = self._progress_dict[location_status]
 
         if self.data_munger.is_last_stop_on_route(location_status.location, location_status.arrival_route):
-            return self.new_eliminated_node(location_status)
+            return None
 
         stop_number = progress.trip_stop_no
         next_stop_no = str(int(stop_number) + 1)
@@ -147,7 +147,7 @@ class Solver:
         if self.data_munger.is_last_stop_on_route(location_status.location, location_status.arrival_route):
             return [transfer_node]
 
-        return [transfer_node, self.get_next_stop_data_for_trip(location_status)]
+        return [n for n in [transfer_node, self.get_next_stop_data_for_trip(location_status)] if n is not None]
 
     def get_node_after_boarding_route(self, location_status, route):
         progress = self._progress_dict[location_status]
@@ -155,7 +155,7 @@ class Solver:
             self._start_time + progress.duration, route, location_status.location)
 
         if trip_id is None:
-            return self.new_eliminated_node(location_status)
+            return None
 
         stop_number = self.data_munger.get_stop_number_from_stop_id(location_status.location, route)
         new_duration = departure_time - self._start_time
@@ -173,7 +173,7 @@ class Solver:
                                    for route in self.data_munger.get_routes_at_stop(location_status.location)
                                    if not self.data_munger.is_last_stop_on_route(location_status.location, route)]
 
-        return [node for node in routes_leaving_location if not self.new_node_is_inefficient_walk(node)]
+        return [node for node in routes_leaving_location if self.new_node_is_reasonable(node)]
 
     def get_nodes_after_transfer(self, location_status):
         walking_data = self.get_walking_data(location_status)
@@ -299,16 +299,6 @@ class Solver:
             return False
         return progress_info.duration + progress_info.minimum_remaining_time >= best_duration
 
-    def new_eliminated_node(self, location_status):
-        progress = self._progress_dict[location_status]
-        return (
-            location_status,
-            ProgressInfo(duration=progress.duration, arrival_trip=progress.arrival_trip,
-                         trip_stop_no=progress.trip_stop_no, parent=location_status,
-                         minimum_remaining_time=progress.minimum_remaining_time, children=None,
-                         expanded=False, eliminated=True)
-        )
-
     def new_node_is_inefficient_walk(self, node):
         new_location, new_progress = node
         parent_transfer = new_progress.parent
@@ -352,6 +342,9 @@ class Solver:
                     return True
 
         return False
+
+    def new_node_is_reasonable(self, node):
+        return node is not None and not self.new_node_is_inefficient_walk(node)
 
     def add_new_nodes_to_progress_dict(self, new_nodes_list, best_solution_duration, *, verbose=True):
         for node in new_nodes_list:
