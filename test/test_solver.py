@@ -707,6 +707,145 @@ class TestSolver(unittest.TestCase):
         actual = subject._progress_dict
         self.assertDictEqual(expected, actual)
 
+    def test_new_node_is_inefficient_walk(self):
+        parent_location = LocationStatusInfo(arrival_route='transfer', location='Bowdoin',
+                                             unvisited='~~Wonderland~~Lynn~~')
+        parent_progress = ProgressInfo(duration=timedelta(minutes=60), arrival_trip='transfer', trip_stop_no='1',
+                                       children=None, parent=None, minimum_remaining_time=timedelta(minutes=60),
+                                       expanded=True, eliminated=False)
+        new_location = LocationStatusInfo(arrival_route=3, location='Bowdoin', unvisited='~~Wonderland~~Lynn~~')
+        new_progress = ProgressInfo(duration=timedelta(minutes=65), arrival_trip='Blue-6AM', trip_stop_no='2',
+                                    children=None, parent=parent_location, minimum_remaining_time=timedelta(minutes=60),
+                                    expanded=False, eliminated=False)
+        more_efficient_new_location = LocationStatusInfo(arrival_route=3, location='Bowdoin', unvisited='~~Lynn~~')
+        more_efficient_new_progress = ProgressInfo(duration=timedelta(minutes=75), arrival_trip='Blue-7AM',
+                                                   trip_stop_no='2', children=None, parent=None,
+                                                   minimum_remaining_time=timedelta(minutes=30), expanded=False,
+                                                   eliminated=False)
+
+        def get_subject():
+            return Solver(analysis=MockAnalysis(route_types_to_solve=[2]), data=MockData(), max_progress_dict=None,
+                          progress_between_pruning_progress_dict=None, prune_thoroughness=.5, start_time=None,
+                          stop_join_string='~~', transfer_duration_seconds=60, transfer_route='transfer',
+                          walk_route='walk', walk_speed_mph=1)
+
+        def test_bad_parent():
+            subject = get_subject()
+            bad_parent = parent_location._replace(arrival_route='Blue')
+            input_progress_dict = {
+                bad_parent: parent_progress._replace(children={new_location}),
+                more_efficient_new_location: more_efficient_new_progress
+            }
+            subject._progress_dict = input_progress_dict
+            self.assertFalse(subject.new_node_is_inefficient_walk((new_location,
+                                                                   new_progress._replace(parent=bad_parent))))
+
+        grandparent_location = LocationStatusInfo(arrival_route='walk', location='Bowdoin',
+                                                  unvisited='~~Wonderland~~Lynn~~')
+        grandparent_progress = ProgressInfo(duration=timedelta(minutes=59), arrival_trip='walk', trip_stop_no='1',
+                                            children={parent_location}, parent=None,
+                                            minimum_remaining_time=timedelta(minutes=60), expanded=True,
+                                            eliminated=False)
+
+        def test_bad_grandparent():
+            subject = get_subject()
+            bad_grandparent = grandparent_location._replace(arrival_route='run')
+            input_progress_dict = {
+                parent_location: parent_progress._replace(children={new_location}, parent=bad_grandparent),
+                bad_grandparent: grandparent_progress,
+                more_efficient_new_location: more_efficient_new_progress
+            }
+            subject._progress_dict = input_progress_dict
+            self.assertFalse(subject.new_node_is_inefficient_walk((new_location, new_progress)))
+
+        great_grandparent_location = LocationStatusInfo(arrival_route='transfer', location='Alewife',
+                                                        unvisited='~~Wonderland~~Lynn~~')
+        great_grandparent_progress = ProgressInfo(duration=timedelta(minutes=9), arrival_trip='transfer',
+                                                  trip_stop_no='1', children={grandparent_location}, parent=None,
+                                                  minimum_remaining_time=timedelta(minutes=60), expanded=True,
+                                                  eliminated=False)
+
+        def test_bad_great_grandparent():
+            subject = get_subject()
+            bad_great_grandparent = great_grandparent_location._replace(arrival_route='run')
+            input_progress_dict = {
+                parent_location: parent_progress._replace(children={new_location}, parent=grandparent_location),
+                grandparent_location: grandparent_progress._replace(parent=bad_great_grandparent),
+                bad_great_grandparent: great_grandparent_progress,
+                more_efficient_new_location: more_efficient_new_progress
+            }
+            subject._progress_dict = input_progress_dict
+            self.assertFalse(subject.new_node_is_inefficient_walk((new_location, new_progress)))
+
+        great_great_grandparent_location = LocationStatusInfo(arrival_route=1, location='Alewife',
+                                                              unvisited='~~Wonderland~~Lynn~~')
+        great_great_grandparent_progress = ProgressInfo(duration=timedelta(minutes=8), arrival_trip='3-6AM',
+                                                        trip_stop_no='1', children={great_grandparent_location},
+                                                        parent=None, minimum_remaining_time=timedelta(minutes=60),
+                                                        expanded=True, eliminated=False)
+
+        def test_last_stop_on_route():
+            subject = get_subject()
+            bad_great_great_grandparent = great_great_grandparent_location._replace(location='Back of the Hill')
+            input_progress_dict = {
+                parent_location: parent_progress._replace(children={new_location}, parent=grandparent_location),
+                grandparent_location: grandparent_progress._replace(parent=great_grandparent_location),
+                great_grandparent_location: great_grandparent_progress._replace(parent=bad_great_great_grandparent),
+                bad_great_great_grandparent: great_great_grandparent_progress,
+                more_efficient_new_location: more_efficient_new_progress
+            }
+            subject._progress_dict = input_progress_dict
+            self.assertFalse(subject.new_node_is_inefficient_walk((new_location, new_progress)))
+
+        def test_off_course_great_great_grandparent():
+            subject = get_subject()
+            bad_great_great_grandparent = great_great_grandparent_location._replace(arrival_route=3, location='Bowdoin')
+            input_progress_dict = {
+                parent_location: parent_progress._replace(children={new_location}, parent=grandparent_location),
+                grandparent_location: grandparent_progress._replace(parent=great_grandparent_location),
+                great_grandparent_location: great_grandparent_progress._replace(parent=bad_great_great_grandparent),
+                bad_great_great_grandparent: great_great_grandparent_progress,
+                more_efficient_new_location: more_efficient_new_progress
+            }
+            subject._progress_dict = input_progress_dict
+            self.assertFalse(subject.new_node_is_inefficient_walk((new_location, new_progress)))
+
+        def test_inefficient_walk():
+            subject = get_subject()
+            input_progress_dict = {
+                parent_location: parent_progress._replace(children={new_location}, parent=grandparent_location),
+                grandparent_location: grandparent_progress._replace(parent=great_grandparent_location),
+                great_grandparent_location: great_grandparent_progress._replace(
+                    parent=great_great_grandparent_location),
+                great_great_grandparent_location: great_great_grandparent_progress,
+                more_efficient_new_location: more_efficient_new_progress
+            }
+            subject._progress_dict = input_progress_dict
+            self.assertTrue(subject.new_node_is_inefficient_walk((new_location, new_progress)))
+
+        def test_efficient_walk():
+            subject = get_subject()
+            input_progress_dict = {
+                parent_location: parent_progress._replace(children={new_location}, parent=grandparent_location),
+                grandparent_location: grandparent_progress._replace(parent=great_grandparent_location),
+                great_grandparent_location: great_grandparent_progress._replace(
+                    parent=great_great_grandparent_location),
+                great_great_grandparent_location: great_great_grandparent_progress,
+                more_efficient_new_location: more_efficient_new_progress
+            }
+            subject._progress_dict = input_progress_dict
+            efficient_new_progress = new_progress._replace(duration=timedelta(minutes=64),
+                                                           minimum_remaining_time=timedelta(minutes=40))
+            self.assertFalse(subject.new_node_is_inefficient_walk((new_location, efficient_new_progress)))
+
+        test_bad_parent()
+        test_bad_grandparent()
+        test_bad_great_grandparent()
+        test_last_stop_on_route()
+        test_off_course_great_great_grandparent()
+        test_inefficient_walk()
+        test_efficient_walk()
+
     def test_prune_progress_dict(self):
         subject = Solver(analysis=None, data=None, max_progress_dict=None, progress_between_pruning_progress_dict=None,
                          prune_thoroughness=.5, start_time=None, stop_join_string='~~',
