@@ -260,7 +260,7 @@ class TestSolver(unittest.TestCase):
                              start_time=DEFAULT_START_TIME, stop_join_string='##', transfer_duration_seconds=None,
                              transfer_route=None, walk_route=None, walk_speed_mph=None)
             input_time = timedelta(minutes=400)
-            expected = timedelta(minutes=340)
+            expected = timedelta(minutes=60)
             actual = subject.get_new_minimum_remaining_time(input_time, ['Bowdoin', 'Lynn'],
                                                             '##Bowdoin##Lynn##Wonderland##', 3)
             self.assertEqual(expected, actual)
@@ -370,7 +370,7 @@ class TestSolver(unittest.TestCase):
                                    unvisited='~~Lynn~~Bowdoin~~Back of the Hill~~'),
                 ProgressInfo(duration=timedelta(minutes=182), children=None,
                              parent=input_location_status, arrival_trip='3-7AM', trip_stop_no='2',
-                             minimum_remaining_time=timedelta(hours=6), expanded=False, eliminated=False)
+                             minimum_remaining_time=timedelta(hours=2), expanded=False, eliminated=False)
             )
             actual = subject.get_next_stop_data_for_trip(input_location_status)
 

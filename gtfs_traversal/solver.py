@@ -96,9 +96,12 @@ class Solver:
             return old_minimum_remaining_time
 
         new_minimum_remaining_time = old_minimum_remaining_time
-        for stop in stops_ids_to_eliminate:
-            if self.add_separators_to_stop_name(stop) in unvisited_stops_string:
-                new_minimum_remaining_time -= self.data_munger.get_minimum_stop_times()[stop]
+        if any(self.add_separators_to_stop_name(stop) in unvisited_stops_string for stop in stops_ids_to_eliminate):
+            new_unvisited_stops = unvisited_stops_string.strip(self.STOP_JOIN_STRING).split(self.STOP_JOIN_STRING)
+            for stop in stops_ids_to_eliminate:
+                if stop in new_unvisited_stops:
+                    new_unvisited_stops.remove(stop)
+            new_minimum_remaining_time = self.data_munger.get_minimum_remaining_time(new_unvisited_stops)
         return new_minimum_remaining_time
 
     def get_next_stop_data_for_trip(self, location_status):
