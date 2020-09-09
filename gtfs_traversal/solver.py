@@ -439,7 +439,7 @@ class Solver:
             num_pruned_nodes += 1
 
     def print_path(self):
-        solution_locations = [k for k in self._progress_dict if k.unvisited == self.STOP_JOIN_STRING]
+        solution_locations = [k for k in self._progress_dict if self.is_solution(k.unvisited)]
         for location in solution_locations:
             path = list()
             _location = location
