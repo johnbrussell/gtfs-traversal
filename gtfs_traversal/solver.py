@@ -390,7 +390,8 @@ class Solver:
             self._progress_dict[parent] = self._progress_dict[parent]._replace(children=set())
         self._progress_dict[parent].children.add(child)
 
-    def minimum_possible_duration(self, progress):
+    @staticmethod
+    def minimum_possible_duration(progress):
         return progress.duration + progress.minimum_remaining_time
 
     def initialize_progress_dict(self, begin_time):
