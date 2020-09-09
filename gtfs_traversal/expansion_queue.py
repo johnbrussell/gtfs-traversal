@@ -53,9 +53,9 @@ class ExpansionQueue:
 
     def remove_keys(self, bad_keys):
         for key in bad_keys:
-            self._remove_key(key)
+            self.remove_key(key)
 
-    def _remove_key(self, bad_key):
+    def remove_key(self, bad_key):
         num_stops_at_key = self._num_remaining_stops(bad_key.unvisited)
 
         # pruning a node that has been expanded

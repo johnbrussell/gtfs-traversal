@@ -374,21 +374,20 @@ class Solver:
         def ineffectiveness(node):
             return len(node.unvisited.split(self.STOP_JOIN_STRING))
 
-        prunable_nodes = set([k for k, v in self._progress_dict.items() if v.eliminated])
+        prunable_nodes = [k for k, v in self._progress_dict.items() if v.eliminated]
         num_nodes_to_prune = math.floor(self.prune_severity * float(len(prunable_nodes)))
         if num_nodes_to_prune == 0:
             return
 
-        node_ineffectiveness = [ineffectiveness(k) for k in prunable_nodes]
-        node_ineffectiveness_order = sorted(list(set(node_ineffectiveness)))
+        node_ineffectiveness = zip(prunable_nodes, [ineffectiveness(k) for k in prunable_nodes])
+        node_ineffectiveness_order = sorted(node_ineffectiveness, key=lambda x: x[1])
         num_pruned_nodes = 0
         while num_pruned_nodes < num_nodes_to_prune and node_ineffectiveness_order:
             node_ineffectiveness_to_prune = node_ineffectiveness_order.pop()
-            nodes_to_prune = set([n for n in prunable_nodes if ineffectiveness(n) == node_ineffectiveness_to_prune])
-            for node in nodes_to_prune:
-                del self._progress_dict[node]
-            self._exp_queue.remove_keys(nodes_to_prune)
-            num_pruned_nodes += len(nodes_to_prune)
+            node_to_prune = node_ineffectiveness_to_prune[0]
+            del self._progress_dict[node_to_prune]
+            self._exp_queue.remove_key(node_to_prune)
+            num_pruned_nodes += 1
 
     def print_path(self):
         solution_locations = [k for k in self._progress_dict if k.unvisited == self.STOP_JOIN_STRING]
