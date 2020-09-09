@@ -169,10 +169,10 @@ class Solver:
         )
 
     def get_nodes_after_boarding_routes(self, location_status):
-        routes_at_location = self.data_munger.get_routes_at_stop(location_status.location)
-        return [self.get_node_after_boarding_route(location_status, route)
-                for route in routes_at_location
-                if not self.data_munger.is_last_stop_on_route(location_status.location, route)]
+        routes_leaving_location = [self.get_node_after_boarding_route(location_status, route)
+                                   for route in self.data_munger.get_routes_at_stop(location_status.location)
+                                   if not self.data_munger.is_last_stop_on_route(location_status.location, route)]
+        return routes_leaving_location
 
     def get_nodes_after_transfer(self, location_status):
         walking_data = self.get_walking_data(location_status)
