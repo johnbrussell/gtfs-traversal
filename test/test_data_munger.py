@@ -1,4 +1,5 @@
 import unittest
+from unittest.mock import patch
 from datetime import datetime, timedelta
 from gtfs_traversal.data_munger import DataMunger
 
@@ -51,9 +52,31 @@ class TestDataMunger(unittest.TestCase):
             self.assertEqual(subject.first_trip_after(DEFAULT_START_TIME, 2, 'Back of the Hill'), expected_none_result)
             self.assertEqual(subject.first_trip_after(DEFAULT_START_TIME, 3, 'Lynn'), expected_none_result)
 
+        def test_caches():
+            subject = self.get_subject_with_mock_data(analysis=MockAnalysis())
+
+            expected_3 = datetime.strptime(DEFAULT_START_DATE + ' 06:00:00', '%Y-%m-%d %H:%M:%S'), '3-6AM'
+            expected_18 = datetime.strptime(DEFAULT_START_DATE + ' 08:00:00', '%Y-%m-%d %H:%M:%S'), '18-8AM'
+            expected_blue = datetime.strptime(DEFAULT_START_DATE + ' 06:00:00', '%Y-%m-%d %H:%M:%S'), 'Blue-6AM'
+
+            self.assertEqual(subject.first_trip_after(DEFAULT_START_TIME + timedelta(hours=6), 1, 'Alewife'),
+                             expected_3)
+            self.assertEqual(subject.first_trip_after(DEFAULT_START_TIME + timedelta(hours=7.99), 2, 'Heath Street'),
+                             expected_18)
+            self.assertEqual(subject.first_trip_after(DEFAULT_START_TIME, 3, 'Wonderland'), expected_blue)
+
+            with patch.object(subject, 'get_datetime_from_raw_string_time', return_value=DEFAULT_START_TIME):
+                self.assertEqual(subject.first_trip_after(DEFAULT_START_TIME + timedelta(hours=6), 1, 'Alewife'),
+                                 expected_3)
+                self.assertEqual(
+                    subject.first_trip_after(DEFAULT_START_TIME + timedelta(hours=7.99), 2, 'Heath Street'),
+                    expected_18)
+                self.assertEqual(subject.first_trip_after(DEFAULT_START_TIME, 3, 'Wonderland'), expected_blue)
+
         test_returns_correct_trip()
         test_returns_none_after_last_trip_of_day()
         test_returns_none_for_last_stop_on_route()
+        test_caches()
 
     def test_get_datetime_from_raw_string_time(self):
         def test_handles_before_noon():
@@ -86,6 +109,21 @@ class TestDataMunger(unittest.TestCase):
         test_handles_before_noon()
         test_handles_after_noon()
         test_handles_after_midnight()
+
+    def test_get_minimum_remaining_time(self):
+        subject = self.get_subject_with_mock_data(analysis=MockAnalysis(route_types_to_solve=[1, 2]))
+        unvisited_stops = ['Wonderland', 'Back of the Hill', 'Lynn', 'Heath Street']
+        expected = timedelta(hours=5)
+        actual = subject.get_minimum_remaining_time(unvisited_stops)
+        self.assertEqual(expected, actual)
+
+    def test_get_minimum_remaining_transfers(self):
+        subject = self.get_subject_with_mock_data(analysis=MockAnalysis(route_types_to_solve=[1, 2]))
+        unvisited_stops = ['Alewife', 'Wonderland', 'Lechmere', 'Back of the Hill', 'Heath Street']
+        current_route = 2
+        expected = 1
+        actual = subject.get_minimum_remaining_transfers(current_route, unvisited_stops)
+        self.assertEqual(expected, actual)
 
     def test_get_minimum_stop_times(self):
         def test_calculates_correct_result():

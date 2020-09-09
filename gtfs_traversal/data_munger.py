@@ -13,6 +13,7 @@ class DataMunger:
         self._minimum_stop_times = None
         self._stops_by_route_in_solution_set = None
         self._transfer_stops = None
+        self._trip_time_cache = {}
         self._unique_routes_to_solve = None
         self._unique_stops_to_solve = None
 
@@ -23,11 +24,6 @@ class DataMunger:
         if self.is_last_stop_on_route(origin_stop_id, route_number):
             return None, None
 
-        # Currently, this function does not work on routes that visit one stop multiple times in a trip.  To fix,
-        #  can pass the origin_stop_number to the function, instead of origin_stop_id
-        date_at_midnight = datetime(year=earliest_departure_time.year, month=earliest_departure_time.month,
-                                    day=earliest_departure_time.day)
-
         # GTFS uses days longer than 24 hours, so need to add a buffer to the end date to allow 25+ hour trips
         latest_departure_time = self.get_buffered_analysis_end_time()
 
@@ -36,7 +32,15 @@ class DataMunger:
         solution_trip_id = None
         for trip_id in self.get_trips_for_route(route_number):
             raw_departure_time = self.get_stops_for_trip(trip_id)[origin_stop_number].departureTime
-            time = self.get_datetime_from_raw_string_time(date_at_midnight, raw_departure_time)
+            if (earliest_departure_time, raw_departure_time) in self._trip_time_cache:
+                time = self._trip_time_cache[(earliest_departure_time, raw_departure_time)]
+            else:
+                # Currently, this function does not work on routes that visit one stop multiple times in a trip.
+                #  To fix, can pass the origin_stop_number to the function, instead of origin_stop_id
+                date_at_midnight = datetime(year=earliest_departure_time.year, month=earliest_departure_time.month,
+                                            day=earliest_departure_time.day)
+                time = self.get_datetime_from_raw_string_time(date_at_midnight, raw_departure_time)
+                self._trip_time_cache[(earliest_departure_time, raw_departure_time)] = time
             if earliest_departure_time <= time < latest_departure_time:
                 latest_departure_time = time
                 solution_trip_id = trip_id
@@ -81,18 +85,14 @@ class DataMunger:
                 best_departure_time, best_trip_id = self.first_trip_after(self.start_time, route, stop)
                 if best_trip_id is None:
                     continue
-                best_stop_number = self.get_stop_number_from_stop_id(stop, route)
-                next_stop_number = str(int(best_stop_number) + 1)
+                stop_number = self.get_stop_number_from_stop_id(stop, route)
+                next_stop_number = str(int(stop_number) + 1)
                 if next_stop_number not in self.get_stops_for_route(route):
                     continue
                 stops_on_route = self.get_stops_for_route(route)
                 next_stop = stops_on_route[next_stop_number].stopId
-                raw_time = stops_on_route[next_stop_number].departureTime
-                start_day_midnight = datetime(year=best_departure_time.year,
-                                              month=best_departure_time.month,
-                                              day=best_departure_time.day)
-                arrival_time_at_next_stop = self.get_datetime_from_raw_string_time(start_day_midnight, raw_time)
-                travel_time_to_next_stop = arrival_time_at_next_stop - best_departure_time
+                travel_time_to_next_stop = self.get_travel_time_between_stops(
+                    best_trip_id, stop_number, next_stop_number)
                 if next_stop not in minimum_stop_times:
                     minimum_stop_times[next_stop] = timedelta(hours=24)
                 if stop not in minimum_stop_times:
@@ -102,6 +102,67 @@ class DataMunger:
 
         self._minimum_stop_times = minimum_stop_times
         return self._minimum_stop_times
+
+    def get_minimum_remaining_time(self, unvisited_stops):
+        total_minimum_remaining_time = timedelta(minutes=0)
+        for stop in unvisited_stops:
+            routes_at_stop = self.get_routes_at_stop(stop)
+            best_time_at_stop = timedelta(hours=24)
+            for route in routes_at_stop:
+                if route not in self.get_unique_routes_to_solve():
+                    continue
+
+                if self.is_last_stop_on_route(stop, route):
+                    stop_number = self.get_stop_number_from_stop_id(stop, route)
+                    previous_stop_number = str(int(stop_number) - 1)
+                    stops_on_route = self.get_stops_for_route(route)
+                    previous_stop = stops_on_route[previous_stop_number].stopId
+                    best_departure_time, best_trip_id = self.first_trip_after(self.start_time, route, previous_stop)
+                else:
+                    best_departure_time, best_trip_id = self.first_trip_after(self.start_time, route, stop)
+
+                if best_trip_id is None:
+                    continue
+
+                stop_number = self.get_stop_number_from_stop_id(stop, route)
+                next_stop_number = str(int(stop_number) + 1)
+                previous_stop_number = str(int(stop_number) - 1)
+                stops_on_route = self.get_stops_for_route(route)
+
+                if next_stop_number in self.get_stops_for_route(route):
+                    travel_time_to_next_stop = self.get_travel_time_between_stops(
+                        best_trip_id, stop_number, next_stop_number)
+                    if stops_on_route[next_stop_number].stopId in unvisited_stops:
+                        best_time_at_stop = min(best_time_at_stop, travel_time_to_next_stop / 2)
+                    else:
+                        best_time_at_stop = min(best_time_at_stop, travel_time_to_next_stop)
+
+                if previous_stop_number in self.get_stops_for_route(route):
+                    travel_time_from_previous_stop = self.get_travel_time_between_stops(
+                        best_trip_id, previous_stop_number, stop_number)
+                    if stops_on_route[previous_stop_number].stopId in unvisited_stops:
+                        best_time_at_stop = min(best_time_at_stop, travel_time_from_previous_stop / 2)
+                    else:
+                        best_time_at_stop = min(best_time_at_stop, travel_time_from_previous_stop)
+            total_minimum_remaining_time += best_time_at_stop
+        return total_minimum_remaining_time
+
+    def get_minimum_remaining_transfers(self, current_route, unvisited_stops):
+        minimum_remaining_transfers = 0
+        routes_accounted_for = set()
+        for stop in unvisited_stops:
+            routes_at_stop = self.get_routes_at_stop(stop)
+            solution_routes_at_stop = [s for s in routes_at_stop if s in self.get_unique_routes_to_solve()]
+            if len(solution_routes_at_stop) > 1:
+                continue
+            route = solution_routes_at_stop[0]
+            if route in routes_accounted_for:
+                continue
+            minimum_remaining_transfers += 1
+            routes_accounted_for.add(route)
+        if current_route in routes_accounted_for:
+            minimum_remaining_transfers -= 1
+        return max(0, minimum_remaining_transfers)
 
     def get_next_stop_id(self, stop_id, route):
         if self.is_last_stop_on_route(stop_id, route):

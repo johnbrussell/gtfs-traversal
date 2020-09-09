@@ -2,18 +2,17 @@ from gtfs_traversal.data_munger import DataMunger
 from gtfs_traversal.expansion_queue import ExpansionQueue
 from gtfs_traversal.data_structures import *
 import math
-from datetime import timedelta
+from datetime import timedelta, datetime
 
 
 class Solver:
-    def __init__(self, analysis, data, max_progress_dict, progress_between_pruning_progress_dict, prune_thoroughness,
-                 start_time, stop_join_string, transfer_duration_seconds, transfer_route, walk_route, walk_speed_mph):
+    def __init__(self, analysis, data, progress_between_pruning_progress_dict, prune_thoroughness, start_time,
+                 stop_join_string, transfer_duration_seconds, transfer_route, walk_route, walk_speed_mph):
         self.walk_speed_mph = walk_speed_mph
         self.STOP_JOIN_STRING = stop_join_string
         self.TRANSFER_ROUTE = transfer_route
         self.WALK_ROUTE = walk_route
         self.TRANSFER_DURATION_SECONDS = transfer_duration_seconds
-        self.MAX_PROGRESS_DICT = max_progress_dict
         self.ANALYSIS = analysis
         self.expansions_to_prune = progress_between_pruning_progress_dict
         self.prune_severity = prune_thoroughness
@@ -88,24 +87,25 @@ class Solver:
         self._initial_unsolved_string = self.data_munger.get_initial_unsolved_string()
         return self._initial_unsolved_string
 
-    def get_new_minimum_remaining_time(self, old_minimum_remaining_time, stops_ids_to_eliminate, unvisited_stops_string,
-                                       route):
-        routes_to_solve = self.data_munger.get_unique_routes_to_solve()
-
-        if route not in routes_to_solve:
+    def get_new_minimum_remaining_time(self, old_minimum_remaining_time, unvisited_stops_string, route,
+                                       new_unvisited_stop_string):
+        if unvisited_stops_string == new_unvisited_stop_string:
             return old_minimum_remaining_time
 
-        new_minimum_remaining_time = old_minimum_remaining_time
-        for stop in stops_ids_to_eliminate:
-            if self.add_separators_to_stop_name(stop) in unvisited_stops_string:
-                new_minimum_remaining_time -= self.data_munger.get_minimum_stop_times()[stop]
-        return new_minimum_remaining_time
+        new_unvisited_stops = new_unvisited_stop_string.strip(self.STOP_JOIN_STRING).split(self.STOP_JOIN_STRING) \
+            if not self.is_solution(new_unvisited_stop_string) else []
+        new_minimum_remaining_travel_time = self.data_munger.get_minimum_remaining_time(new_unvisited_stops)
+
+        new_minimum_remaining_transfer_time = \
+            self.data_munger.get_minimum_remaining_transfers(route, new_unvisited_stops) * \
+            timedelta(seconds=self.TRANSFER_DURATION_SECONDS)
+        return new_minimum_remaining_travel_time + new_minimum_remaining_transfer_time
 
     def get_next_stop_data_for_trip(self, location_status):
         progress = self._progress_dict[location_status]
 
         if self.data_munger.is_last_stop_on_route(location_status.location, location_status.arrival_route):
-            return self.new_eliminated_node(location_status)
+            return None
 
         stop_number = progress.trip_stop_no
         next_stop_no = str(int(stop_number) + 1)
@@ -116,9 +116,9 @@ class Solver:
         new_duration = progress.duration + self.data_munger.get_travel_time_between_stops(
             progress.arrival_trip, stop_number, next_stop_no)
         new_minimum_remaining_time = self.get_new_minimum_remaining_time(progress.minimum_remaining_time,
-                                                                         [location_status.location, next_stop_id],
                                                                          location_status.unvisited,
-                                                                         location_status.arrival_route)
+                                                                         location_status.arrival_route,
+                                                                         new_unvisited_string)
         return (
             LocationStatusInfo(location=next_stop_id, arrival_route=location_status.arrival_route,
                                unvisited=new_unvisited_string),
@@ -148,7 +148,7 @@ class Solver:
             self._start_time + progress.duration, route, location_status.location)
 
         if trip_id is None:
-            return self.new_eliminated_node(location_status)
+            return None
 
         stop_number = self.data_munger.get_stop_number_from_stop_id(location_status.location, route)
         new_duration = departure_time - self._start_time
@@ -162,10 +162,11 @@ class Solver:
         )
 
     def get_nodes_after_boarding_routes(self, location_status):
-        routes_at_location = self.data_munger.get_routes_at_stop(location_status.location)
-        return [self.get_node_after_boarding_route(location_status, route)
-                for route in routes_at_location
-                if not self.data_munger.is_last_stop_on_route(location_status.location, route)]
+        routes_leaving_location = [self.get_node_after_boarding_route(location_status, route)
+                                   for route in self.data_munger.get_routes_at_stop(location_status.location)
+                                   if not self.data_munger.is_last_stop_on_route(location_status.location, route)]
+
+        return [node for node in routes_leaving_location if self.new_node_is_reasonable(node)]
 
     def get_nodes_after_transfer(self, location_status):
         walking_data = self.get_walking_data(location_status)
@@ -212,10 +213,12 @@ class Solver:
 
     def get_transfer_data(self, location_status):
         progress = self._progress_dict[location_status]
+        minimum_remaining_time = max(
+            timedelta(minutes=0), progress.minimum_remaining_time - timedelta(seconds=self.TRANSFER_DURATION_SECONDS))
         return (location_status._replace(arrival_route=self.TRANSFER_ROUTE),
                 ProgressInfo(duration=progress.duration + timedelta(seconds=self.TRANSFER_DURATION_SECONDS),
                              arrival_trip=self.TRANSFER_ROUTE, trip_stop_no=self.TRANSFER_ROUTE, parent=location_status,
-                             minimum_remaining_time=progress.minimum_remaining_time, children=None,
+                             minimum_remaining_time=minimum_remaining_time, children=None,
                              expanded=False, eliminated=False))
 
     def get_trip_schedules(self):
@@ -289,15 +292,52 @@ class Solver:
             return False
         return progress_info.duration + progress_info.minimum_remaining_time >= best_duration
 
-    def new_eliminated_node(self, location_status):
-        progress = self._progress_dict[location_status]
-        return (
-            location_status,
-            ProgressInfo(duration=progress.duration, arrival_trip=progress.arrival_trip,
-                         trip_stop_no=progress.trip_stop_no, parent=location_status,
-                         minimum_remaining_time=progress.minimum_remaining_time, children=None,
-                         expanded=False, eliminated=True)
-        )
+    def new_node_is_inefficient_walk(self, node):
+        new_location, new_progress = node
+        parent_transfer = new_progress.parent
+        if parent_transfer.arrival_route != self.TRANSFER_ROUTE:
+            return False
+
+        grandparent_walk = self._progress_dict[parent_transfer].parent
+        if grandparent_walk.arrival_route != self.WALK_ROUTE:
+            return False
+
+        great_grandparent_transfer = self._progress_dict[grandparent_walk].parent
+        if great_grandparent_transfer.arrival_route != self.TRANSFER_ROUTE:
+            return False
+
+        great_great_grandparent_travel = self._progress_dict[great_grandparent_transfer].parent
+        original_route = great_great_grandparent_travel.arrival_route
+        if self.data_munger.is_last_stop_on_route(great_great_grandparent_travel.location, original_route):
+            return False
+
+        if original_route not in self.data_munger.get_unique_routes_to_solve():
+            # unvisited nodes will be the same, so will not add inefficient node
+            return False
+
+        location_to_test = great_great_grandparent_travel.location
+        unvisited_to_test = great_great_grandparent_travel.unvisited
+        while self.data_munger.get_next_stop_id(location_to_test, original_route) is not None:
+            location_to_test = self.data_munger.get_next_stop_id(location_to_test, original_route)
+            if self.add_separators_to_stop_name(location_to_test) not in unvisited_to_test:
+                continue
+
+            unvisited_to_test = self.eliminate_stop_from_string(location_to_test, unvisited_to_test)
+
+            location_status_to_test = LocationStatusInfo(
+                location=new_location.location,
+                arrival_route=new_location.arrival_route,
+                unvisited=unvisited_to_test
+            )
+            if location_status_to_test in self._progress_dict:
+                if self.minimum_possible_duration(new_progress) >= \
+                        self.minimum_possible_duration(self._progress_dict[location_status_to_test]):
+                    return True
+
+        return False
+
+    def new_node_is_reasonable(self, node):
+        return node is not None and not self.new_node_is_inefficient_walk(node)
 
     def add_new_nodes_to_progress_dict(self, new_nodes_list, best_solution_duration, *, verbose=True):
         for node in new_nodes_list:
@@ -306,6 +346,9 @@ class Solver:
         return best_solution_duration
 
     def add_new_node_to_progress_dict(self, new_node, best_solution_duration, *, verbose=True):
+        if new_node is None:
+            return best_solution_duration
+
         new_location, new_progress = new_node
 
         if new_progress.eliminated:
@@ -316,7 +359,7 @@ class Solver:
                 return best_solution_duration
 
         if best_solution_duration is not None:
-            if new_progress.duration + new_progress.minimum_remaining_time >= best_solution_duration:
+            if self.minimum_possible_duration(new_progress) >= best_solution_duration:
                 return best_solution_duration
 
         if new_location in self._progress_dict and not self._progress_dict[new_location].eliminated:
@@ -324,8 +367,7 @@ class Solver:
         self._progress_dict[new_location] = new_progress
         self.add_child_to_parent(new_progress.parent, new_location)
 
-        is_solution = new_location.unvisited == self.STOP_JOIN_STRING
-        if is_solution:
+        if self.is_solution(new_location.unvisited):
             if verbose:
                 print('solution', new_progress.duration)
             best_solution_duration = new_progress.duration
@@ -339,6 +381,13 @@ class Solver:
         if self._progress_dict[parent].children is None:
             self._progress_dict[parent] = self._progress_dict[parent]._replace(children=set())
         self._progress_dict[parent].children.add(child)
+
+    def is_solution(self, stops_string):
+        return stops_string == self.STOP_JOIN_STRING
+
+    @staticmethod
+    def minimum_possible_duration(progress):
+        return progress.duration + progress.minimum_remaining_time
 
     def initialize_progress_dict(self, begin_time):
         progress_dict = dict()
@@ -374,21 +423,20 @@ class Solver:
         def ineffectiveness(node):
             return len(node.unvisited.split(self.STOP_JOIN_STRING))
 
-        prunable_nodes = set([k for k, v in self._progress_dict.items() if v.eliminated])
+        prunable_nodes = [k for k, v in self._progress_dict.items() if v.eliminated]
         num_nodes_to_prune = math.floor(self.prune_severity * float(len(prunable_nodes)))
         if num_nodes_to_prune == 0:
             return
 
-        node_ineffectiveness = [ineffectiveness(k) for k in prunable_nodes]
-        node_ineffectiveness_order = sorted(list(set(node_ineffectiveness)))
+        node_ineffectiveness = zip(prunable_nodes, [ineffectiveness(k) for k in prunable_nodes])
+        node_ineffectiveness_order = sorted(node_ineffectiveness, key=lambda x: x[1])
         num_pruned_nodes = 0
         while num_pruned_nodes < num_nodes_to_prune and node_ineffectiveness_order:
             node_ineffectiveness_to_prune = node_ineffectiveness_order.pop()
-            nodes_to_prune = set([n for n in prunable_nodes if ineffectiveness(n) == node_ineffectiveness_to_prune])
-            for node in nodes_to_prune:
-                del self._progress_dict[node]
-            self._exp_queue.remove_keys(nodes_to_prune)
-            num_pruned_nodes += len(nodes_to_prune)
+            node_to_prune = node_ineffectiveness_to_prune[0]
+            del self._progress_dict[node_to_prune]
+            self._exp_queue.remove_key(node_to_prune)
+            num_pruned_nodes += 1
 
     def print_path(self):
         solution_locations = [k for k in self._progress_dict if k.unvisited == self.STOP_JOIN_STRING]
@@ -409,13 +457,30 @@ class Solver:
         if len(self._progress_dict) > 0:
             self._exp_queue.add(self._progress_dict.keys())
 
+        num_stations = len(self.data_munger.get_unique_stops_to_solve())
+        num_start_points = self._exp_queue.len()
+        num_completed_stations = 0
+        num_initial_start_points = num_start_points
+        stations_denominator = num_initial_start_points * num_stations
+        best_progress = 0
+        start_time = datetime.now()
+
         num_expansions = 0
         while not self._exp_queue.is_empty():
             num_expansions += 1
+            if self._exp_queue._num_remaining_stops_to_pop == num_stations:
+                num_completed_stations = min(num_initial_start_points - 1, num_initial_start_points - num_start_points)
+                num_start_points = max(num_start_points - 1, 0)
             expandee = self._exp_queue.pop()
             known_best_time = self.expand(expandee, known_best_time)
-            if known_best_time is not None and num_expansions % self.expansions_to_prune == 0:
-                num_expansions = 0
-                self.prune_progress_dict()
+            if known_best_time is not None:
+                if int((num_stations * num_completed_stations +
+                        self._exp_queue._num_remaining_stops_to_pop) / stations_denominator * 100.0) > best_progress:
+                    best_progress = int((num_stations * num_completed_stations +
+                        self._exp_queue._num_remaining_stops_to_pop) / stations_denominator * 100.0)
+                    print(best_progress, datetime.now() - start_time)
+                if num_expansions % self.expansions_to_prune == 0:
+                    num_expansions = 0
+                    self.prune_progress_dict()
 
         return known_best_time, self._progress_dict, self._start_time
