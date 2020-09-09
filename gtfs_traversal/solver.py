@@ -87,20 +87,14 @@ class Solver:
         self._initial_unsolved_string = self.data_munger.get_initial_unsolved_string()
         return self._initial_unsolved_string
 
-    def get_new_minimum_remaining_time(self, old_minimum_remaining_time, stops_ids_to_eliminate, unvisited_stops_string,
-                                       route):
-        routes_to_solve = self.data_munger.get_unique_routes_to_solve()
-
-        if route not in routes_to_solve:
+    def get_new_minimum_remaining_time(self, old_minimum_remaining_time, unvisited_stops_string, route,
+                                       new_unvisited_stop_string):
+        if unvisited_stops_string == new_unvisited_stop_string:
             return old_minimum_remaining_time
 
-        new_minimum_remaining_travel_time = old_minimum_remaining_time
-        new_unvisited_stops = unvisited_stops_string.strip(self.STOP_JOIN_STRING).split(self.STOP_JOIN_STRING)
-        if any(self.add_separators_to_stop_name(stop) in unvisited_stops_string for stop in stops_ids_to_eliminate):
-            for stop in stops_ids_to_eliminate:
-                if stop in new_unvisited_stops:
-                    new_unvisited_stops.remove(stop)
-            new_minimum_remaining_travel_time = self.data_munger.get_minimum_remaining_time(new_unvisited_stops)
+        new_unvisited_stops = new_unvisited_stop_string.strip(self.STOP_JOIN_STRING).split(self.STOP_JOIN_STRING) \
+            if not self.is_solution(new_unvisited_stop_string) else []
+        new_minimum_remaining_travel_time = self.data_munger.get_minimum_remaining_time(new_unvisited_stops)
 
         new_minimum_remaining_transfer_time = \
             self.data_munger.get_minimum_remaining_transfers(route, new_unvisited_stops) * \
@@ -122,9 +116,9 @@ class Solver:
         new_duration = progress.duration + self.data_munger.get_travel_time_between_stops(
             progress.arrival_trip, stop_number, next_stop_no)
         new_minimum_remaining_time = self.get_new_minimum_remaining_time(progress.minimum_remaining_time,
-                                                                         [location_status.location, next_stop_id],
                                                                          location_status.unvisited,
-                                                                         location_status.arrival_route)
+                                                                         location_status.arrival_route,
+                                                                         new_unvisited_string)
         return (
             LocationStatusInfo(location=next_stop_id, arrival_route=location_status.arrival_route,
                                unvisited=new_unvisited_string),
@@ -373,8 +367,7 @@ class Solver:
         self._progress_dict[new_location] = new_progress
         self.add_child_to_parent(new_progress.parent, new_location)
 
-        is_solution = new_location.unvisited == self.STOP_JOIN_STRING
-        if is_solution:
+        if self.is_solution(new_location.unvisited):
             if verbose:
                 print('solution', new_progress.duration)
             best_solution_duration = new_progress.duration
@@ -388,6 +381,9 @@ class Solver:
         if self._progress_dict[parent].children is None:
             self._progress_dict[parent] = self._progress_dict[parent]._replace(children=set())
         self._progress_dict[parent].children.add(child)
+
+    def is_solution(self, stops_string):
+        return stops_string == self.STOP_JOIN_STRING
 
     @staticmethod
     def minimum_possible_duration(progress):
