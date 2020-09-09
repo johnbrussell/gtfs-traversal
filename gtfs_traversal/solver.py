@@ -69,7 +69,7 @@ class Solver:
         return uneliminated.replace(self.add_separators_to_stop_name(name), self.STOP_JOIN_STRING)
 
     def expand(self, location_status, known_best_time):
-        if location_status.unvisited == self.STOP_JOIN_STRING \
+        if self.is_solution(location_status.unvisited) \
                 or self._progress_dict[location_status].expanded \
                 or self._progress_dict[location_status].eliminated:
             return known_best_time
