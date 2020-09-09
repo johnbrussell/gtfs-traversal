@@ -6,14 +6,13 @@ from datetime import timedelta, datetime
 
 
 class Solver:
-    def __init__(self, analysis, data, max_progress_dict, progress_between_pruning_progress_dict, prune_thoroughness,
-                 start_time, stop_join_string, transfer_duration_seconds, transfer_route, walk_route, walk_speed_mph):
+    def __init__(self, analysis, data, progress_between_pruning_progress_dict, prune_thoroughness, start_time,
+                 stop_join_string, transfer_duration_seconds, transfer_route, walk_route, walk_speed_mph):
         self.walk_speed_mph = walk_speed_mph
         self.STOP_JOIN_STRING = stop_join_string
         self.TRANSFER_ROUTE = transfer_route
         self.WALK_ROUTE = walk_route
         self.TRANSFER_DURATION_SECONDS = transfer_duration_seconds
-        self.MAX_PROGRESS_DICT = max_progress_dict
         self.ANALYSIS = analysis
         self.expansions_to_prune = progress_between_pruning_progress_dict
         self.prune_severity = prune_thoroughness
