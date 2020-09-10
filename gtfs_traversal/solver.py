@@ -20,6 +20,7 @@ class Solver:
         self._best_duration = None
         self._exp_queue = None
         self._initial_unsolved_string = None
+        self._initialization_time = datetime.now()
         self._off_course_stop_locations = None
         self._progress_dict = dict()
         self._route_trips = None
@@ -463,7 +464,6 @@ class Solver:
         num_initial_start_points = num_start_points
         stations_denominator = num_initial_start_points * num_stations
         best_progress = 0
-        start_time = datetime.now()
 
         num_expansions = 0
         while not self._exp_queue.is_empty():
@@ -478,7 +478,7 @@ class Solver:
                         self._exp_queue._num_remaining_stops_to_pop) / stations_denominator * 100.0) > best_progress:
                     best_progress = int((num_stations * num_completed_stations +
                         self._exp_queue._num_remaining_stops_to_pop) / stations_denominator * 100.0)
-                    print(best_progress, datetime.now() - start_time)
+                    print(best_progress, datetime.now() - self._initialization_time)
                 if num_expansions % self.expansions_to_prune == 0:
                     num_expansions = 0
                     self.prune_progress_dict()
