@@ -370,7 +370,7 @@ class Solver:
 
         if self.is_solution(new_location.unvisited):
             if verbose:
-                print('solution', new_progress.duration)
+                print(datetime.now() - self._initialization_time, 'solution:', new_progress.duration)
             best_solution_duration = new_progress.duration
             self.mark_slow_nodes_as_eliminated(best_solution_duration, preserve={new_location})
         else:
