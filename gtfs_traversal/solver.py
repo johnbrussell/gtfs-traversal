@@ -1,7 +1,6 @@
 from gtfs_traversal.data_munger import DataMunger
-from gtfs_traversal.expansion_queue import ExpansionQueue
 from gtfs_traversal.data_structures import *
-import math
+import math, heapq
 from datetime import timedelta, datetime
 
 
@@ -19,6 +18,7 @@ class Solver:
 
         self._best_duration = None
         self._exp_queue = None
+        self._heap_info = None
         self._initial_unsolved_string = None
         self._initialization_time = datetime.now()
         self._off_course_stop_locations = None
@@ -343,7 +343,6 @@ class Solver:
     def add_new_nodes_to_progress_dict(self, new_nodes_list, best_solution_duration, *, verbose=True):
         for node in new_nodes_list:
             best_solution_duration = self.add_new_node_to_progress_dict(node, best_solution_duration, verbose=verbose)
-        self._exp_queue.sort_latest_nodes(self._progress_dict)
         return best_solution_duration
 
     def add_new_node_to_progress_dict(self, new_node, best_solution_duration, *, verbose=True):
@@ -365,6 +364,12 @@ class Solver:
 
         if new_location in self._progress_dict and not self._progress_dict[new_location].eliminated:
             self.mark_nodes_as_eliminated({new_location})
+            if not self._progress_dict[new_location].expanded and not self.is_solution(new_location.unvisited):
+                print(self.node_priority(new_location), "adding")
+                node_priority = self.node_priority(new_location)
+                self._exp_queue.remove(node_priority)
+            elif any(new_location in v for _, v in self._heap_info.items()):
+                print("something went wrong")
         self._progress_dict[new_location] = new_progress
         self.add_child_to_parent(new_progress.parent, new_location)
 
@@ -374,9 +379,18 @@ class Solver:
             best_solution_duration = new_progress.duration
             self.mark_slow_nodes_as_eliminated(best_solution_duration, preserve={new_location})
         else:
-            self._exp_queue.add_node(new_location)
+            node_priority = self.node_priority(new_location)
+            heapq.heappush(self._exp_queue, node_priority)
+            if node_priority not in self._heap_info:
+                self._heap_info[node_priority] = set()
+            self._heap_info[node_priority].add(new_location)
 
         return best_solution_duration
+
+    def node_priority(self, new_location):
+        return len(new_location.unvisited.strip(self.STOP_JOIN_STRING).split(self.STOP_JOIN_STRING)) + \
+               round(self._progress_dict[new_location].duration.total_seconds() /
+               (self._progress_dict[new_location].duration.total_seconds() + 10000), 3)
 
     def add_child_to_parent(self, parent, child):
         if self._progress_dict[parent].children is None:
@@ -421,23 +435,33 @@ class Solver:
         return progress_dict, best_departure_time
 
     def prune_progress_dict(self):
-        def ineffectiveness(node):
-            return len(node.unvisited.split(self.STOP_JOIN_STRING))
+        print("pruning")
+
+        # def ineffectiveness(node):
+        #     return len(node.unvisited.split(self.STOP_JOIN_STRING))
 
         prunable_nodes = [k for k, v in self._progress_dict.items() if v.eliminated]
         num_nodes_to_prune = math.floor(self.prune_severity * float(len(prunable_nodes)))
         if num_nodes_to_prune == 0:
             return
 
-        node_ineffectiveness = zip(prunable_nodes, [ineffectiveness(k) for k in prunable_nodes])
+        node_ineffectiveness = zip(prunable_nodes, [len(k.unvisited.split(self.STOP_JOIN_STRING))
+                                                    for k in prunable_nodes])
         node_ineffectiveness_order = sorted(node_ineffectiveness, key=lambda x: x[1])
         num_pruned_nodes = 0
+        pruned_nodes = set()
         while num_pruned_nodes < num_nodes_to_prune and node_ineffectiveness_order:
             node_ineffectiveness_to_prune = node_ineffectiveness_order.pop()
             node_to_prune = node_ineffectiveness_to_prune[0]
-            del self._progress_dict[node_to_prune]
-            self._exp_queue.remove_key(node_to_prune)
             num_pruned_nodes += 1
+            pruned_nodes.add(node_to_prune)
+        for node in pruned_nodes:
+            if self.node_priority(node) in self._heap_info:
+                if node in self._heap_info[self.node_priority(node)]:
+                    self._heap_info[self.node_priority(node)].remove(node)
+            if self.node_priority(node) in self._exp_queue:
+                self._exp_queue.remove(self.node_priority(node))
+            del self._progress_dict[node]
 
     def print_path(self):
         solution_locations = [k for k in self._progress_dict if self.is_solution(k.unvisited)]
@@ -454,30 +478,53 @@ class Solver:
 
     def find_solution(self, begin_time, known_best_time):
         self._progress_dict, self._start_time = self.initialize_progress_dict(begin_time)
-        self._exp_queue = ExpansionQueue(len(self.data_munger.get_unique_stops_to_solve()), self.STOP_JOIN_STRING)
+        self._exp_queue = []
+        self._heap_info = dict()
         if len(self._progress_dict) > 0:
-            self._exp_queue.add(self._progress_dict.keys())
+            for key in self._progress_dict.keys():
+                heapq.heappush(self._exp_queue, self.node_priority(key))
+                if self.node_priority(key) not in self._heap_info:
+                    self._heap_info[self.node_priority(key)] = set()
+                self._heap_info[self.node_priority(key)].add(key)
 
         num_stations = len(self.data_munger.get_unique_stops_to_solve())
-        num_start_points = self._exp_queue.len()
-        num_completed_stations = 0
+        num_start_points = len(self._exp_queue)
         num_initial_start_points = num_start_points
-        stations_denominator = num_initial_start_points * num_stations
         best_progress = 0
+        max_priority = max(self._exp_queue)
+        stations_denominator = num_initial_start_points * max_priority
 
         num_expansions = 0
-        while not self._exp_queue.is_empty():
+        while len(self._exp_queue) > 0:
             num_expansions += 1
-            if self._exp_queue._num_remaining_stops_to_pop == num_stations:
-                num_completed_stations = min(num_initial_start_points - 1, num_initial_start_points - num_start_points)
-                num_start_points = max(num_start_points - 1, 0)
-            expandee = self._exp_queue.pop()
+            # print(num_expansions)
+            heap_expandee = heapq.heappop(self._exp_queue)
+            # print({k: len(v) for k, v in self._heap_info.items()})
+            # print(len(self._exp_queue))
+            num_remaining_nodes = len([n for n in self._exp_queue if n == heap_expandee])
+            # print(len([n for n in self._exp_queue if n == heap_expandee]))
+            try:
+                print(heap_expandee)
+                expandee = self._heap_info[heap_expandee].pop()
+                # print(len(self._heap_info[heap_expandee]))
+            except:
+                # print(self._exp_queue)
+                # print(self._heap_info)
+                print(heap_expandee)
+                print(min(self._exp_queue))  # was more than heap expandee
+                print(self._heap_info[heap_expandee])
+                raise
+            # if num_remaining_nodes != len(self._heap_info[heap_expandee]):
+            #     print(heap_expandee)
+            #     print(self._heap_info[heap_expandee])
+            #     quit()
             known_best_time = self.expand(expandee, known_best_time)
             if known_best_time is not None:
-                if int((num_stations * num_completed_stations +
-                        self._exp_queue._num_remaining_stops_to_pop) / stations_denominator * 100.0) > best_progress:
-                    best_progress = int((num_stations * num_completed_stations +
-                        self._exp_queue._num_remaining_stops_to_pop) / stations_denominator * 100.0)
+                completed_stations = (num_initial_start_points -
+                                      (len([e for e in self._exp_queue if e == max_priority]) + 1)) * num_stations + \
+                                     self.node_priority(expandee)
+                if int(100.0 * completed_stations / stations_denominator - 1) > best_progress:
+                    best_progress = math.floor(100.0 * completed_stations / stations_denominator)
                     print(best_progress, datetime.now() - self._initialization_time)
                 if num_expansions % self.expansions_to_prune == 0:
                     num_expansions = 0

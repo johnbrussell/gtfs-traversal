@@ -92,7 +92,7 @@ class TestExpansionQueue(unittest.TestCase):
         subject.add([location_d, location_e, location_b, location_c])
         subject.sort_latest_nodes(solver_progress_dict)
 
-        expected = [location_b, location_c, location_d, location_e]
+        expected = [location_e, location_d, location_c, location_b]
         actual = subject._queue[2]
         self.assertListEqual(expected, actual)
 

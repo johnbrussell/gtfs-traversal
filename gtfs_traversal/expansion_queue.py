@@ -1,3 +1,6 @@
+import heapq
+
+
 class ExpansionQueue:
     def __init__(self, num_solution_stops, stop_join_string):
         self._one_more_than_number_of_solution_stops = num_solution_stops + 1
@@ -17,6 +20,7 @@ class ExpansionQueue:
             self._queue[num_remaining_stops] = []
             if num_remaining_stops < self._num_remaining_stops_to_pop:
                 self._num_remaining_stops_to_pop = num_remaining_stops
+        heapq.heappush(self._queue[num_remaining_stops], ())
         self._queue[num_remaining_stops].append(node)
 
     def _handle_empty_queue_at_key(self, key):
@@ -41,7 +45,7 @@ class ExpansionQueue:
         return len(stops_string.split(self._stop_join_string)) - 2
 
     def pop(self):
-        to_return = self._queue[self._num_remaining_stops_to_pop].pop(0)
+        to_return = self._queue[self._num_remaining_stops_to_pop].pop()
         self._handle_empty_queue_at_key(self._num_remaining_stops_to_pop)
         return to_return
 
@@ -49,7 +53,7 @@ class ExpansionQueue:
         if self._num_remaining_stops_to_pop == self._one_more_than_number_of_solution_stops:
             return
         self._queue[self._num_remaining_stops_to_pop] = sorted(self._queue[self._num_remaining_stops_to_pop],
-                                                               key=lambda x: solver_progress_dict[x].duration)
+                                                               key=lambda x: solver_progress_dict[x].duration * -1)
 
     def remove_keys(self, bad_keys):
         for key in bad_keys:
