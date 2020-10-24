@@ -61,11 +61,6 @@ class DataMunger:
     def get_datetime_from_raw_string_time(self, date_at_midnight, time_string):
         return date_at_midnight + timedelta(seconds=self.convert_to_seconds_since_midnight(time_string))
 
-    def get_initial_unsolved_string(self):
-        return self.stop_join_string + \
-               self.stop_join_string.join(self.get_unique_stops_to_solve()) + \
-               self.stop_join_string
-
     def get_minimum_stop_times(self):
         if self._minimum_stop_times is not None:
             return self._minimum_stop_times

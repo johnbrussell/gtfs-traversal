@@ -20,6 +20,7 @@ class Solver:
         self._best_duration = None
         self._exp_queue = None
         self._initial_unsolved_string = None
+        self._initialization_time = datetime.now()
         self._off_course_stop_locations = None
         self._progress_dict = dict()
         self._route_trips = None
@@ -69,7 +70,7 @@ class Solver:
         return uneliminated.replace(self.add_separators_to_stop_name(name), self.STOP_JOIN_STRING)
 
     def expand(self, location_status, known_best_time):
-        if location_status.unvisited == self.STOP_JOIN_STRING \
+        if self.is_solution(location_status.unvisited) \
                 or self._progress_dict[location_status].expanded \
                 or self._progress_dict[location_status].eliminated:
             return known_best_time
@@ -81,10 +82,10 @@ class Solver:
         return self.add_new_nodes_to_progress_dict(new_nodes, known_best_time)
 
     def get_initial_unsolved_string(self):
-        if self._initial_unsolved_string is not None:
-            return self._initial_unsolved_string
-
-        self._initial_unsolved_string = self.data_munger.get_initial_unsolved_string()
+        if self._initial_unsolved_string is None:
+            self._initial_unsolved_string = self.STOP_JOIN_STRING + \
+                       self.STOP_JOIN_STRING.join(self.data_munger.get_unique_stops_to_solve()) + \
+                       self.STOP_JOIN_STRING
         return self._initial_unsolved_string
 
     def get_new_minimum_remaining_time(self, old_minimum_remaining_time, unvisited_stops_string, route,
@@ -369,7 +370,7 @@ class Solver:
 
         if self.is_solution(new_location.unvisited):
             if verbose:
-                print('solution', new_progress.duration)
+                print(datetime.now() - self._initialization_time, 'solution:', new_progress.duration)
             best_solution_duration = new_progress.duration
             self.mark_slow_nodes_as_eliminated(best_solution_duration, preserve={new_location})
         else:
@@ -439,7 +440,7 @@ class Solver:
             num_pruned_nodes += 1
 
     def print_path(self):
-        solution_locations = [k for k in self._progress_dict if k.unvisited == self.STOP_JOIN_STRING]
+        solution_locations = [k for k in self._progress_dict if self.is_solution(k.unvisited)]
         for location in solution_locations:
             path = list()
             _location = location
@@ -463,7 +464,6 @@ class Solver:
         num_initial_start_points = num_start_points
         stations_denominator = num_initial_start_points * num_stations
         best_progress = 0
-        start_time = datetime.now()
 
         num_expansions = 0
         while not self._exp_queue.is_empty():
@@ -478,7 +478,7 @@ class Solver:
                         self._exp_queue._num_remaining_stops_to_pop) / stations_denominator * 100.0) > best_progress:
                     best_progress = int((num_stations * num_completed_stations +
                         self._exp_queue._num_remaining_stops_to_pop) / stations_denominator * 100.0)
-                    print(best_progress, datetime.now() - start_time)
+                    print(best_progress, datetime.now() - self._initialization_time)
                 if num_expansions % self.expansions_to_prune == 0:
                     num_expansions = 0
                     self.prune_progress_dict()
