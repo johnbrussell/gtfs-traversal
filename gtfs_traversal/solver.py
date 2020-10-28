@@ -84,8 +84,8 @@ class Solver:
     def get_initial_unsolved_string(self):
         if self._initial_unsolved_string is None:
             self._initial_unsolved_string = self.STOP_JOIN_STRING + \
-                       self.STOP_JOIN_STRING.join(self.data_munger.get_unique_stops_to_solve()) + \
-                       self.STOP_JOIN_STRING
+                self.STOP_JOIN_STRING.join(self.data_munger.get_unique_stops_to_solve()) + \
+                self.STOP_JOIN_STRING
         return self._initial_unsolved_string
 
     def get_new_minimum_remaining_time(self, old_minimum_remaining_time, unvisited_stops_string, route,
