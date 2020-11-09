@@ -251,6 +251,7 @@ class TestSolver(unittest.TestCase):
             subject = Solver(analysis=MockAnalysis(), data=MockData(), progress_between_pruning_progress_dict=None,
                              prune_thoroughness=None, start_time=DEFAULT_START_TIME, stop_join_string='##',
                              transfer_duration_seconds=5, transfer_route=None, walk_route=None, walk_speed_mph=None)
+            subject._string_shortener = MockStringShortener()
             input_time = timedelta(minutes=400)
             expected = timedelta(minutes=60)
             actual = subject.get_new_minimum_remaining_time(input_time, '##Bowdoin##Lynn##Wonderland##', 3,
@@ -345,6 +346,7 @@ class TestSolver(unittest.TestCase):
                              prune_thoroughness=None, start_time=DEFAULT_START_TIME, stop_join_string='~~',
                              transfer_duration_seconds=4, transfer_route=DEFAULT_TRANSFER_ROUTE, walk_route=None,
                              walk_speed_mph=None)
+            subject._string_shortener = MockStringShortener()
 
             input_location_status = LocationStatusInfo(
                 location='Alewife', arrival_route=1,
@@ -554,7 +556,9 @@ class TestSolver(unittest.TestCase):
 
             all_stations = subject.data_munger.get_unique_stops_to_solve()
             for station in all_stations:
-                self.assertTrue(station in sample_unvisited_string)
+                self.assertTrue(station not in sample_unvisited_string)
+                self.assertTrue(station in subject._string_shortener._shorten_dict)
+                self.assertTrue(subject._string_shortener.shorten(station) in sample_unvisited_string)
 
             expected_dict = {
                 LocationStatusInfo(location="Heath Street", arrival_route=2, unvisited=sample_unvisited_string):
@@ -592,7 +596,9 @@ class TestSolver(unittest.TestCase):
 
             all_stations = subject.data_munger.get_unique_stops_to_solve()
             for station in all_stations:
-                self.assertTrue(station in sample_unvisited_string)
+                self.assertTrue(station not in sample_unvisited_string)
+                self.assertTrue(station in subject._string_shortener._shorten_dict)
+                self.assertTrue(subject._string_shortener.shorten(station) in sample_unvisited_string)
 
             expected_dict = {
                 LocationStatusInfo(location="Lechmere", arrival_route=2, unvisited=sample_unvisited_string):
@@ -705,10 +711,12 @@ class TestSolver(unittest.TestCase):
                                                    eliminated=False)
 
         def get_subject():
-            return Solver(analysis=MockAnalysis(route_types_to_solve=[2]), data=MockData(),
+            subj = Solver(analysis=MockAnalysis(route_types_to_solve=[2]), data=MockData(),
                           progress_between_pruning_progress_dict=None, prune_thoroughness=.5, start_time=None,
                           stop_join_string='~~', transfer_duration_seconds=60, transfer_route='transfer',
                           walk_route='walk', walk_speed_mph=1)
+            subj._string_shortener = MockStringShortener()
+            return subj
 
         def test_bad_parent():
             subject = get_subject()
@@ -983,3 +991,13 @@ class MockAnalysis:
     def __init__(self, route_types_to_solve=None):
         self.route_types = [1, 2] if route_types_to_solve is None else route_types_to_solve
         self.end_date = DEFAULT_START_DATE
+
+
+class MockStringShortener:
+    @staticmethod
+    def lengthen(input):
+        return input
+
+    @staticmethod
+    def shorten(input):
+        return input

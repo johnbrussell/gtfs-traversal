@@ -1,6 +1,7 @@
 from gtfs_traversal.data_munger import DataMunger
 from gtfs_traversal.expansion_queue import ExpansionQueue
 from gtfs_traversal.data_structures import *
+from gtfs_traversal.string_shortener import StringShortener
 import math
 from datetime import timedelta, datetime
 
@@ -16,6 +17,7 @@ class Solver:
         self.ANALYSIS = analysis
         self.expansions_to_prune = progress_between_pruning_progress_dict
         self.prune_severity = prune_thoroughness
+        self._string_shortener = StringShortener()
 
         self._best_duration = None
         self._exp_queue = None
@@ -67,7 +69,8 @@ class Solver:
         return uneliminated
 
     def eliminate_stop_from_string(self, name, uneliminated):
-        return uneliminated.replace(self.add_separators_to_stop_name(name), self.STOP_JOIN_STRING)
+        return uneliminated.replace(self.add_separators_to_stop_name(self._string_shortener.shorten(name)),
+                                    self.STOP_JOIN_STRING)
 
     def expand(self, location_status, known_best_time):
         if self.is_solution(location_status.unvisited) \
@@ -84,7 +87,8 @@ class Solver:
     def get_initial_unsolved_string(self):
         if self._initial_unsolved_string is None:
             self._initial_unsolved_string = self.STOP_JOIN_STRING + \
-                self.STOP_JOIN_STRING.join(self.data_munger.get_unique_stops_to_solve()) + \
+                self.STOP_JOIN_STRING.join(self._string_shortener.shorten(stop)
+                                           for stop in self.data_munger.get_unique_stops_to_solve()) + \
                 self.STOP_JOIN_STRING
         return self._initial_unsolved_string
 
@@ -93,8 +97,9 @@ class Solver:
         if unvisited_stops_string == new_unvisited_stop_string:
             return old_minimum_remaining_time
 
-        new_unvisited_stops = new_unvisited_stop_string.strip(self.STOP_JOIN_STRING).split(self.STOP_JOIN_STRING) \
+        new_unvisited_stop_ids = new_unvisited_stop_string.strip(self.STOP_JOIN_STRING).split(self.STOP_JOIN_STRING) \
             if not self.is_solution(new_unvisited_stop_string) else []
+        new_unvisited_stops = [self._string_shortener.lengthen(id) for id in new_unvisited_stop_ids]
         new_minimum_remaining_travel_time = self.data_munger.get_minimum_remaining_time(new_unvisited_stops)
 
         new_minimum_remaining_transfer_time = \
@@ -320,10 +325,12 @@ class Solver:
         unvisited_to_test = great_great_grandparent_travel.unvisited
         while self.data_munger.get_next_stop_id(location_to_test, original_route) is not None:
             location_to_test = self.data_munger.get_next_stop_id(location_to_test, original_route)
-            if self.add_separators_to_stop_name(location_to_test) not in unvisited_to_test:
+            if self.add_separators_to_stop_name(
+                    self._string_shortener.shorten(location_to_test)) not in unvisited_to_test:
                 continue
 
-            unvisited_to_test = self.eliminate_stop_from_string(location_to_test, unvisited_to_test)
+            unvisited_to_test = self.eliminate_stop_from_string(self._string_shortener.shorten(location_to_test),
+                                                                unvisited_to_test)
 
             location_status_to_test = LocationStatusInfo(
                 location=new_location.location,
