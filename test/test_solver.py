@@ -72,11 +72,11 @@ class TestSolver(unittest.TestCase):
                                                    eliminated=True)
             new_progress_slower_than_old_progress = ProgressInfo(duration=timedelta(minutes=30.1),
                                                                  arrival_trip=None, trip_stop_no=None, parent=None,
-                                                                 children=None, minimum_remaining_time=None, expanded=None,
-                                                                 eliminated=False)
-            new_progress_slower_than_max_time = ProgressInfo(duration=timedelta(minutes=29),
-                                                             arrival_trip=None, trip_stop_no=None, parent=None,
-                                                             children=None, minimum_remaining_time=timedelta(minutes=102),
+                                                                 children=None, minimum_remaining_time=None,
+                                                                 expanded=None, eliminated=False)
+            new_progress_slower_than_max_time = ProgressInfo(duration=timedelta(minutes=29), arrival_trip=None,
+                                                             trip_stop_no=None, parent=None, children=None,
+                                                             minimum_remaining_time=timedelta(minutes=102),
                                                              expanded=None, eliminated=False)
             new_progress_improvement = ProgressInfo(duration=timedelta(minutes=29),
                                                     arrival_trip=None, trip_stop_no=None, parent=None, children=None,
