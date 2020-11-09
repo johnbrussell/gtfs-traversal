@@ -30,7 +30,7 @@ class TestSolver(unittest.TestCase):
             actual = subject._progress_dict
             self.assertDictEqual(expected, actual)
 
-        def test_silbing():
+        def test_sibling():
             subject = Solver(analysis=MockAnalysis(), data=MockData(), progress_between_pruning_progress_dict=None,
                              prune_thoroughness=None, start_time=None, stop_join_string='~~',
                              transfer_duration_seconds=None, transfer_route=None, walk_route=None, walk_speed_mph=None)
@@ -50,7 +50,7 @@ class TestSolver(unittest.TestCase):
             self.assertDictEqual(expected, actual)
 
         test_first_child()
-        test_silbing()
+        test_sibling()
 
     def test_add_new_nodes_to_progress_dict(self):
         def test_improvement():
@@ -72,11 +72,11 @@ class TestSolver(unittest.TestCase):
                                                    eliminated=True)
             new_progress_slower_than_old_progress = ProgressInfo(duration=timedelta(minutes=30.1),
                                                                  arrival_trip=None, trip_stop_no=None, parent=None,
-                                                                 children=None, minimum_remaining_time=None, expanded=None,
-                                                                 eliminated=False)
-            new_progress_slower_than_max_time = ProgressInfo(duration=timedelta(minutes=29),
-                                                             arrival_trip=None, trip_stop_no=None, parent=None,
-                                                             children=None, minimum_remaining_time=timedelta(minutes=102),
+                                                                 children=None, minimum_remaining_time=None,
+                                                                 expanded=None, eliminated=False)
+            new_progress_slower_than_max_time = ProgressInfo(duration=timedelta(minutes=29), arrival_trip=None,
+                                                             trip_stop_no=None, parent=None, children=None,
+                                                             minimum_remaining_time=timedelta(minutes=102),
                                                              expanded=None, eliminated=False)
             new_progress_improvement = ProgressInfo(duration=timedelta(minutes=29),
                                                     arrival_trip=None, trip_stop_no=None, parent=None, children=None,
@@ -251,6 +251,7 @@ class TestSolver(unittest.TestCase):
             subject = Solver(analysis=MockAnalysis(), data=MockData(), progress_between_pruning_progress_dict=None,
                              prune_thoroughness=None, start_time=DEFAULT_START_TIME, stop_join_string='##',
                              transfer_duration_seconds=5, transfer_route=None, walk_route=None, walk_speed_mph=None)
+            subject._string_shortener = MockStringShortener()
             input_time = timedelta(minutes=400)
             expected = timedelta(minutes=60)
             actual = subject.get_new_minimum_remaining_time(input_time, '##Bowdoin##Lynn##Wonderland##', 3,
@@ -345,6 +346,7 @@ class TestSolver(unittest.TestCase):
                              prune_thoroughness=None, start_time=DEFAULT_START_TIME, stop_join_string='~~',
                              transfer_duration_seconds=4, transfer_route=DEFAULT_TRANSFER_ROUTE, walk_route=None,
                              walk_speed_mph=None)
+            subject._string_shortener = MockStringShortener()
 
             input_location_status = LocationStatusInfo(
                 location='Alewife', arrival_route=1,
@@ -443,14 +445,11 @@ class TestSolver(unittest.TestCase):
         with patch.object(Solver, 'get_walking_data', return_value=['walking data']) as mock_walking_data:
             with patch.object(Solver, 'get_node_after_boarding_route', return_value='new route data') \
                     as mock_node_after_boarding_route:
-                with patch.object(Solver, 'new_node_is_inefficient_walk', return_value=False) \
-                        as mock_node_check:
-                    actual = subject.get_nodes_after_transfer(input_location_status)
-                    mock_walking_data.assert_called_once_with(input_location_status)
-                    self.assertEqual(mock_node_after_boarding_route.call_count, 2)
-                    mock_node_after_boarding_route.assert_any_call(input_location_status, 1)
-                    mock_node_after_boarding_route.assert_any_call(input_location_status, 3)
-                    self.assertEqual(mock_node_check.call_count, 2)
+                actual = subject.get_nodes_after_transfer(input_location_status)
+                mock_walking_data.assert_called_once_with(input_location_status)
+                self.assertEqual(mock_node_after_boarding_route.call_count, 2)
+                mock_node_after_boarding_route.assert_any_call(input_location_status, 1)
+                mock_node_after_boarding_route.assert_any_call(input_location_status, 3)
 
         expected = ['walking data', 'new route data', 'new route data']
         self.assertEqual(expected, actual)
@@ -554,7 +553,9 @@ class TestSolver(unittest.TestCase):
 
             all_stations = subject.data_munger.get_unique_stops_to_solve()
             for station in all_stations:
-                self.assertTrue(station in sample_unvisited_string)
+                self.assertTrue(station not in sample_unvisited_string)
+                self.assertTrue(station in subject._string_shortener._shorten_dict)
+                self.assertTrue(subject._string_shortener.shorten(station) in sample_unvisited_string)
 
             expected_dict = {
                 LocationStatusInfo(location="Heath Street", arrival_route=2, unvisited=sample_unvisited_string):
@@ -592,7 +593,9 @@ class TestSolver(unittest.TestCase):
 
             all_stations = subject.data_munger.get_unique_stops_to_solve()
             for station in all_stations:
-                self.assertTrue(station in sample_unvisited_string)
+                self.assertTrue(station not in sample_unvisited_string)
+                self.assertTrue(station in subject._string_shortener._shorten_dict)
+                self.assertTrue(subject._string_shortener.shorten(station) in sample_unvisited_string)
 
             expected_dict = {
                 LocationStatusInfo(location="Lechmere", arrival_route=2, unvisited=sample_unvisited_string):
@@ -687,172 +690,6 @@ class TestSolver(unittest.TestCase):
         subject.mark_slow_nodes_as_eliminated(new_duration, preserve=to_preserve)
         actual = subject._progress_dict
         self.assertDictEqual(expected, actual)
-
-    def test_new_node_is_inefficient_walk(self):
-        parent_location = LocationStatusInfo(arrival_route='transfer', location='Bowdoin',
-                                             unvisited='~~Wonderland~~Lynn~~')
-        parent_progress = ProgressInfo(duration=timedelta(minutes=60), arrival_trip='transfer', trip_stop_no='1',
-                                       children=None, parent=None, minimum_remaining_time=timedelta(minutes=60),
-                                       expanded=True, eliminated=False)
-        new_location = LocationStatusInfo(arrival_route=3, location='Bowdoin', unvisited='~~Wonderland~~Lynn~~')
-        new_progress = ProgressInfo(duration=timedelta(minutes=65), arrival_trip='Blue-6AM', trip_stop_no='2',
-                                    children=None, parent=parent_location, minimum_remaining_time=timedelta(minutes=60),
-                                    expanded=False, eliminated=False)
-        more_efficient_new_location = LocationStatusInfo(arrival_route=3, location='Bowdoin', unvisited='~~Lynn~~')
-        more_efficient_new_progress = ProgressInfo(duration=timedelta(minutes=75), arrival_trip='Blue-7AM',
-                                                   trip_stop_no='2', children=None, parent=None,
-                                                   minimum_remaining_time=timedelta(minutes=30), expanded=False,
-                                                   eliminated=False)
-
-        def get_subject():
-            return Solver(analysis=MockAnalysis(route_types_to_solve=[2]), data=MockData(),
-                          progress_between_pruning_progress_dict=None, prune_thoroughness=.5, start_time=None,
-                          stop_join_string='~~', transfer_duration_seconds=60, transfer_route='transfer',
-                          walk_route='walk', walk_speed_mph=1)
-
-        def test_bad_parent():
-            subject = get_subject()
-            bad_parent = parent_location._replace(arrival_route='Blue')
-            input_progress_dict = {
-                bad_parent: parent_progress._replace(children={new_location}),
-                more_efficient_new_location: more_efficient_new_progress
-            }
-            subject._progress_dict = input_progress_dict
-            self.assertFalse(subject.new_node_is_inefficient_walk((new_location,
-                                                                   new_progress._replace(parent=bad_parent))))
-
-        grandparent_location = LocationStatusInfo(arrival_route='walk', location='Bowdoin',
-                                                  unvisited='~~Wonderland~~Lynn~~')
-        grandparent_progress = ProgressInfo(duration=timedelta(minutes=59), arrival_trip='walk', trip_stop_no='1',
-                                            children={parent_location}, parent=None,
-                                            minimum_remaining_time=timedelta(minutes=60), expanded=True,
-                                            eliminated=False)
-
-        def test_bad_grandparent():
-            subject = get_subject()
-            bad_grandparent = grandparent_location._replace(arrival_route='run')
-            input_progress_dict = {
-                parent_location: parent_progress._replace(children={new_location}, parent=bad_grandparent),
-                bad_grandparent: grandparent_progress,
-                more_efficient_new_location: more_efficient_new_progress
-            }
-            subject._progress_dict = input_progress_dict
-            self.assertFalse(subject.new_node_is_inefficient_walk((new_location, new_progress)))
-
-        great_grandparent_location = LocationStatusInfo(arrival_route='transfer', location='Alewife',
-                                                        unvisited='~~Wonderland~~Lynn~~')
-        great_grandparent_progress = ProgressInfo(duration=timedelta(minutes=9), arrival_trip='transfer',
-                                                  trip_stop_no='1', children={grandparent_location}, parent=None,
-                                                  minimum_remaining_time=timedelta(minutes=60), expanded=True,
-                                                  eliminated=False)
-
-        def test_bad_great_grandparent():
-            subject = get_subject()
-            bad_great_grandparent = great_grandparent_location._replace(arrival_route='run')
-            input_progress_dict = {
-                parent_location: parent_progress._replace(children={new_location}, parent=grandparent_location),
-                grandparent_location: grandparent_progress._replace(parent=bad_great_grandparent),
-                bad_great_grandparent: great_grandparent_progress,
-                more_efficient_new_location: more_efficient_new_progress
-            }
-            subject._progress_dict = input_progress_dict
-            self.assertFalse(subject.new_node_is_inefficient_walk((new_location, new_progress)))
-
-        great_great_grandparent_location = LocationStatusInfo(arrival_route=1, location='Alewife',
-                                                              unvisited='~~Wonderland~~Lynn~~')
-        great_great_grandparent_progress = ProgressInfo(duration=timedelta(minutes=8), arrival_trip='3-6AM',
-                                                        trip_stop_no='1', children={great_grandparent_location},
-                                                        parent=None, minimum_remaining_time=timedelta(minutes=60),
-                                                        expanded=True, eliminated=False)
-
-        def test_last_stop_on_route():
-            subject = get_subject()
-            bad_great_great_grandparent = great_great_grandparent_location._replace(location='Back of the Hill')
-            input_progress_dict = {
-                parent_location: parent_progress._replace(children={new_location}, parent=grandparent_location),
-                grandparent_location: grandparent_progress._replace(parent=great_grandparent_location),
-                great_grandparent_location: great_grandparent_progress._replace(parent=bad_great_great_grandparent),
-                bad_great_great_grandparent: great_great_grandparent_progress,
-                more_efficient_new_location: more_efficient_new_progress
-            }
-            subject._progress_dict = input_progress_dict
-            self.assertFalse(subject.new_node_is_inefficient_walk((new_location, new_progress)))
-
-        def test_off_course_great_great_grandparent():
-            subject = get_subject()
-            bad_great_great_grandparent = great_great_grandparent_location._replace(arrival_route=3, location='Bowdoin')
-            input_progress_dict = {
-                parent_location: parent_progress._replace(children={new_location}, parent=grandparent_location),
-                grandparent_location: grandparent_progress._replace(parent=great_grandparent_location),
-                great_grandparent_location: great_grandparent_progress._replace(parent=bad_great_great_grandparent),
-                bad_great_great_grandparent: great_great_grandparent_progress,
-                more_efficient_new_location: more_efficient_new_progress
-            }
-            subject._progress_dict = input_progress_dict
-            self.assertFalse(subject.new_node_is_inefficient_walk((new_location, new_progress)))
-
-        def test_inefficient_walk():
-            subject = get_subject()
-            input_progress_dict = {
-                parent_location: parent_progress._replace(children={new_location}, parent=grandparent_location),
-                grandparent_location: grandparent_progress._replace(parent=great_grandparent_location),
-                great_grandparent_location: great_grandparent_progress._replace(
-                    parent=great_great_grandparent_location),
-                great_great_grandparent_location: great_great_grandparent_progress,
-                more_efficient_new_location: more_efficient_new_progress
-            }
-            subject._progress_dict = input_progress_dict
-            self.assertTrue(subject.new_node_is_inefficient_walk((new_location, new_progress)))
-
-        def test_efficient_walk():
-            subject = get_subject()
-            input_progress_dict = {
-                parent_location: parent_progress._replace(children={new_location}, parent=grandparent_location),
-                grandparent_location: grandparent_progress._replace(parent=great_grandparent_location),
-                great_grandparent_location: great_grandparent_progress._replace(
-                    parent=great_great_grandparent_location),
-                great_great_grandparent_location: great_great_grandparent_progress,
-                more_efficient_new_location: more_efficient_new_progress
-            }
-            subject._progress_dict = input_progress_dict
-            efficient_new_progress = new_progress._replace(duration=timedelta(minutes=64),
-                                                           minimum_remaining_time=timedelta(minutes=40))
-            self.assertFalse(subject.new_node_is_inefficient_walk((new_location, efficient_new_progress)))
-
-        test_bad_parent()
-        test_bad_grandparent()
-        test_bad_great_grandparent()
-        test_last_stop_on_route()
-        test_off_course_great_great_grandparent()
-        test_inefficient_walk()
-        test_efficient_walk()
-
-    def test_new_node_is_reasonable(self):
-        def test_none():
-            subject = Solver(analysis=None, data=None, progress_between_pruning_progress_dict=None,
-                             prune_thoroughness=.5, start_time=None, stop_join_string='~~',
-                             transfer_duration_seconds=None, transfer_route=None, walk_route=None, walk_speed_mph=None)
-            self.assertFalse(subject.new_node_is_reasonable(None))
-
-        def test_inefficient_walk():
-            subject = Solver(analysis=None, data=None, progress_between_pruning_progress_dict=None,
-                             prune_thoroughness=.5, start_time=None, stop_join_string='~~',
-                             transfer_duration_seconds=None, transfer_route=None, walk_route=None, walk_speed_mph=None)
-            with patch.object(subject, 'new_node_is_inefficient_walk', return_value=True) as inefficient_walk_patch:
-                self.assertFalse(subject.new_node_is_reasonable('anything'))
-                inefficient_walk_patch.assert_called_once_with('anything')
-
-        def test_valid_node():
-            subject = Solver(analysis=None, data=None, progress_between_pruning_progress_dict=None,
-                             prune_thoroughness=.5, start_time=None, stop_join_string='~~',
-                             transfer_duration_seconds=None, transfer_route=None, walk_route=None, walk_speed_mph=None)
-            with patch.object(subject, 'new_node_is_inefficient_walk', return_value=False) as inefficient_walk_patch:
-                self.assertTrue(subject.new_node_is_reasonable('anything'))
-                inefficient_walk_patch.assert_called_once_with('anything')
-
-        test_none()
-        test_inefficient_walk()
-        test_valid_node()
 
     def test_prune_progress_dict(self):
         subject = Solver(analysis=None, data=None, progress_between_pruning_progress_dict=None, prune_thoroughness=.5,
@@ -983,3 +820,13 @@ class MockAnalysis:
     def __init__(self, route_types_to_solve=None):
         self.route_types = [1, 2] if route_types_to_solve is None else route_types_to_solve
         self.end_date = DEFAULT_START_DATE
+
+
+class MockStringShortener:
+    @staticmethod
+    def lengthen(string):
+        return string
+
+    @staticmethod
+    def shorten(string):
+        return string
