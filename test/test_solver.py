@@ -30,7 +30,7 @@ class TestSolver(unittest.TestCase):
             actual = subject._progress_dict
             self.assertDictEqual(expected, actual)
 
-        def test_silbing():
+        def test_sibling():
             subject = Solver(analysis=MockAnalysis(), data=MockData(), progress_between_pruning_progress_dict=None,
                              prune_thoroughness=None, start_time=None, stop_join_string='~~',
                              transfer_duration_seconds=None, transfer_route=None, walk_route=None, walk_speed_mph=None)
@@ -50,7 +50,7 @@ class TestSolver(unittest.TestCase):
             self.assertDictEqual(expected, actual)
 
         test_first_child()
-        test_silbing()
+        test_sibling()
 
     def test_add_new_nodes_to_progress_dict(self):
         def test_improvement():
