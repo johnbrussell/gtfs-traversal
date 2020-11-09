@@ -99,7 +99,7 @@ class Solver:
 
         new_unvisited_stop_ids = new_unvisited_stop_string.strip(self.STOP_JOIN_STRING).split(self.STOP_JOIN_STRING) \
             if not self.is_solution(new_unvisited_stop_string) else []
-        new_unvisited_stops = [self._string_shortener.lengthen(id) for id in new_unvisited_stop_ids]
+        new_unvisited_stops = [self._string_shortener.lengthen(stop_id) for stop_id in new_unvisited_stop_ids]
         new_minimum_remaining_travel_time = self.data_munger.get_minimum_remaining_time(new_unvisited_stops)
 
         new_minimum_remaining_transfer_time = \
