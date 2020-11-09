@@ -840,9 +840,9 @@ class MockAnalysis:
 
 class MockStringShortener:
     @staticmethod
-    def lengthen(input):
-        return input
+    def lengthen(string):
+        return string
 
     @staticmethod
-    def shorten(input):
-        return input
+    def shorten(string):
+        return string
