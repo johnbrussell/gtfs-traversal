@@ -691,22 +691,6 @@ class TestSolver(unittest.TestCase):
         actual = subject._progress_dict
         self.assertDictEqual(expected, actual)
 
-    def test_new_node_is_reasonable(self):
-        def test_none():
-            subject = Solver(analysis=None, data=None, progress_between_pruning_progress_dict=None,
-                             prune_thoroughness=.5, start_time=None, stop_join_string='~~',
-                             transfer_duration_seconds=None, transfer_route=None, walk_route=None, walk_speed_mph=None)
-            self.assertFalse(subject.new_node_is_reasonable(None))
-
-        def test_valid_node():
-            subject = Solver(analysis=None, data=None, progress_between_pruning_progress_dict=None,
-                             prune_thoroughness=.5, start_time=None, stop_join_string='~~',
-                             transfer_duration_seconds=None, transfer_route=None, walk_route=None, walk_speed_mph=None)
-            self.assertTrue(subject.new_node_is_reasonable('anything'))
-
-        test_none()
-        test_valid_node()
-
     def test_prune_progress_dict(self):
         subject = Solver(analysis=None, data=None, progress_between_pruning_progress_dict=None, prune_thoroughness=.5,
                          start_time=None, stop_join_string='~~', transfer_duration_seconds=None, transfer_route=None,

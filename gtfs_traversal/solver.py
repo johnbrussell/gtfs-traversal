@@ -172,7 +172,7 @@ class Solver:
                                    for route in self.data_munger.get_routes_at_stop(location_status.location)
                                    if not self.data_munger.is_last_stop_on_route(location_status.location, route)]
 
-        return [node for node in routes_leaving_location if self.new_node_is_reasonable(node)]
+        return routes_leaving_location
 
     def get_nodes_after_transfer(self, location_status):
         walking_data = self.get_walking_data(location_status)
@@ -297,10 +297,6 @@ class Solver:
         if location in preserve:
             return False
         return progress_info.duration + progress_info.minimum_remaining_time >= best_duration
-
-    @staticmethod
-    def new_node_is_reasonable(node):
-        return node is not None
 
     def add_new_nodes_to_progress_dict(self, new_nodes_list, best_solution_duration, *, verbose=True):
         for node in new_nodes_list:
