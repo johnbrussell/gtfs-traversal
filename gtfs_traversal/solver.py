@@ -298,54 +298,9 @@ class Solver:
             return False
         return progress_info.duration + progress_info.minimum_remaining_time >= best_duration
 
-    def new_node_is_inefficient_walk(self, node):
-        new_location, new_progress = node
-        parent_transfer = new_progress.parent
-        if parent_transfer.arrival_route != self.TRANSFER_ROUTE:
-            return False
-
-        grandparent_walk = self._progress_dict[parent_transfer].parent
-        if grandparent_walk.arrival_route != self.WALK_ROUTE:
-            return False
-
-        great_grandparent_transfer = self._progress_dict[grandparent_walk].parent
-        if great_grandparent_transfer.arrival_route != self.TRANSFER_ROUTE:
-            return False
-
-        great_great_grandparent_travel = self._progress_dict[great_grandparent_transfer].parent
-        original_route = great_great_grandparent_travel.arrival_route
-        if self.data_munger.is_last_stop_on_route(great_great_grandparent_travel.location, original_route):
-            return False
-
-        if original_route not in self.data_munger.get_unique_routes_to_solve():
-            # unvisited nodes will be the same, so will not add inefficient node
-            return False
-
-        location_to_test = great_great_grandparent_travel.location
-        unvisited_to_test = great_great_grandparent_travel.unvisited
-        while self.data_munger.get_next_stop_id(location_to_test, original_route) is not None:
-            location_to_test = self.data_munger.get_next_stop_id(location_to_test, original_route)
-            if self.add_separators_to_stop_name(
-                    self._string_shortener.shorten(location_to_test)) not in unvisited_to_test:
-                continue
-
-            unvisited_to_test = self.eliminate_stop_from_string(self._string_shortener.shorten(location_to_test),
-                                                                unvisited_to_test)
-
-            location_status_to_test = LocationStatusInfo(
-                location=new_location.location,
-                arrival_route=new_location.arrival_route,
-                unvisited=unvisited_to_test
-            )
-            if location_status_to_test in self._progress_dict:
-                if self.minimum_possible_duration(new_progress) >= \
-                        self.minimum_possible_duration(self._progress_dict[location_status_to_test]):
-                    return True
-
-        return False
-
-    def new_node_is_reasonable(self, node):
-        return node is not None and not self.new_node_is_inefficient_walk(node)
+    @staticmethod
+    def new_node_is_reasonable(node):
+        return node is not None
 
     def add_new_nodes_to_progress_dict(self, new_nodes_list, best_solution_duration, *, verbose=True):
         for node in new_nodes_list:
