@@ -257,6 +257,7 @@ class Solver:
                 next_stop = self.data_munger.get_next_stop_id(stop, route)
                 if next_stop is None:
                     continue
+                # you'd never walk to a non-solution route stop if the next stop is closer to your previous location
                 if route in solution_routes or stop_walk_times[stop] < stop_walk_times[next_stop]:
                     relevant_stops[stop] = stop_walk_times[stop]
                     break
