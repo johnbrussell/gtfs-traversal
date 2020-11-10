@@ -242,7 +242,7 @@ class TestSolver(unittest.TestCase):
             subject = Solver(analysis=MockAnalysis(), data=MockData(), progress_between_pruning_progress_dict=None,
                              prune_thoroughness=None, start_time=None, stop_join_string=None,
                              transfer_duration_seconds=None, transfer_route=None, walk_route=None, walk_speed_mph=None)
-            input_time = timedelta(seconds=400)
+            input_time = 400
             expected = input_time
             actual = subject.get_new_minimum_remaining_time(input_time, None, 'not a route', None)
             self.assertEqual(expected, actual)
@@ -252,8 +252,8 @@ class TestSolver(unittest.TestCase):
                              prune_thoroughness=None, start_time=DEFAULT_START_TIME, stop_join_string='##',
                              transfer_duration_seconds=5, transfer_route=None, walk_route=None, walk_speed_mph=None)
             subject._string_shortener = MockStringShortener()
-            input_time = timedelta(minutes=400)
-            expected = timedelta(minutes=60)
+            input_time = 400 * 60
+            expected = 60 * 60
             actual = subject.get_new_minimum_remaining_time(input_time, '##Bowdoin##Lynn##Wonderland##', 3,
                                                             '##Wonderland##')
             self.assertEqual(expected, actual)
@@ -283,16 +283,16 @@ class TestSolver(unittest.TestCase):
                              transfer_duration_seconds=53, transfer_route='transfer route', walk_route='walk route',
                              walk_speed_mph=None)
             location_status_info = LocationStatusInfo(location=None, arrival_route='walk route', unvisited=None)
-            progress_info = ProgressInfo(duration=timedelta(seconds=47), arrival_trip=None,
+            progress_info = ProgressInfo(duration=47, arrival_trip=None,
                                          trip_stop_no=None, parent=None, children=None,
-                                         minimum_remaining_time=timedelta(minutes=1), expanded=None, eliminated=None)
+                                         minimum_remaining_time=60, expanded=None, eliminated=None)
             subject._progress_dict[location_status_info] = progress_info
 
             expected = [(location_status_info._replace(arrival_route='transfer route'),
-                         progress_info._replace(duration=timedelta(seconds=100),
+                         progress_info._replace(duration=100,
                                                 trip_stop_no='transfer route', arrival_trip='transfer route',
                                                 parent=location_status_info, expanded=False, eliminated=False,
-                                                minimum_remaining_time=timedelta(seconds=7)))]
+                                                minimum_remaining_time=7))]
             actual = subject.get_new_nodes(location_status_info)
 
             self.assertEqual(actual, expected)
@@ -352,18 +352,18 @@ class TestSolver(unittest.TestCase):
                 location='Alewife', arrival_route=1,
                 unvisited='~~Lynn~~Bowdoin~~Wonderland~~Back of the Hill~~Alewife~~')
             input_progress = ProgressInfo(
-                duration=timedelta(minutes=2), parent=None, children=None,
+                duration=2 * 60, parent=None, children=None,
                 arrival_trip='3-7AM', trip_stop_no='1',
-                minimum_remaining_time=timedelta(hours=8), expanded=False, eliminated=False)
+                minimum_remaining_time=8 * 60 * 60, expanded=False, eliminated=False)
             subject._progress_dict[input_location_status] = input_progress
             subject._start_time = DEFAULT_START_TIME + timedelta(minutes=418)
 
             expected = (
                 LocationStatusInfo(location='Wonderland', arrival_route=1,
                                    unvisited='~~Lynn~~Bowdoin~~Back of the Hill~~'),
-                ProgressInfo(duration=timedelta(minutes=182), children=None,
+                ProgressInfo(duration=182 * 60, children=None,
                              parent=input_location_status, arrival_trip='3-7AM', trip_stop_no='2',
-                             minimum_remaining_time=timedelta(hours=2, seconds=4), expanded=False, eliminated=False)
+                             minimum_remaining_time=2 * 60 * 60 + 4, expanded=False, eliminated=False)
             )
             actual = subject.get_next_stop_data_for_trip(input_location_status)
 
@@ -383,9 +383,9 @@ class TestSolver(unittest.TestCase):
                 location='Bowdoin', arrival_route=DEFAULT_TRANSFER_ROUTE,
                 unvisited='~~Lynn~~Bowdoin~~Back of the Hill~~')
             input_progress = ProgressInfo(
-                duration=timedelta(minutes=20), parent=None, children=None,
+                duration=20 * 60, parent=None, children=None,
                 arrival_trip=DEFAULT_TRANSFER_ROUTE, trip_stop_no='1',
-                minimum_remaining_time=timedelta(hours=1), expanded=False, eliminated=False)
+                minimum_remaining_time=60 * 60, expanded=False, eliminated=False)
             subject._progress_dict[input_location_status] = input_progress
             subject._start_time = DEFAULT_START_TIME+timedelta(minutes=418)
             input_new_route = 3
@@ -393,9 +393,9 @@ class TestSolver(unittest.TestCase):
             expected = (
                 LocationStatusInfo(location='Bowdoin', arrival_route=3,
                                    unvisited='~~Lynn~~Bowdoin~~Back of the Hill~~'),
-                ProgressInfo(duration=timedelta(minutes=122), children=None,
+                ProgressInfo(duration=122 * 60, children=None,
                              parent=input_location_status, arrival_trip='Blue-6AM', trip_stop_no='2',
-                             minimum_remaining_time=timedelta(hours=1), expanded=False, eliminated=False)
+                             minimum_remaining_time=60 * 60, expanded=False, eliminated=False)
             )
             actual = subject.get_node_after_boarding_route(input_location_status, input_new_route)
             self.assertEqual(expected, actual)
@@ -410,9 +410,9 @@ class TestSolver(unittest.TestCase):
                 location='Back of the Hill', arrival_route=DEFAULT_TRANSFER_ROUTE,
                 unvisited='~~Lynn~~Bowdoin~~Back of the Hill~~')
             input_progress = ProgressInfo(
-                duration=timedelta(minutes=20), parent=None, children=None,
+                duration=20 * 60, parent=None, children=None,
                 arrival_trip=DEFAULT_TRANSFER_ROUTE, trip_stop_no='1',
-                minimum_remaining_time=timedelta(hours=1), expanded=False, eliminated=False)
+                minimum_remaining_time=60 * 60, expanded=False, eliminated=False)
             subject._progress_dict[input_location_status] = input_progress
             subject._start_time = DEFAULT_START_TIME+timedelta(minutes=418)
             input_new_route = 2
@@ -437,9 +437,9 @@ class TestSolver(unittest.TestCase):
         input_progress_parent = LocationStatusInfo(location='Wonderland', arrival_route=2,
                                                    unvisited='~~Lynn~~Bowdoin~~Back of the Hill~~')
         input_progress = ProgressInfo(
-            duration=timedelta(minutes=20), children=None,
+            duration=20 * 60, children=None,
             parent=input_progress_parent, arrival_trip=DEFAULT_TRANSFER_ROUTE, trip_stop_no='1',
-            minimum_remaining_time=timedelta(hours=1), expanded=False, eliminated=False)
+            minimum_remaining_time=60 * 60, expanded=False, eliminated=False)
         subject._progress_dict[input_location_status] = input_progress
 
         with patch.object(Solver, 'get_walking_data', return_value=['walking data']) as mock_walking_data:
@@ -512,9 +512,9 @@ class TestSolver(unittest.TestCase):
             input_progress_parent = LocationStatusInfo(location='Wonderland', arrival_route=2,
                                                        unvisited='~~Lynn~~')
             input_progress = ProgressInfo(
-                duration=timedelta(minutes=20), children=None,
+                duration=20 * 60, children=None,
                 parent=input_progress_parent, arrival_trip=DEFAULT_TRANSFER_ROUTE, trip_stop_no='1',
-                minimum_remaining_time=timedelta(hours=1),
+                minimum_remaining_time=60 * 60,
                 expanded=False, eliminated=False)
             subject._progress_dict[input_location_status] = input_progress
 
@@ -527,7 +527,7 @@ class TestSolver(unittest.TestCase):
             expected = {
                 (
                     LocationStatusInfo(location=station, arrival_route='walk route', unvisited='~~Lynn~~'),
-                    ProgressInfo(duration=input_progress.duration + timedelta(seconds=time), children=None,
+                    ProgressInfo(duration=input_progress.duration + time, children=None,
                                  parent=input_location_status, arrival_trip='walk route', trip_stop_no='walk route',
                                  minimum_remaining_time=input_progress.minimum_remaining_time,
                                  expanded=False, eliminated=False)
@@ -561,21 +561,21 @@ class TestSolver(unittest.TestCase):
             expected_dict = {
                 LocationStatusInfo(location="Heath Street", arrival_route=2, unvisited=sample_unvisited_string):
                     ProgressInfo(
-                        duration=timedelta(seconds=0), parent=None, children=None,
+                        duration=0, parent=None, children=None,
                         arrival_trip='18-8AM', trip_stop_no='1',
-                        minimum_remaining_time=timedelta(hours=5, minutes=30), expanded=False, eliminated=False
+                        minimum_remaining_time=5 * 60 * 60 + 30 * 60, expanded=False, eliminated=False
                     ),
                 LocationStatusInfo(location="Alewife", arrival_route=1, unvisited=sample_unvisited_string):
                     ProgressInfo(
-                        duration=timedelta(seconds=0), parent=None, children=None,
+                        duration=0, parent=None, children=None,
                         arrival_trip='3-8AM', trip_stop_no='1',
-                        minimum_remaining_time=timedelta(hours=5, minutes=30), expanded=False, eliminated=False
+                        minimum_remaining_time=5 * 60 * 60 + 30 * 60, expanded=False, eliminated=False
                     ),
                 LocationStatusInfo(location="Wonderland", arrival_route=3, unvisited=sample_unvisited_string):
                     ProgressInfo(
-                        duration=timedelta(seconds=0), parent=None, children=None,
+                        duration=0, parent=None, children=None,
                         arrival_trip='Blue-8AM', trip_stop_no='1',
-                        minimum_remaining_time=timedelta(hours=5, minutes=30), expanded=False, eliminated=False
+                        minimum_remaining_time=5 * 60 * 60 + 30 * 60, expanded=False, eliminated=False
                     ),
             }
 
@@ -601,21 +601,21 @@ class TestSolver(unittest.TestCase):
             expected_dict = {
                 LocationStatusInfo(location="Lechmere", arrival_route=2, unvisited=sample_unvisited_string):
                     ProgressInfo(
-                        duration=timedelta(seconds=0), parent=None, children=None,
+                        duration=0, parent=None, children=None,
                         arrival_trip='18-6AM', trip_stop_no='2',
-                        minimum_remaining_time=timedelta(hours=5, minutes=30), expanded=False, eliminated=False
+                        minimum_remaining_time=5 * 60 * 60 + 30 * 60, expanded=False, eliminated=False
                     ),
                 LocationStatusInfo(location="Wonderland", arrival_route=1, unvisited=sample_unvisited_string):
                     ProgressInfo(
-                        duration=timedelta(seconds=0), parent=None, children=None,
+                        duration=0, parent=None, children=None,
                         arrival_trip='3-6AM', trip_stop_no='2',
-                        minimum_remaining_time=timedelta(hours=5, minutes=30), expanded=False, eliminated=False
+                        minimum_remaining_time=5 * 60 * 60 + 30 * 60, expanded=False, eliminated=False
                     ),
                 LocationStatusInfo(location="Bowdoin", arrival_route=3, unvisited=sample_unvisited_string):
                     ProgressInfo(
-                        duration=timedelta(seconds=0), parent=None, children=None,
+                        duration=0, parent=None, children=None,
                         arrival_trip='Blue-6AM', trip_stop_no='2',
-                        minimum_remaining_time=timedelta(hours=5, minutes=30), expanded=False, eliminated=False
+                        minimum_remaining_time=5 * 60 * 60 + 30 * 60, expanded=False, eliminated=False
                     ),
             }
 

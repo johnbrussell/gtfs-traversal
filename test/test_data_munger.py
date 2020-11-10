@@ -113,7 +113,7 @@ class TestDataMunger(unittest.TestCase):
     def test_get_minimum_remaining_time(self):
         subject = self.get_subject_with_mock_data(analysis=MockAnalysis(route_types_to_solve=[1, 2]))
         unvisited_stops = ['Wonderland', 'Back of the Hill', 'Lynn', 'Heath Street']
-        expected = timedelta(hours=5)
+        expected = 5 * 60 * 60
         actual = subject.get_minimum_remaining_time(unvisited_stops)
         self.assertEqual(expected, actual)
 
@@ -130,13 +130,13 @@ class TestDataMunger(unittest.TestCase):
             subject = self.get_subject_with_mock_data(analysis=MockAnalysis(route_types_to_solve=[1, 2]))
 
             expected = {
-                'Alewife': timedelta(minutes=90),
-                'Wonderland': timedelta(minutes=30),
-                'Heath Street': timedelta(minutes=90),
-                'Lechmere': timedelta(minutes=30),
-                'Bowdoin': timedelta(minutes=30),
-                'Lynn': timedelta(minutes=30),
-                'Back of the Hill': timedelta(minutes=30)
+                'Alewife': 90 * 60,
+                'Wonderland': 30 * 60,
+                'Heath Street': 90 * 60,
+                'Lechmere': 30 * 60,
+                'Bowdoin': 30 * 60,
+                'Lynn': 30 * 60,
+                'Back of the Hill': 30 * 60
             }
             actual = subject.get_minimum_stop_times()
 
@@ -264,9 +264,9 @@ class TestDataMunger(unittest.TestCase):
     def test_get_travel_time_between_stops(self):
         subject = self.get_subject_with_mock_data(analysis=MockAnalysis(route_types_to_solve=[1, 2]))
 
-        self.assertEqual(subject.get_travel_time_between_stops('3-6AM', '1', '3'), timedelta(hours=4))
-        self.assertEqual(subject.get_travel_time_between_stops('3-7AM', '1', '2'), timedelta(hours=3))
-        self.assertEqual(subject.get_travel_time_between_stops('18-8AM', '2', '3'), timedelta(minutes=60))
+        self.assertEqual(subject.get_travel_time_between_stops_in_seconds('3-6AM', '1', '3'), 4 * 60 * 60)
+        self.assertEqual(subject.get_travel_time_between_stops_in_seconds('3-7AM', '1', '2'), 3 * 60 * 60)
+        self.assertEqual(subject.get_travel_time_between_stops_in_seconds('18-8AM', '2', '3'), 60 * 60)
 
     def test_get_unique_routes_to_solve(self):
         def test_returns_correct_result():

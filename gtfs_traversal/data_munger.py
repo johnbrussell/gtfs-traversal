@@ -87,12 +87,12 @@ class DataMunger:
                     continue
                 stops_on_route = self.get_stops_for_route(route)
                 next_stop = stops_on_route[next_stop_number].stopId
-                travel_time_to_next_stop = self.get_travel_time_between_stops(
+                travel_time_to_next_stop = self.get_travel_time_between_stops_in_seconds(
                     best_trip_id, stop_number, next_stop_number)
                 if next_stop not in minimum_stop_times:
-                    minimum_stop_times[next_stop] = timedelta(hours=24)
+                    minimum_stop_times[next_stop] = 24 * 60 * 60
                 if stop not in minimum_stop_times:
-                    minimum_stop_times[stop] = timedelta(hours=24)
+                    minimum_stop_times[stop] = 24 * 60 * 60
                 minimum_stop_times[next_stop] = min(minimum_stop_times[next_stop], travel_time_to_next_stop / 2)
                 minimum_stop_times[stop] = min(minimum_stop_times[stop], travel_time_to_next_stop / 2)
 
@@ -100,10 +100,10 @@ class DataMunger:
         return self._minimum_stop_times
 
     def get_minimum_remaining_time(self, unvisited_stops):
-        total_minimum_remaining_time = timedelta(minutes=0)
+        total_minimum_remaining_time = 0
         for stop in unvisited_stops:
             routes_at_stop = self.get_routes_at_stop(stop)
-            best_time_at_stop = timedelta(hours=24)
+            best_time_at_stop = 24 * 60 * 60
             for route in routes_at_stop:
                 if route not in self.get_unique_routes_to_solve():
                     continue
@@ -126,7 +126,7 @@ class DataMunger:
                 stops_on_route = self.get_stops_for_route(route)
 
                 if next_stop_number in self.get_stops_for_route(route):
-                    travel_time_to_next_stop = self.get_travel_time_between_stops(
+                    travel_time_to_next_stop = self.get_travel_time_between_stops_in_seconds(
                         best_trip_id, stop_number, next_stop_number)
                     if stops_on_route[next_stop_number].stopId in unvisited_stops:
                         best_time_at_stop = min(best_time_at_stop, travel_time_to_next_stop / 2)
@@ -134,7 +134,7 @@ class DataMunger:
                         best_time_at_stop = min(best_time_at_stop, travel_time_to_next_stop)
 
                 if previous_stop_number in self.get_stops_for_route(route):
-                    travel_time_from_previous_stop = self.get_travel_time_between_stops(
+                    travel_time_from_previous_stop = self.get_travel_time_between_stops_in_seconds(
                         best_trip_id, previous_stop_number, stop_number)
                     if stops_on_route[previous_stop_number].stopId in unvisited_stops:
                         best_time_at_stop = min(best_time_at_stop, travel_time_from_previous_stop / 2)
@@ -250,7 +250,7 @@ class DataMunger:
         return self.get_trip_schedules()[trip_id].tripStops
 
     def get_total_minimum_time(self):
-        total_minimum_time = timedelta(0)
+        total_minimum_time = 0
         for v in self.get_minimum_stop_times().values():
             total_minimum_time += v
         return total_minimum_time
@@ -324,14 +324,14 @@ class DataMunger:
         self._transfer_stops = transfer_stops
         return self._transfer_stops
 
-    def get_travel_time_between_stops(self, trip, on_stop_number, off_stop_number):
+    def get_travel_time_between_stops_in_seconds(self, trip, on_stop_number, off_stop_number):
         assert float(off_stop_number) >= float(on_stop_number), 'cannot travel backwards along trip'
         trip_stops = self.get_stops_for_trip(trip)
         on_time_raw = trip_stops[on_stop_number].departureTime
         on_time_seconds_since_midnight = self.convert_to_seconds_since_midnight(on_time_raw)
         off_time_raw = trip_stops[off_stop_number].departureTime
         off_time_seconds_since_midnight = self.convert_to_seconds_since_midnight(off_time_raw)
-        return timedelta(seconds=off_time_seconds_since_midnight - on_time_seconds_since_midnight)
+        return off_time_seconds_since_midnight - on_time_seconds_since_midnight
 
     @staticmethod
     def convert_to_seconds_since_midnight(raw_time_string):
