@@ -440,7 +440,7 @@ class Solver:
         num_start_points = self._exp_queue.len()
         num_completed_stations = 0
         num_initial_start_points = num_start_points
-        stations_denominator = num_initial_start_points * num_stations
+        stations_denominator = num_initial_start_points * num_stations + 1
         best_progress = 0
 
         num_expansions = 0
