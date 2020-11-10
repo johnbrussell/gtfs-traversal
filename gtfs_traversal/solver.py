@@ -447,7 +447,7 @@ class Solver:
                 if int((num_stations * num_completed_stations +
                         self._exp_queue._num_remaining_stops_to_pop) / stations_denominator * 100.0) > best_progress:
                     best_progress = int((num_stations * num_completed_stations +
-                        self._exp_queue._num_remaining_stops_to_pop) / stations_denominator * 100.0)
+                                         self._exp_queue._num_remaining_stops_to_pop) / stations_denominator * 100.0)
                     print(best_progress, datetime.now() - self._initialization_time)
                 if num_expansions % self.expansions_to_prune == 0:
                     num_expansions = 0
