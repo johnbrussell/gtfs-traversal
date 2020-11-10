@@ -11,6 +11,7 @@ class DataMunger:
         self._buffered_analysis_end_time = None
         self._location_routes = None
         self._minimum_stop_times = None
+        self._route_list = None
         self._stops_by_route_in_solution_set = None
         self._transfer_stops = None
         self._trip_time_cache = {}
@@ -176,6 +177,12 @@ class DataMunger:
 
     def get_route_types_to_solve(self):
         return [str(r) for r in self.analysis.route_types]
+
+    def get_route_list(self):
+        if self._route_list is None:
+            self._route_list = [route_id for route_id, route in self.data.uniqueRouteTrips.items()]
+
+        return self._route_list
 
     def get_routes_at_stop(self, stop_id):
         return self.get_routes_by_stop()[stop_id]

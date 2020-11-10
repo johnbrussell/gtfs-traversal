@@ -177,6 +177,23 @@ class TestDataMunger(unittest.TestCase):
         test_stop_in_middle_of_route()
         test_stop_at_end_of_route()
 
+    def test_get_route_list(self):
+        def test_munges_correctly():
+            subject = self.get_subject_with_mock_data(analysis=MockAnalysis())
+            expected = [1, 2, 3]
+            actual = subject.get_route_list()
+            self.assertListEqual(expected, actual)
+
+        def test_memoizes():
+            subject = self.get_subject_with_mock_data(analysis=MockAnalysis())
+            expected = ['route list']
+            subject._route_list = expected
+            actual = subject.get_route_list()
+            self.assertListEqual(expected, actual)
+
+        test_munges_correctly()
+        test_memoizes()
+
     def test_get_routes_by_stop(self):
         def test_munges_correctly():
             subject = self.get_subject_with_mock_data()
