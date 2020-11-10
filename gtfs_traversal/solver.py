@@ -49,8 +49,8 @@ class Solver:
 
         delta_lat = (origin_lat - dest_lat) / 2
         delta_long = (origin_long - dest_long) / 2
-        delta_lat = math.sin(delta_lat) * math.sin(delta_lat)
-        delta_long = math.sin(delta_long) * math.sin(delta_long)
+        delta_lat = math.pow(math.sin(delta_lat), 2)
+        delta_long = math.pow(math.sin(delta_long), 2)
         origin_lat = math.cos(origin_lat)
         dest_lat = math.cos(dest_lat)
         haversine = delta_lat + origin_lat * dest_lat * delta_long
@@ -95,6 +95,7 @@ class Solver:
 
     def get_new_minimum_remaining_time(self, old_minimum_remaining_time, unvisited_stops_string, route,
                                        new_unvisited_stop_string):
+        # Both the travel and transfer parts of this function seem to speed things up.
         if unvisited_stops_string == new_unvisited_stop_string:
             return old_minimum_remaining_time
 
@@ -142,9 +143,6 @@ class Solver:
         transfer_node = self.get_transfer_data(location_status)
 
         if location_status.arrival_route == self.WALK_ROUTE:
-            return [transfer_node]
-
-        if self.data_munger.is_last_stop_on_route(location_status.location, location_status.arrival_route):
             return [transfer_node]
 
         return [transfer_node, self.get_next_stop_data_for_trip(location_status)]
