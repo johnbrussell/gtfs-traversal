@@ -244,12 +244,25 @@ class Solver:
 
         all_coordinates = self.data_munger.get_all_stop_coordinates()
         current_coordinates = all_coordinates[location_status.location]
+        solution_routes = self.data_munger.get_unique_routes_to_solve()
+        stop_walk_times = {
+            stop: self.walk_time_seconds(current_coordinates.lat, coordinates.lat,
+                                         current_coordinates.long, coordinates.long)
+            for stop, coordinates in all_coordinates.items()
+        }
+        relevant_stops = dict()
 
-        walking_durations = [
-            self.walk_time_seconds(current_coordinates.lat, all_coordinates[location].lat,
-                                   current_coordinates.long, all_coordinates[location].long)
-            for location in all_coordinates
-        ]
+        for stop in all_coordinates.keys():
+            for route in self.data_munger.get_routes_at_stop(stop):
+                # you'd never walk to the last stop on a route
+                next_stop = self.data_munger.get_next_stop_id(stop, route)
+                if next_stop is None:
+                    continue
+                if route in solution_routes or stop_walk_times[stop] < stop_walk_times[next_stop]:
+                    relevant_stops[stop] = stop_walk_times[stop]
+                    break
+
+        del relevant_stops[location_status.location]
 
         return [
             (
@@ -259,8 +272,7 @@ class Solver:
                              minimum_remaining_time=progress.minimum_remaining_time, children=None,
                              expanded=False, eliminated=False)
             )
-            for loc, wts in zip(all_coordinates.keys(), walking_durations)
-            if loc != location_status.location
+            for loc, wts in relevant_stops.items()
         ]
 
     def mark_slow_nodes_as_eliminated(self, best_solution_duration, *, preserve):
