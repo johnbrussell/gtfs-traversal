@@ -11,8 +11,8 @@ class TestExpansionQueue(unittest.TestCase):
         subject = ExpansionQueue(num_solution_stops=2, stop_join_string="~~")
         subject.add(nodes)
         expected_queue = {
-            1: [location_a],
-            2: [location_b, location_b],
+            1: {location_a},
+            2: {location_b, location_b},
         }
         expected_stop_to_pop = 1
         actual_queue = subject._queue
@@ -24,19 +24,31 @@ class TestExpansionQueue(unittest.TestCase):
     def test_is_empty(self):
         location_a = LocationStatusInfo(location='a', arrival_route=None, unvisited="~~a~~")
         subject = ExpansionQueue(num_solution_stops=2, stop_join_string="~~")
-
+        solver_progress_dict = {
+            location_a: ProgressInfo(duration=1, arrival_trip=None, trip_stop_no=None, parent=None,
+                                     children=None, minimum_remaining_time=None, expanded=None,
+                                     eliminated=True),
+        }
         self.assertTrue(subject.is_empty())
 
         subject.add([location_a])
         self.assertFalse(subject.is_empty())
 
-        subject.pop()
+        subject.pop(solver_progress_dict)
         self.assertTrue(subject.is_empty())
 
     def test_len(self):
         location_a = LocationStatusInfo(location='a', arrival_route=None, unvisited="~~a~~")
         location_b = LocationStatusInfo(location='b', arrival_route=None, unvisited="~~a~~b~~")
         subject = ExpansionQueue(num_solution_stops=2, stop_join_string="~~")
+        solver_progress_dict = {
+            location_a: ProgressInfo(duration=1, arrival_trip=None, trip_stop_no=None, parent=None,
+                                     children=None, minimum_remaining_time=None, expanded=None,
+                                     eliminated=True),
+            location_b: ProgressInfo(duration=1, arrival_trip=None, trip_stop_no=None, parent=None,
+                                     children=None, minimum_remaining_time=None, expanded=None,
+                                     eliminated=True),
+        }
 
         self.assertEqual(subject.len(), 0)
 
@@ -46,26 +58,34 @@ class TestExpansionQueue(unittest.TestCase):
         subject.add([location_b])
         self.assertEqual(subject.len(), 2)
 
-        subject.pop()
+        subject.pop(solver_progress_dict)
         self.assertEqual(subject.len(), 1)
 
-        subject.pop()
+        subject.pop(solver_progress_dict)
         self.assertEqual(subject.len(), 0)
 
     def test_pop(self):
         location_a = LocationStatusInfo(location='a', arrival_route=None, unvisited="~~a~~")
         location_b = LocationStatusInfo(location='b', arrival_route=None, unvisited="~~a~~b~~")
         subject = ExpansionQueue(num_solution_stops=2, stop_join_string="~~")
+        solver_progress_dict = {
+            location_a: ProgressInfo(duration=1, arrival_trip=None, trip_stop_no=None, parent=None,
+                                     children=None, minimum_remaining_time=None, expanded=None,
+                                     eliminated=True),
+            location_b: ProgressInfo(duration=1, arrival_trip=None, trip_stop_no=None, parent=None,
+                                     children=None, minimum_remaining_time=None, expanded=None,
+                                     eliminated=True),
+        }
 
         subject.add([location_a, location_b])
 
         expected_queue = {
-            2: [location_b]
+            2: {location_b}
         }
         expected_node = location_a
         expected_stop_to_pop = 2
 
-        actual_node = subject.pop()
+        actual_node = subject.pop(solver_progress_dict)
         actual_queue = subject._queue
         actual_stop_to_pop = subject._num_remaining_stops_to_pop
 
@@ -108,7 +128,7 @@ class TestExpansionQueue(unittest.TestCase):
 
         subject.remove_keys([location_a, location_c, location_d, location_e, location_f])
         expected_queue = {
-            2: [location_b]
+            2: {location_b}
         }
         expected_stop_to_pop = 2
         actual_queue = subject._queue

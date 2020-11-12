@@ -95,10 +95,8 @@ class TestSolver(unittest.TestCase):
                 new_location: new_progress_improvement
             }
             with patch.object(subject, 'add_child_to_parent') as child_patch:
-                with patch.object(subject._exp_queue, 'sort_latest_nodes') as sort_patch:
-                    actual_duration = subject.add_new_nodes_to_progress_dict(new_nodes, input_best_duration)
-                    child_patch.assert_called_once()
-                    sort_patch.assert_called_once()
+                actual_duration = subject.add_new_nodes_to_progress_dict(new_nodes, input_best_duration)
+                child_patch.assert_called_once()
             actual_dictionary = subject._progress_dict
             self.assertEqual(expected_duration, actual_duration)
             self.assertDictEqual(expected_dictionary, actual_dictionary)
@@ -717,8 +715,8 @@ class TestSolver(unittest.TestCase):
             location_3: eliminated_progress
         }
         expected_expansion_queue_queue = {
-            1: [location_3],
-            3: [location_1]
+            1: {location_3},
+            3: {location_1}
         }
         subject.prune_progress_dict()
         actual_progress_dict = subject._progress_dict

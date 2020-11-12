@@ -319,9 +319,6 @@ class Solver:
     def add_new_nodes_to_progress_dict(self, new_nodes_list, best_solution_duration, *, verbose=True):
         for node in new_nodes_list:
             best_solution_duration = self.add_new_node_to_progress_dict(node, best_solution_duration, verbose=verbose)
-        # sorting after every insertion makes this significantly faster.
-            # Only sorting for new node lists of > 2 does not help.
-        self._exp_queue.sort_latest_nodes(self._progress_dict)
         return best_solution_duration
 
     def add_new_node_to_progress_dict(self, new_node, best_solution_duration, *, verbose=True):
@@ -449,7 +446,7 @@ class Solver:
             if self._exp_queue._num_remaining_stops_to_pop == num_stations:
                 num_completed_stations = min(num_initial_start_points - 1, num_initial_start_points - num_start_points)
                 num_start_points = max(num_start_points - 1, 0)
-            expandee = self._exp_queue.pop()
+            expandee = self._exp_queue.pop(self._progress_dict)
             known_best_time = self.expand(expandee, known_best_time)
             if known_best_time is not None:
                 if int((num_stations * num_completed_stations +
