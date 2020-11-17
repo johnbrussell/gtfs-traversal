@@ -220,8 +220,10 @@ class Solver:
         progress = self._progress_dict[location_status]
         minimum_remaining_time = max(
             0, progress.minimum_remaining_time - self.TRANSFER_DURATION_SECONDS)
-        return (location_status._replace(arrival_route=self.TRANSFER_ROUTE),
-                ProgressInfo(duration=progress.duration + self.TRANSFER_DURATION_SECONDS,
+        new_location_status = location_status._replace(arrival_route=self.TRANSFER_ROUTE)
+        new_duartion = progress.duration + self.TRANSFER_DURATION_SECONDS
+        return (new_location_status,
+                ProgressInfo(duration=new_duartion,
                              arrival_trip=self.TRANSFER_ROUTE, trip_stop_no=self.TRANSFER_ROUTE, parent=location_status,
                              minimum_remaining_time=minimum_remaining_time, children=None,
                              expanded=False, eliminated=False))
