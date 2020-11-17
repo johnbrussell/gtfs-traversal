@@ -14,13 +14,13 @@ class ExpansionQueue:
         if num_remaining_stops == 0:
             return
         if num_remaining_stops not in self._queue:
-            self._queue[num_remaining_stops] = []
+            self._queue[num_remaining_stops] = set()
             if num_remaining_stops < self._num_remaining_stops_to_pop:
                 self._num_remaining_stops_to_pop = num_remaining_stops
-        self._queue[num_remaining_stops].append(node)
+        self._queue[num_remaining_stops].add(node)
 
     def _handle_empty_queue_at_key(self, key):
-        if self.is_list_empty(self._queue[key]):
+        if self.is_set_empty(self._queue[key]):
             del self._queue[key]
             self._reset_num_remaining_stops_to_pop()
 
@@ -28,7 +28,7 @@ class ExpansionQueue:
         return self._num_remaining_stops_to_pop >= self._one_more_than_number_of_solution_stops
 
     @staticmethod
-    def is_list_empty(lst):
+    def is_set_empty(lst):
         return True if not lst else False
 
     def len(self):
@@ -40,10 +40,11 @@ class ExpansionQueue:
     def _num_remaining_stops(self, stops_string):
         return len(stops_string.split(self._stop_join_string)) - 2
 
-    def pop(self):
-        to_return = self._queue[self._num_remaining_stops_to_pop].pop(0)
+    def pop(self, solver_progress_dict):
+        best = min(self._queue[self._num_remaining_stops_to_pop], key=lambda x: solver_progress_dict[x].duration)
+        self._queue[self._num_remaining_stops_to_pop].remove(best)
         self._handle_empty_queue_at_key(self._num_remaining_stops_to_pop)
-        return to_return
+        return best
 
     def sort_latest_nodes(self, solver_progress_dict):
         if self._num_remaining_stops_to_pop == self._one_more_than_number_of_solution_stops:
