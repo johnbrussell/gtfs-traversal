@@ -81,9 +81,9 @@ class Solver:
 
         self._progress_dict[location_status] = self._progress_dict[location_status]._replace(expanded=True)
 
-        new_nodes = self.get_new_nodes(location_status)
+        new_nodes = self.get_new_nodes(location_status, known_best_time)
 
-        return self.add_new_nodes_to_progress_dict(new_nodes, known_best_time)
+        return self.add_new_nodes_to_progress_dict(new_nodes, known_best_time, location_status)
 
     def get_initial_unsolved_string(self):
         if self._initial_unsolved_string is None:
@@ -136,9 +136,9 @@ class Solver:
                          expanded=False, eliminated=False)
         )
 
-    def get_new_nodes(self, location_status):
+    def get_new_nodes(self, location_status, known_best_time):
         if location_status.arrival_route == self.TRANSFER_ROUTE:
-            return self.get_nodes_after_transfer(location_status)
+            return self.get_nodes_after_transfer(location_status, known_best_time)
 
         transfer_node = self.get_transfer_data(location_status)
 
@@ -173,8 +173,8 @@ class Solver:
 
         return routes_leaving_location
 
-    def get_nodes_after_transfer(self, location_status):
-        walking_data = self.get_walking_data(location_status)
+    def get_nodes_after_transfer(self, location_status, known_best_time):
+        walking_data = self.get_walking_data(location_status, known_best_time)
         new_route_data = self.get_nodes_after_boarding_routes(location_status)
 
         return walking_data + new_route_data
@@ -233,7 +233,7 @@ class Solver:
         self._trip_schedules = self.data_munger.get_trip_schedules()
         return self._trip_schedules
 
-    def get_walking_data(self, location_status):
+    def get_walking_data(self, location_status, known_best_time):
         progress = self._progress_dict[location_status]
 
         if progress.parent is None:
@@ -263,6 +263,11 @@ class Solver:
                     break
 
         del relevant_stops[location_status.location]
+        if known_best_time is None:
+            max_walk_time = max(relevant_stops.values()) + 1
+        else:
+            max_walk_time = known_best_time - self._progress_dict[location_status].duration - \
+                            self._progress_dict[location_status].minimum_remaining_time
 
         return [
             (
@@ -273,6 +278,7 @@ class Solver:
                              expanded=False, eliminated=False)
             )
             for loc, wts in relevant_stops.items()
+            if wts < max_walk_time
         ]
 
     def mark_slow_nodes_as_eliminated(self, best_solution_duration, *, preserve):
@@ -316,27 +322,39 @@ class Solver:
             return False
         return progress_info.duration + progress_info.minimum_remaining_time >= best_duration
 
-    def add_new_nodes_to_progress_dict(self, new_nodes_list, best_solution_duration, *, verbose=True):
-        for node in new_nodes_list:
-            best_solution_duration = self.add_new_node_to_progress_dict(node, best_solution_duration, verbose=verbose)
-        return best_solution_duration
+    def node_is_valid(self, node, best_solution_duration):
+        if node is None:
+            return False
 
-    def add_new_node_to_progress_dict(self, new_node, best_solution_duration, *, verbose=True):
-        if new_node is None:
-            return best_solution_duration
-
-        new_location, new_progress = new_node
+        new_location, new_progress = node
 
         if new_progress.eliminated:
-            return best_solution_duration
+            return False
 
         if self._progress_dict.get(new_location, None) is not None:
             if self._progress_dict[new_location].duration <= new_progress.duration:
-                return best_solution_duration
+                return False
 
         if best_solution_duration is not None:
             if self.minimum_possible_duration(new_progress) >= best_solution_duration:
-                return best_solution_duration
+                return False
+
+        return True
+
+    def add_new_nodes_to_progress_dict(self, new_nodes_list, best_solution_duration, parent, *, verbose=True):
+        valid_nodes_list = [node for node in new_nodes_list if self.node_is_valid(node, best_solution_duration)]
+
+        if valid_nodes_list:
+            for node in valid_nodes_list:
+                best_solution_duration = self.add_new_node_to_progress_dict(node, best_solution_duration,
+                                                                            verbose=verbose)
+        else:
+            self.mark_nodes_as_eliminated({parent})
+
+        return best_solution_duration
+
+    def add_new_node_to_progress_dict(self, new_node, best_solution_duration, *, verbose=True):
+        new_location, new_progress = new_node
 
         if new_location in self._progress_dict and not self._progress_dict[new_location].eliminated:
             self.mark_nodes_as_eliminated({new_location})
