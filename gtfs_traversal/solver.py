@@ -444,11 +444,14 @@ class Solver:
                          location in optimal_start_locations}
         return progress_dict, best_departure_time
 
+    def prunable_nodes(self):
+        return [k for k, v in self._progress_dict.items() if v.eliminated]
+
     def prune_progress_dict(self):
         def ineffectiveness(node):
             return len(node.unvisited.split(self.STOP_JOIN_STRING))
 
-        prunable_nodes = [k for k, v in self._progress_dict.items() if v.eliminated]
+        prunable_nodes = self.prunable_nodes()
         num_nodes_to_prune = math.floor(self.prune_severity * float(len(prunable_nodes)))
         if num_nodes_to_prune == 0:
             return
@@ -502,7 +505,8 @@ class Solver:
                         self._exp_queue._num_remaining_stops_to_pop) / stations_denominator * 100.0) > best_progress:
                     best_progress = int((num_stations * num_completed_stations +
                                          self._exp_queue._num_remaining_stops_to_pop) / stations_denominator * 100.0)
-                    print(best_progress, datetime.now() - self._initialization_time)
+                    print(best_progress, datetime.now() - self._initialization_time, self._exp_queue.len(),
+                          len(self._progress_dict), len(self.prunable_nodes()))
                 if num_expansions % self.expansions_to_prune == 0:
                     num_expansions = 0
                     self.prune_progress_dict()
