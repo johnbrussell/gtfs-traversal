@@ -538,7 +538,6 @@ class TestSolver(unittest.TestCase):
             walking_times = {(station, subject.walk_time_seconds(coordinates.lat, wonderland_coordinates.lat,
                                                                  coordinates.long, wonderland_coordinates.long))
                              for station, coordinates in stop_coordinates.items()}
-            stations_farther_than_next_stop = ['Lynn', 'Back of the Hill']
             expected = {
                 (
                     LocationStatusInfo(location=station, arrival_route='walk route', unvisited='~~Lynn~~'),
@@ -547,7 +546,7 @@ class TestSolver(unittest.TestCase):
                                  minimum_remaining_time=input_progress.minimum_remaining_time,
                                  expanded=False, eliminated=False)
                 )
-                for station, time in walking_times if station not in stations_farther_than_next_stop
+                for station, time in walking_times
             }
             actual = set(subject.get_walking_data(input_location_status, 1000000))
             self.assertSetEqual(expected, actual)

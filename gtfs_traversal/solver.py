@@ -249,28 +249,17 @@ class Solver:
 
         all_coordinates = self.data_munger.get_all_stop_coordinates()
         current_coordinates = all_coordinates[location_status.location]
-        solution_routes = self.data_munger.get_unique_routes_to_solve()
         stop_walk_times = {
             stop: self.walk_time_seconds(current_coordinates.lat, coordinates.lat,
                                          current_coordinates.long, coordinates.long)
             for stop, coordinates in all_coordinates.items()
         }
-        relevant_stops = dict()
 
-        for stop in all_coordinates.keys():
-            for route in self.data_munger.get_routes_at_stop(stop):
-                # you'd never walk to the last stop on a route
-                next_stop = self.data_munger.get_next_stop_id(stop, route)
-                if next_stop is None:
-                    continue
-                # you'd never walk to a non-solution route stop if the next stop is closer to your previous location
-                if route in solution_routes or stop_walk_times[stop] < stop_walk_times[next_stop]:
-                    relevant_stops[stop] = stop_walk_times[stop]
-                    break
+        # Filtering walk times to exclude non-solution stops whose next stop is closer doesn't seem to improve speed.
 
-        del relevant_stops[location_status.location]
+        del stop_walk_times[location_status.location]
         if known_best_time is None:
-            max_walk_time = max(relevant_stops.values()) + 1
+            max_walk_time = max(stop_walk_times.values()) + 1
         else:
             max_walk_time = known_best_time - self._progress_dict[location_status].duration - \
                             self._progress_dict[location_status].minimum_remaining_time
@@ -283,7 +272,7 @@ class Solver:
                              minimum_remaining_time=progress.minimum_remaining_time, children=None,
                              expanded=False, eliminated=False)
             )
-            for loc, wts in relevant_stops.items()
+            for loc, wts in stop_walk_times.items()
             if wts < max_walk_time
         ]
 
