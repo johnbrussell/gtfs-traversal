@@ -272,7 +272,7 @@ class TestDataMunger(unittest.TestCase):
         def test_returns_correct_result():
             analysis = MockAnalysis()
             subject = self.get_subject_with_mock_data(analysis=analysis)
-            expected = [1, 2]
+            expected = {1, 2}
             self.assertEqual(subject.get_unique_routes_to_solve(), expected)
 
         def test_memoizes():
