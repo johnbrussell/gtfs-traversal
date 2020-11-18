@@ -222,7 +222,9 @@ class Solver:
             0, progress.minimum_remaining_time - self.TRANSFER_DURATION_SECONDS)
         new_location_status = location_status._replace(arrival_route=self.TRANSFER_ROUTE)
         new_duration = progress.duration + self.TRANSFER_DURATION_SECONDS
-        if self.location_has_been_reached_faster(new_location_status, new_duration, location_status):
+        if location_status.location in self.get_stop_locations_to_solve() and \
+                location_status.arrival_route not in self.data_munger.get_unique_routes_to_solve() and \
+                self.location_has_been_reached_faster(new_location_status, new_duration, location_status):
             return None
         return (new_location_status,
                 ProgressInfo(duration=new_duration,
