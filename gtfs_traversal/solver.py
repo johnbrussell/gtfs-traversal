@@ -222,6 +222,8 @@ class Solver:
             0, progress.minimum_remaining_time - self.TRANSFER_DURATION_SECONDS)
         new_location_status = location_status._replace(arrival_route=self.TRANSFER_ROUTE)
         new_duartion = progress.duration + self.TRANSFER_DURATION_SECONDS
+        if self.location_has_been_reached_faster(location_status, new_duartion, location_status):
+            return None
         return (new_location_status,
                 ProgressInfo(duration=new_duartion,
                              arrival_trip=self.TRANSFER_ROUTE, trip_stop_no=self.TRANSFER_ROUTE, parent=location_status,
@@ -282,6 +284,31 @@ class Solver:
             for loc, wts in relevant_stops.items()
             if wts < max_walk_time
         ]
+
+    def last_improving_ancestor(self, location):
+        parent = self._progress_dict[location].parent
+        while parent is not None and location.unvisited == parent.unvisited:
+            location, parent = parent, self._progress_dict[parent].parent
+        return location
+
+    def location_has_been_reached_faster(self, new_location, new_duration, parent):
+        last_ancestor_to_improve = self.last_improving_ancestor(parent)
+
+        descendants = {last_ancestor_to_improve}
+        while descendants:
+            subject = descendants.pop()
+            subject_progress = self._progress_dict[subject]
+            if subject_progress.duration >= new_duration:
+                continue
+
+            if subject != parent and subject.location == new_location.location and \
+                    subject_progress.duration < new_duration:
+                return True
+
+            if subject_progress.children is not None:
+                descendants = descendants.union(subject_progress.children)
+
+        return False
 
     def mark_slow_nodes_as_eliminated(self, best_solution_duration, *, preserve):
         nodes_to_eliminate = {k for k, v in self._progress_dict.items() if

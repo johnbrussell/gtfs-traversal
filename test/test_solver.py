@@ -652,6 +652,162 @@ class TestSolver(unittest.TestCase):
         test_middle_of_route()
         test_no_valid_departures()
 
+    def test_last_improving_ancestor(self):
+        def test_close_to_start():
+            subject = Solver(analysis=MockAnalysis(), data=MockData(), progress_between_pruning_progress_dict=None,
+                             prune_thoroughness=None, start_time=DEFAULT_START_TIME, stop_join_string='~~',
+                             transfer_duration_seconds=None, transfer_route='transfer', walk_route=None,
+                             walk_speed_mph=None)
+            subject._progress_dict = {
+                LocationStatusInfo(location='1', arrival_route='1', unvisited='~~1~~2~~3~~'):
+                    ProgressInfo(duration=0, arrival_trip=None, trip_stop_no=1, children=None, parent=None,
+                                 minimum_remaining_time=180, expanded=None, eliminated=False)
+            }
+            expected = LocationStatusInfo(location='1', arrival_route='1', unvisited='~~1~~2~~3~~')
+            actual = subject.last_improving_ancestor(
+                LocationStatusInfo(location='1', arrival_route='1', unvisited='~~1~~2~~3~~'))
+
+            self.assertEqual(expected, actual)
+
+        def test_deep():
+            subject = Solver(analysis=MockAnalysis(), data=MockData(), progress_between_pruning_progress_dict=None,
+                             prune_thoroughness=None, start_time=DEFAULT_START_TIME, stop_join_string='~~',
+                             transfer_duration_seconds=None, transfer_route='transfer', walk_route='walk',
+                             walk_speed_mph=None)
+            location_1 = LocationStatusInfo(location='1', arrival_route='1', unvisited='~~1~~2~~3~~')
+            location_2 = LocationStatusInfo(location='2', arrival_route='1', unvisited='~~3~~')
+            location_3 = LocationStatusInfo(location='2', arrival_route='transfer', unvisited='~~3~~')
+            location_4 = LocationStatusInfo(location='4', arrival_route='walk', unvisited='~~3~~')
+            location_5 = LocationStatusInfo(location='4', arrival_route='transfer', unvisited='~~3~~')
+            location_6 = LocationStatusInfo(location='4', arrival_route='2', unvisited='~~3~~')
+
+            subject._progress_dict = {
+                location_1:
+                    ProgressInfo(duration=0, arrival_trip=None, trip_stop_no=1,
+                                 children={location_2}, parent=None, minimum_remaining_time=180, expanded=None,
+                                 eliminated=False),
+                location_2:
+                    ProgressInfo(duration=60, arrival_trip=1, trip_stop_no=2,
+                                 children={location_3}, parent=location_1, minimum_remaining_time=60,
+                                 expanded=None, eliminated=False),
+                location_3:
+                    ProgressInfo(duration=90, arrival_trip=1, trip_stop_no=2,
+                                 children={location_4}, parent=location_2, minimum_remaining_time=60,
+                                 expanded=None, eliminated=False),
+                location_4:
+                    ProgressInfo(duration=190, arrival_trip=1, trip_stop_no=2,
+                                 children={location_5}, parent=location_3, minimum_remaining_time=60,
+                                 expanded=None, eliminated=False),
+                location_5:
+                    ProgressInfo(duration=220, arrival_trip=1, trip_stop_no=2,
+                                 children={location_6}, parent=location_4, minimum_remaining_time=60,
+                                 expanded=None, eliminated=False),
+                location_6:
+                    ProgressInfo(duration=250, arrival_trip=1, trip_stop_no=2,
+                                 children=None, parent=location_5, minimum_remaining_time=60,
+                                 expanded=None, eliminated=False)
+            }
+
+            expected = location_2
+            actual = subject.last_improving_ancestor(location_6)
+            self.assertEqual(expected, actual)
+
+        test_close_to_start()
+        test_deep()
+
+    def test_location_has_been_reached_faster(self):
+        def test_parent_does_not_count():
+            subject = Solver(analysis=MockAnalysis(), data=MockData(), progress_between_pruning_progress_dict=None,
+                             prune_thoroughness=None, start_time=DEFAULT_START_TIME, stop_join_string='~~',
+                             transfer_duration_seconds=None, transfer_route='transfer', walk_route=None,
+                             walk_speed_mph=None)
+            location_1 = LocationStatusInfo(location='1', arrival_route='1', unvisited='~~1~~2~~3~~')
+            subject._progress_dict = {
+                location_1:
+                    ProgressInfo(duration=0, arrival_trip=None, trip_stop_no=1, children=None, parent=None,
+                                 minimum_remaining_time=180, expanded=None, eliminated=False)
+            }
+            new_location = LocationStatusInfo(location='1', arrival_route='transfer', unvisited='~~1~~2~~3')
+            self.assertFalse(subject.location_has_been_reached_faster(new_location, new_duration=1, parent=location_1))
+
+        def test_faster_path_causes_elimination():
+            subject = Solver(analysis=MockAnalysis(), data=MockData(), progress_between_pruning_progress_dict=None,
+                             prune_thoroughness=None, start_time=DEFAULT_START_TIME, stop_join_string='~~',
+                             transfer_duration_seconds=None, transfer_route='transfer', walk_route='walk',
+                             walk_speed_mph=None)
+            location_1 = LocationStatusInfo(location='1', arrival_route='1', unvisited='~~1~~2~~3~~4~~')
+            location_2 = LocationStatusInfo(location='2', arrival_route='1', unvisited='~~3~~4~~')
+            location_3 = LocationStatusInfo(location='2', arrival_route='transfer', unvisited='~~3~~4~~')
+            location_4 = LocationStatusInfo(location='4', arrival_route='walk', unvisited='~~3~~4~~')
+            location_5 = LocationStatusInfo(location='4', arrival_route='1', unvisited='~~3~~')
+            location_6 = LocationStatusInfo(location='4', arrival_route='transfer', unvisited='~~3~~4~~')
+
+            subject._progress_dict = {
+                location_1:
+                    ProgressInfo(duration=0, arrival_trip=None, trip_stop_no=1,
+                                 children={location_2}, parent=None, minimum_remaining_time=180, expanded=None,
+                                 eliminated=False),
+                location_2:
+                    ProgressInfo(duration=60, arrival_trip=1, trip_stop_no=2,
+                                 children={location_3, location_5}, parent=location_1, minimum_remaining_time=60,
+                                 expanded=None, eliminated=False),
+                location_3:
+                    ProgressInfo(duration=90, arrival_trip='transfer', trip_stop_no=2,
+                                 children={location_4}, parent=location_2, minimum_remaining_time=60,
+                                 expanded=None, eliminated=False),
+                location_4:
+                    ProgressInfo(duration=190, arrival_trip='walk', trip_stop_no=2,
+                                 children=None, parent=location_3, minimum_remaining_time=60,
+                                 expanded=None, eliminated=False),
+                location_5:
+                    ProgressInfo(duration=90, arrival_trip=1, trip_stop_no=3,
+                                 children=None, parent=location_2, minimum_remaining_time=30,
+                                 expanded=None, eliminated=None)
+            }
+
+            self.assertTrue(subject.location_has_been_reached_faster(location_6, 220, location_4))
+
+        def test_slower_path_does_not_cause_elimination():
+            subject = Solver(analysis=MockAnalysis(), data=MockData(), progress_between_pruning_progress_dict=None,
+                             prune_thoroughness=None, start_time=DEFAULT_START_TIME, stop_join_string='~~',
+                             transfer_duration_seconds=None, transfer_route='transfer', walk_route='walk',
+                             walk_speed_mph=None)
+            location_1 = LocationStatusInfo(location='1', arrival_route='1', unvisited='~~1~~2~~3~~4~~')
+            location_2 = LocationStatusInfo(location='2', arrival_route='1', unvisited='~~3~~4~~')
+            location_3 = LocationStatusInfo(location='2', arrival_route='transfer', unvisited='~~3~~4~~')
+            location_4 = LocationStatusInfo(location='4', arrival_route='walk', unvisited='~~3~~4~~')
+            location_5 = LocationStatusInfo(location='4', arrival_route='1', unvisited='~~3~~')
+            location_6 = LocationStatusInfo(location='4', arrival_route='transfer', unvisited='~~3~~4~~')
+
+            subject._progress_dict = {
+                location_1:
+                    ProgressInfo(duration=0, arrival_trip=None, trip_stop_no=1,
+                                 children={location_2}, parent=None, minimum_remaining_time=180, expanded=None,
+                                 eliminated=False),
+                location_2:
+                    ProgressInfo(duration=60, arrival_trip=1, trip_stop_no=2,
+                                 children={location_3, location_5}, parent=location_1, minimum_remaining_time=60,
+                                 expanded=None, eliminated=False),
+                location_3:
+                    ProgressInfo(duration=90, arrival_trip='transfer', trip_stop_no=2,
+                                 children={location_4}, parent=location_2, minimum_remaining_time=60,
+                                 expanded=None, eliminated=False),
+                location_4:
+                    ProgressInfo(duration=190, arrival_trip='walk', trip_stop_no=2,
+                                 children=None, parent=location_3, minimum_remaining_time=60,
+                                 expanded=None, eliminated=False),
+                location_5:
+                    ProgressInfo(duration=221, arrival_trip=1, trip_stop_no=3,
+                                 children=None, parent=location_2, minimum_remaining_time=30,
+                                 expanded=None, eliminated=None)
+            }
+
+            self.assertFalse(subject.location_has_been_reached_faster(location_6, 220, location_4))
+
+        test_parent_does_not_count()
+        test_faster_path_causes_elimination()
+        test_slower_path_does_not_cause_elimination()
+
     def test_mark_slow_nodes_as_eliminated(self):
         new_duration = timedelta(minutes=10)
         valid_progress_info = ProgressInfo(duration=timedelta(minutes=8), arrival_trip=None, trip_stop_no=None,
