@@ -455,14 +455,14 @@ class Solver:
             self._exp_queue.remove_key(node_to_prune)
             num_pruned_nodes += 1
 
-    def print_path(self):
-        solution_locations = [k for k in self._progress_dict if self.is_solution(k.unvisited)]
+    def print_path(self, progress_dict):
+        solution_locations = [k for k in progress_dict if self.is_solution(k.unvisited)]
         for location in solution_locations:
             path = list()
             _location = location
             while _location is not None:
                 path.append((_location.arrival_route, _location.location))
-                _location = self._progress_dict[_location].parent
+                _location = progress_dict[_location].parent
             path = reversed(path)
             print("solution:")
             for stop in path:
