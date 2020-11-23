@@ -265,6 +265,7 @@ class Solver:
         }
 
         # Filtering walk times to exclude non-solution stops whose next stop is closer doesn't seem to improve speed.
+        #  But, this was determined before working to reduce the number of walking expansions - 0ef8ae6 can revert this
 
         del stop_walk_times[location_status.location]
         if known_best_time is None:
