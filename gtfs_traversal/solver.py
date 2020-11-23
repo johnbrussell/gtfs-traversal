@@ -33,6 +33,7 @@ class Solver:
         self._stops_at_ends_of_solution_routes = None
         self._total_minimum_time = None
         self._trip_schedules = None
+        self._walking_coordinates = None
 
         self.data_munger = DataMunger(
             analysis=analysis,
@@ -239,20 +240,28 @@ class Solver:
         self._trip_schedules = self.data_munger.get_trip_schedules()
         return self._trip_schedules
 
+    def get_walking_coordinates(self):
+        if self._walking_coordinates is None:
+            self.reset_walking_coordinates(None)
+
+        return self._walking_coordinates
+
     def get_walking_data(self, location_status, known_best_time):
         progress = self._progress_dict[location_status]
+        walking_coordinates = self.get_walking_coordinates()
 
         if progress.parent is None:
             return []
         if progress.parent.arrival_route == self.WALK_ROUTE:
             return []
+        if location_status.location not in walking_coordinates:
+            return []
 
-        all_coordinates = self.data_munger.get_all_stop_coordinates()
-        current_coordinates = all_coordinates[location_status.location]
+        current_coordinates = walking_coordinates[location_status.location]
         stop_walk_times = {
             stop: self.walk_time_seconds(current_coordinates.lat, coordinates.lat,
                                          current_coordinates.long, coordinates.long)
-            for stop, coordinates in all_coordinates.items()
+            for stop, coordinates in walking_coordinates.items()
         }
 
         # Filtering walk times to exclude non-solution stops whose next stop is closer doesn't seem to improve speed.
@@ -330,6 +339,34 @@ class Solver:
                 if len(self._progress_dict[parent].children) == 0:
                     nodes_to_eliminate.add(parent)
 
+    def reset_walking_coordinates(self, known_best_time):
+        abs_max_walk_time = None if known_best_time is None else known_best_time - self.get_total_minimum_time()
+        all_coordinates = self.data_munger.get_all_stop_coordinates()
+        solution_stops = self.data_munger.get_unique_stops_to_solve()
+        self._walking_coordinates = dict()
+        for stop1 in solution_stops:
+            # find walk time to farthest station from stop1
+            max_walk_time = 0
+            for stop2 in solution_stops:
+                wts = self.walk_time_seconds(all_coordinates[stop1].lat, all_coordinates[stop2].lat,
+                                             all_coordinates[stop1].long, all_coordinates[stop2].long)
+                max_walk_time = max(wts, max_walk_time)
+
+            # If a global ceiling is more strict than the time to the farthest station, use the global ceiling
+            if abs_max_walk_time is not None:
+                max_walk_time = min(max_walk_time, abs_max_walk_time)
+
+            # add any station closer to stop1 than max_walk_time to self._walking_coordinates if it's below the global
+            #  logical walk time ceiling
+            for stop3, coordinates in all_coordinates.items():
+                if stop3 in self._walking_coordinates:
+                    continue
+
+                wts = self.walk_time_seconds(all_coordinates[stop1].lat, coordinates.lat,
+                                             all_coordinates[stop1].long, coordinates.long)
+                if wts <= max_walk_time:
+                    self._walking_coordinates[stop3] = coordinates
+
     def start_time_in_seconds(self):
         if self._start_time_in_seconds is None:
             self._start_time_in_seconds = self._start_time.total_seconds()
@@ -386,6 +423,7 @@ class Solver:
                 print(datetime.now() - self._initialization_time, 'solution:', timedelta(seconds=new_progress.duration))
             best_solution_duration = new_progress.duration
             self.mark_slow_nodes_as_eliminated(best_solution_duration, preserve={new_location})
+            self.reset_walking_coordinates(best_solution_duration)
         else:
             self._exp_queue.add_node(new_location)
 

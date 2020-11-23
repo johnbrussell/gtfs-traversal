@@ -152,11 +152,12 @@ class TestSolver(unittest.TestCase):
             }
             with patch.object(subject, 'add_child_to_parent') as child_patch:
                 with patch.object(subject, 'mark_slow_nodes_as_eliminated') as elimination_patch:
-                    actual_duration = subject.add_new_nodes_to_progress_dict(new_nodes, input_best_duration,
-                                                                             known_best_time,
-                                                                             verbose=False)
-                    child_patch.assert_called_once()
-                    elimination_patch.assert_called_once()
+                    with patch.object(subject, 'reset_walking_coordinates') as coordinates_patch:
+                        actual_duration = subject.add_new_nodes_to_progress_dict(new_nodes, input_best_duration,
+                                                                                 known_best_time, verbose=False)
+                        child_patch.assert_called_once()
+                        elimination_patch.assert_called_once()
+                        coordinates_patch.assert_called_once_with(expected_duration)
             actual_dictionary = subject._progress_dict
             self.assertEqual(expected_duration, actual_duration)
             self.assertDictEqual(expected_dictionary, actual_dictionary)
@@ -891,6 +892,60 @@ class TestSolver(unittest.TestCase):
 
         self.assertDictEqual(expected_progress_dict, actual_progress_dict)
         self.assertDictEqual(expected_expansion_queue_queue, actual_expansion_queue_queue)
+
+    def test_reset_walking_coordinates(self):
+        def test_no_known_best_time():
+            subject = Solver(analysis=MockAnalysis(route_types_to_solve=[1]), data=MockData(),
+                             progress_between_pruning_progress_dict=5,
+                             prune_thoroughness=.1, start_time=DEFAULT_START_TIME, stop_join_string='~~',
+                             transfer_duration_seconds=1, transfer_route='transfer', walk_route='walk',
+                             walk_speed_mph=1)
+
+            def walk_time_seconds(_lat1, _lat2, long1, long2):
+                if long1 == 3 or long2 == 3:
+                    return 1000000
+
+                return 100
+
+            with patch.object(subject, 'walk_time_seconds', new=walk_time_seconds):
+                subject.reset_walking_coordinates(known_best_time=None)
+
+            coordinates = subject.data_munger.get_all_stop_coordinates()
+            self.assertEqual(len(subject.get_walking_coordinates()), len(coordinates) - 1)
+            self.assertTrue('Heath Street' not in subject.get_walking_coordinates())
+
+        def test_known_best_time():
+            subject = Solver(analysis=MockAnalysis(route_types_to_solve=[1]),
+                             data=MockData(), progress_between_pruning_progress_dict=5,
+                             prune_thoroughness=.1, start_time=DEFAULT_START_TIME, stop_join_string='~~',
+                             transfer_duration_seconds=1, transfer_route='transfer', walk_route='walk',
+                             walk_speed_mph=1)
+
+            def walk_time_seconds(lat1, lat2, long1, long2):
+                if long1 == 3 or long2 == 3:  # Heath Street is very far
+                    return 1000000
+                if lat1 == -5 or lat2 == -5:  # Lechmere is somewhat far
+                    return 1500
+                if (lat1 == 7 or lat2 == 7) and lat1 != -6 and lat2 != -6:  # Lynn far except to Bowdoin
+                    return 200000
+                return 500  # Everything else is close
+
+            coordinates = subject.data_munger.get_all_stop_coordinates()
+
+            with patch.object(subject, 'walk_time_seconds', new=walk_time_seconds):
+                subject.reset_walking_coordinates(known_best_time=None)
+                self.assertEqual(len(subject.get_walking_coordinates()), len(coordinates) - 1)
+
+                # This example has minimum time of 9000, so this is max 1000 walking time
+                subject.reset_walking_coordinates(known_best_time=10000)
+
+            coordinates = subject.data_munger.get_all_stop_coordinates()
+            self.assertEqual(len(subject.get_walking_coordinates()), len(coordinates) - 2)
+            self.assertTrue('Heath Street' not in subject.get_walking_coordinates())
+            self.assertTrue('Lechmere' not in subject.get_walking_coordinates())
+
+        test_no_known_best_time()
+        test_known_best_time()
 
     def test_walk_time_seconds(self):
         def get_solver_with_speed(*, mph):
