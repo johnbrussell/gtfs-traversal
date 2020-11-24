@@ -277,7 +277,7 @@ class TestSolver(unittest.TestCase):
                          prune_thoroughness=None, start_time=None, stop_join_string=None,
                          transfer_duration_seconds=None, transfer_route=None, walk_route=None, walk_speed_mph=None)
 
-        points_to_test = [
+        points_to_test = {
             EarthLocation(lat=-5, long=0),
             EarthLocation(lat=-10, long=-15),
             EarthLocation(lat=0, long=-140),
@@ -286,7 +286,7 @@ class TestSolver(unittest.TestCase):
             EarthLocation(lat=-10, long=15),
             EarthLocation(lat=0, long=140),
             EarthLocation(lat=10, long=15)
-        ]
+        }
         expected = EarthLocation(lat=0, long=0)
         actual = subject.geographic_mean(points_to_test, interval=0.9, max_interval=0.00004)
         max_distance = subject.distance_miles(0, .00004, 0, .00004)

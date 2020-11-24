@@ -94,9 +94,10 @@ class Solver:
 
     def geographic_mean(self, points, *, interval=1.0, max_interval=0.00005):
         if len(points) == 1:
-            return points[0]
+            return points.pop()
 
-        best_mean = points[0]
+        best_mean = points.pop()
+        points.add(best_mean)
 
         while interval > max_interval:
             test_means = [
