@@ -43,6 +43,16 @@ class Solver:
         )
 
     def walk_time_seconds(self, lat1, lat2, long1, long2):
+        return self.distance_miles(lat1, lat2, long1, long2) * 3600 / self.walk_speed_mph
+
+    @staticmethod
+    def to_radians_from_degrees(degrees):
+        return degrees * math.pi / 180
+
+    def add_separators_to_stop_name(self, stop_name):
+        return f'{self.STOP_JOIN_STRING}{stop_name}{self.STOP_JOIN_STRING}'
+
+    def distance_miles(self, lat1, lat2, long1, long2):
         origin_lat = self.to_radians_from_degrees(lat1)
         origin_long = self.to_radians_from_degrees(long1)
         dest_lat = self.to_radians_from_degrees(lat2)
@@ -55,15 +65,7 @@ class Solver:
         origin_lat = math.cos(origin_lat)
         dest_lat = math.cos(dest_lat)
         haversine = delta_lat + origin_lat * dest_lat * delta_long
-        haversine = 2 * 3959 * math.asin(math.sqrt(haversine))
-        return haversine * 3600 / self.walk_speed_mph
-
-    @staticmethod
-    def to_radians_from_degrees(degrees):
-        return degrees * math.pi / 180
-
-    def add_separators_to_stop_name(self, stop_name):
-        return f'{self.STOP_JOIN_STRING}{stop_name}{self.STOP_JOIN_STRING}'
+        return 2 * 3959 * math.asin(math.sqrt(haversine))
 
     def eliminate_stops_from_string(self, stops, uneliminated):
         for stop in stops:
