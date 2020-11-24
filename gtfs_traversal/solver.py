@@ -372,13 +372,13 @@ class Solver:
                 if len(self._progress_dict[parent].children) == 0:
                     nodes_to_eliminate.add(parent)
 
-    def reset_walking_coordinates(self, known_best_time):
+    def relevant_walk_stops(self, origin_stops, known_best_time):
         abs_max_walk_time = None if known_best_time is None else known_best_time - self.get_total_minimum_time()
         all_coordinates = self.data_munger.get_all_stop_coordinates()
-        solution_stops = self.data_munger.get_unique_stops_to_solve()
-        self._walking_coordinates = dict()
-        for stop1 in solution_stops:
-            # find walk time to farthest station from stop1
+        solution_stops = self.data_munger.get_stop_locations_to_solve()
+        relevant_stops = set()
+        for stop1 in origin_stops:
+            # find walk time to farthest solution station from stop1
             max_walk_time = 0
             for stop2 in solution_stops:
                 wts = self.walk_time_seconds(all_coordinates[stop1].lat, all_coordinates[stop2].lat,
@@ -389,16 +389,27 @@ class Solver:
             if abs_max_walk_time is not None:
                 max_walk_time = min(max_walk_time, abs_max_walk_time)
 
-            # add any station closer to stop1 than max_walk_time to self._walking_coordinates if it's below the global
+            # add any station closer to stop1 than max_walk_time to relevant_stops if it's below the global
             #  logical walk time ceiling
             for stop3, coordinates in all_coordinates.items():
-                if stop3 in self._walking_coordinates:
+                if stop3 in relevant_stops:
                     continue
 
                 wts = self.walk_time_seconds(all_coordinates[stop1].lat, coordinates.lat,
                                              all_coordinates[stop1].long, coordinates.long)
+
                 if wts <= max_walk_time:
-                    self._walking_coordinates[stop3] = coordinates
+                    relevant_stops.add(stop3)
+
+        return relevant_stops
+
+    def reset_walking_coordinates(self, known_best_time):
+        all_coordinates = self.data_munger.get_all_stop_coordinates()
+        solution_stops = self.data_munger.get_unique_stops_to_solve()
+        self._walking_coordinates = dict()
+        relevant_stops = self.relevant_walk_stops(solution_stops, known_best_time)
+        for stop in relevant_stops:
+            self._walking_coordinates[stop] = all_coordinates[stop]
 
     def start_time_in_seconds(self):
         if self._start_time_in_seconds is None:
