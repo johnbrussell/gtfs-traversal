@@ -53,7 +53,7 @@ class Solver:
         return f'{self.STOP_JOIN_STRING}{stop_name}{self.STOP_JOIN_STRING}'
 
     def average_distance_miles(self, origin_point, other_points):
-        return sum([self.distance_miles(origin_point[0], p[0], origin_point[1], p[1]) for p in other_points]) / \
+        return sum([self.distance_miles(origin_point.lat, p.lat, origin_point.long, p.long) for p in other_points]) / \
                len(other_points)
 
     def distance_miles(self, lat1, lat2, long1, long2):
