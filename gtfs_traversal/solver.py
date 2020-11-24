@@ -375,15 +375,10 @@ class Solver:
     def relevant_walk_stops(self, origin_stops, known_best_time):
         abs_max_walk_time = None if known_best_time is None else known_best_time - self.get_total_minimum_time()
         all_coordinates = self.data_munger.get_all_stop_coordinates()
-        solution_stops = self.data_munger.get_stop_locations_to_solve()
         relevant_stops = set()
         for stop1 in origin_stops:
             # find walk time to farthest solution station from stop1
-            max_walk_time = 0
-            for stop2 in solution_stops:
-                wts = self.walk_time_seconds(all_coordinates[stop1].lat, all_coordinates[stop2].lat,
-                                             all_coordinates[stop1].long, all_coordinates[stop2].long)
-                max_walk_time = max(wts, max_walk_time)
+            max_walk_time = self.walk_time_to_farthest_solution_station(stop1)
 
             # If a global ceiling is more strict than the time to the farthest station, use the global ceiling
             if abs_max_walk_time is not None:
@@ -416,6 +411,17 @@ class Solver:
             self._start_time_in_seconds = self._start_time.total_seconds()
 
         return self._start_time_in_seconds
+
+    def walk_time_to_farthest_solution_station(self, origin):
+        solution_stops = self.data_munger.get_stop_locations_to_solve()
+
+        max_walk_time = 0
+        for stop in solution_stops:
+            wts = self.walk_time_seconds(solution_stops[origin].lat, solution_stops[stop].lat,
+                                         solution_stops[origin].long, solution_stops[stop].long)
+            max_walk_time = max(wts, max_walk_time)
+
+        return max_walk_time
 
     def to_coordinate(self, earth_location):
         if earth_location.lat > 90:
