@@ -272,6 +272,26 @@ class TestSolver(unittest.TestCase):
         test_expanded()
         test_calculate_expansion()
 
+    def test_geographic_mean(self):
+        subject = Solver(analysis=MockAnalysis(), data=MockData(), progress_between_pruning_progress_dict=None,
+                         prune_thoroughness=None, start_time=None, stop_join_string=None,
+                         transfer_duration_seconds=None, transfer_route=None, walk_route=None, walk_speed_mph=None)
+
+        points_to_test = [
+            EarthLocation(lat=-5, long=0),
+            EarthLocation(lat=-10, long=-15),
+            EarthLocation(lat=0, long=-140),
+            EarthLocation(lat=10, long=-15),
+            EarthLocation(lat=5, long=0),
+            EarthLocation(lat=-10, long=15),
+            EarthLocation(lat=0, long=140),
+            EarthLocation(lat=10, long=15)
+        ]
+        expected = EarthLocation(lat=0, long=0)
+        actual = subject.geographic_mean(points_to_test, interval=0.9, max_interval=0.00004)
+        max_distance = subject.distance_miles(0, .00004, 0, .00004)
+        self.assertTrue(subject.distance_miles(expected.lat, actual.lat, expected.long, actual.long) < max_distance)
+
     def test_get_new_minimum_remaining_time(self):
         def test_route_not_on_solution_set():
             subject = Solver(analysis=MockAnalysis(), data=MockData(), progress_between_pruning_progress_dict=None,

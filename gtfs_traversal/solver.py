@@ -92,6 +92,32 @@ class Solver:
 
         return self.add_new_nodes_to_progress_dict(new_nodes, known_best_time, location_status)
 
+    def geographic_mean(self, points, *, interval=1.0, max_interval=0.00005):
+        if len(points) == 1:
+            return points[0]
+
+        best_mean = points[0]
+
+        while interval > max_interval:
+            test_means = [
+                self.to_coordinate(EarthLocation(lat=best_mean.lat, long=best_mean.long + interval)),
+                self.to_coordinate(EarthLocation(lat=best_mean.lat + interval, long=best_mean.long + interval)),
+                self.to_coordinate(EarthLocation(lat=best_mean.lat + interval, long=best_mean.long)),
+                self.to_coordinate(EarthLocation(lat=best_mean.lat + interval, long=best_mean.long - interval)),
+                self.to_coordinate(EarthLocation(lat=best_mean.lat, long=best_mean.long - interval)),
+                self.to_coordinate(EarthLocation(lat=best_mean.lat - interval, long=best_mean.long - interval)),
+                self.to_coordinate(EarthLocation(lat=best_mean.lat - interval, long=best_mean.long)),
+                self.to_coordinate(EarthLocation(lat=best_mean.lat - interval, long=best_mean.long + interval)),
+                best_mean
+            ]
+            best_test_point = min(test_means, key=lambda p: self.average_distance_miles(p, points))
+            if best_test_point == best_mean:
+                interval = interval / 2
+            else:
+                best_mean = best_test_point
+
+        return best_mean
+
     def get_initial_unsolved_string(self):
         if self._initial_unsolved_string is None:
             self._initial_unsolved_string = self.STOP_JOIN_STRING + \
@@ -379,6 +405,17 @@ class Solver:
             self._start_time_in_seconds = self._start_time.total_seconds()
 
         return self._start_time_in_seconds
+
+    def to_coordinate(self, earth_location):
+        if earth_location.lat > 90:
+            return self.to_coordinate(EarthLocation(lat=180 - earth_location.lat, long=-earth_location.long))
+        if earth_location.lat < -90:
+            return self.to_coordinate(EarthLocation(lat=-180 - earth_location.lat, long=-earth_location.long))
+        if earth_location.long > 180:
+            return self.to_coordinate(EarthLocation(lat=earth_location.lat, long=-360 + earth_location.long))
+        if earth_location.long <= -180:
+            return self.to_coordinate(EarthLocation(lat=earth_location.lat, long=360 + earth_location.long))
+        return earth_location
 
     @staticmethod
     def is_too_slow(location, progress_info, best_duration, preserve):
