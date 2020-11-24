@@ -52,6 +52,10 @@ class Solver:
     def add_separators_to_stop_name(self, stop_name):
         return f'{self.STOP_JOIN_STRING}{stop_name}{self.STOP_JOIN_STRING}'
 
+    def average_distance_miles(self, origin_point, other_points):
+        return sum([self.distance_miles(origin_point[0], p[0], origin_point[1], p[1]) for p in other_points]) / \
+               len(other_points)
+
     def distance_miles(self, lat1, lat2, long1, long2):
         origin_lat = self.to_radians_from_degrees(lat1)
         origin_long = self.to_radians_from_degrees(long1)

@@ -165,6 +165,39 @@ class TestSolver(unittest.TestCase):
         test_improvement()
         test_solution()
 
+    def test_average_distance_miles(self):
+        subject = Solver(analysis=MockAnalysis(), data=MockData(), progress_between_pruning_progress_dict=None,
+                         prune_thoroughness=None, start_time=None, stop_join_string='~~',
+                         transfer_duration_seconds=None, transfer_route=None, walk_route=None, walk_speed_mph=None)
+
+        def test_simple():
+            origin = EarthLocation(lat=0, long=0)
+            points = [EarthLocation(lat=1, long=0), EarthLocation(lat=-1, long=0), origin]
+            expected = 69 * 2 / 3  # About 69.1 miles between degrees of latitude
+            actual = subject.average_distance_miles(origin, points)
+            self.assertTrue(abs(actual - expected) < 0.1)
+
+        def test_complicated():
+            origin = EarthLocation(lat=0, long=0)
+            points = [
+                EarthLocation(lat=1, long=0),
+                EarthLocation(lat=-1, long=0),
+                EarthLocation(lat=0, long=1),
+                EarthLocation(lat=0, long=-1),
+                origin
+            ]
+            expected = 69 * 4 / 5
+            actual = subject.average_distance_miles(origin, points)
+            self.assertTrue(abs(expected - actual) < 0.1)
+
+            points = [EarthLocation(lat=p.lat + 45, long=p.long) for p in points]
+            origin = EarthLocation(lat=origin.lat + 45, long=origin.long)
+            new_distance = subject.average_distance_miles(origin, points)
+            self.assertTrue(new_distance < actual)
+
+        test_simple()
+        test_complicated()
+
     def test_expand(self):
         def test_solved():
             subject = Solver(analysis=MockAnalysis(), data=MockData(), progress_between_pruning_progress_dict=None,
