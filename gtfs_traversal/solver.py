@@ -74,24 +74,61 @@ class Solver:
                                           if station in relevant_stations}
         irrelevant_stations = {station for station in non_solution_coordinates.keys()
                                if station not in relevant_stations}
+        print(len(relevant_non_solution_stations), len(irrelevant_stations))
 
-        relevant_stations_mean = self.geographic_mean(
-            {coordinates for station, coordinates in non_solution_coordinates.items()
-             if station in relevant_non_solution_stations})
+        cluster_coordinates = solution_cluster_relevant_stops.keys()
+        relevant_station_clusters_unadjusted = {
+            station: min(cluster_coordinates,
+                         key=lambda p: self.distance_miles(all_coordinates[station].lat, p.lat,
+                                                           all_coordinates[station].long, p.long))
+            for station in relevant_non_solution_stations
+        }
+        relevant_cluster_means = set()
+        for mean in relevant_station_clusters_unadjusted.values():
+            relevant_cluster_means.add(mean)
+        relevant_cluster_stations = dict()
+        for station, coordinates in relevant_station_clusters_unadjusted.items():
+            if coordinates not in relevant_cluster_stations:
+                relevant_cluster_stations[coordinates] = set()
+            relevant_cluster_stations[coordinates].add(station)
+        relevant_cluster_means_dict = {
+            coordinates: self.geographic_mean({all_coordinates[s] for s in relevant_cluster_stations[coordinates]})
+            for coordinates in relevant_cluster_means
+        }
+        relevant_station_clusters = {
+            station: relevant_cluster_means_dict[coordinates]
+            for station, coordinates in relevant_station_clusters_unadjusted.items()
+        }
+        relevant_cluster_stations = dict()
+        for station, coordinates in relevant_station_clusters.items():
+            if coordinates not in relevant_cluster_stations:
+                relevant_cluster_stations[coordinates] = set()
+            relevant_cluster_stations[coordinates].add(station)
+
+        # relevant_station_clusters, relevant_cluster_stations = self.cluster_specific_stations(
+        #     {rs: all_coordinates[rs] for rs in relevant_non_solution_stations}, improvement_threshold, known_best_time
+        # )
+
         irrelevant_stations_mean = self.geographic_mean(
             {coordinates for station, coordinates in non_solution_coordinates.items() if station in irrelevant_stations}
         )
-        for station in relevant_non_solution_stations:
-            solution_station_clusters[station] = relevant_stations_mean
+        for station, coordinates in relevant_station_clusters.items():
+            solution_station_clusters[station] = coordinates
         for station in irrelevant_stations:
             solution_station_clusters[station] = irrelevant_stations_mean
-        for cluster, stops in [(relevant_stations_mean, relevant_non_solution_stations),
-                               (irrelevant_stations_mean, irrelevant_stations)]:
+        for cluster, stops in relevant_cluster_stations.items():
             stops_to_add = self.relevant_walk_stops(stops, known_best_time)
             if cluster in solution_cluster_relevant_stops:
                 solution_cluster_relevant_stops[cluster] = solution_cluster_relevant_stops[cluster].union(stops_to_add)
             else:
                 solution_cluster_relevant_stops[cluster] = stops_to_add
+
+        stops_to_add = self.relevant_walk_stops(irrelevant_stations, known_best_time)
+        if irrelevant_stations_mean in solution_cluster_relevant_stops:
+            solution_cluster_relevant_stops[irrelevant_stations_mean] = \
+                solution_cluster_relevant_stops[irrelevant_stations_mean].union(stops_to_add)
+        else:
+            solution_cluster_relevant_stops[irrelevant_stations_mean] = stops_to_add
 
         all_relevant_stations = set()
         for stations in solution_cluster_relevant_stops.values():
@@ -131,7 +168,9 @@ class Solver:
     def cluster_specific_stations(self, station_coordinates_to_cluster, improvement_threshold, known_best_time):
         all_coordinates = self.data_munger.get_all_stop_coordinates()
 
+        # max_allowable_cluster_distance = self.walk_speed_mph
         num_clusters = 1
+        consecutive_worsenings = 0
         cluster_origins = set()
         station_clusters = None
         cluster_relevant_stops = None
@@ -175,19 +214,37 @@ class Solver:
             for cluster, stops_in_range in cluster_num_in_range_stops.items():
                 solution_stops_in_range += float(stops_in_range) * len(cluster_stations[cluster]) / \
                     len(station_clusters)
+            # max_cluster_distance = 0
+            # for cluster, stops in cluster_stations.items():
+            #     for stop1 in stops:
+            #         if max_cluster_distance > max_allowable_cluster_distance:
+            #             break
+            #         for stop2 in stops:
+            #             new_dist = self.distance_miles(
+            #                 all_coordinates[stop1].lat, all_coordinates[stop2].lat,
+            #                 all_coordinates[stop1].long, all_coordinates[stop2].long
+            #             )
+            #             if new_dist > max_cluster_distance:
+            #                 max_cluster_distance = new_dist
+            # clusters_acceptably_small = max_cluster_distance <= max_allowable_cluster_distance
             is_improvement = previous_average_solution_stops_in_range is None or \
                 previous_average_distance is None or \
                 average_distance < (1 - improvement_threshold) * previous_average_distance or \
                 solution_stops_in_range < (1 - improvement_threshold) * previous_average_solution_stops_in_range
-            print([len(rs) for rs in cluster_relevant_stops.values()])
+            print([len(cluster_relevant_stops[coordinates]) for coordinates in cluster_stations.keys()])
             print(average_distance, solution_stops_in_range)
-            if not is_improvement:
+            if is_improvement:
+                consecutive_worsenings = 0
+            else:
+                consecutive_worsenings += 1
+            if consecutive_worsenings >= 6:
                 return previous_station_clusters, previous_cluster_stations
 
-            previous_station_clusters = station_clusters
-            previous_cluster_stations = cluster_relevant_stops
-            previous_average_distance = average_distance
-            previous_average_solution_stops_in_range = solution_stops_in_range
+            if is_improvement:
+                previous_station_clusters = station_clusters
+                previous_cluster_stations = cluster_relevant_stops
+                previous_average_distance = average_distance
+                previous_average_solution_stops_in_range = solution_stops_in_range
             num_clusters += 1
 
         return station_clusters, cluster_relevant_stops
