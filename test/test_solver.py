@@ -288,7 +288,7 @@ class TestSolver(unittest.TestCase):
             EarthLocation(lat=10, long=15)
         }
         expected = EarthLocation(lat=0, long=0)
-        actual = subject.geographic_mean(points_to_test, interval=0.9, max_interval=0.00004)
+        actual = subject.geographic_mean(points_to_test, interval=1000, max_interval=0.00004)
         max_distance = subject.distance_miles(0, .00004, 0, .00004)
         self.assertTrue(subject.distance_miles(expected.lat, actual.lat, expected.long, actual.long) < max_distance)
 
