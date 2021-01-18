@@ -5,7 +5,7 @@ if __name__ == "__main__":
     from gtfs_parsing.data_structures.data_structures import gtfsSchedules, uniqueRouteInfo
     from gtfs_traversal.data_munger import DataMunger
     from gtfs_traversal.read_data import *
-    from gtfs_traversal.solver import Solver
+    from gtfs_traversal.traverser import Traverser
 
     STOP_JOIN_STRING = '~~'
     TRANSFER_ROUTE = 'transfer'
@@ -56,10 +56,10 @@ if __name__ == "__main__":
         stop_join_string=STOP_JOIN_STRING,
     )
 
-    solver = Solver(analysis=analysis, data=data, progress_between_pruning_progress_dict=10000, prune_thoroughness=.001,
-                    start_time=start_time, stop_join_string=STOP_JOIN_STRING,
-                    transfer_duration_seconds=TRANSFER_DURATION_SECONDS, transfer_route=TRANSFER_ROUTE,
-                    walk_route=WALK_ROUTE, walk_speed_mph=WALK_SPEED_MPH)
+    solver = Traverser(analysis=analysis, data=data, progress_between_pruning_progress_dict=10000, prune_thoroughness=.001,
+                       start_time=start_time, stop_join_string=STOP_JOIN_STRING,
+                       transfer_duration_seconds=TRANSFER_DURATION_SECONDS, transfer_route=TRANSFER_ROUTE,
+                       walk_route=WALK_ROUTE, walk_speed_mph=WALK_SPEED_MPH)
 
     # end_date_midnight
     best_time = None
