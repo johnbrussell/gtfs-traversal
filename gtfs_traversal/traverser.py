@@ -1,12 +1,13 @@
 from gtfs_traversal.data_munger import DataMunger
 from gtfs_traversal.expansion_queue import ExpansionQueue
 from gtfs_traversal.data_structures import *
+from gtfs_traversal.solver import Solver
 from gtfs_traversal.string_shortener import StringShortener
 import math
 from datetime import timedelta, datetime
 
 
-class Solver:
+class Traverser(Solver):
     def __init__(self, analysis, data, progress_between_pruning_progress_dict, prune_thoroughness, start_time,
                  stop_join_string, transfer_duration_seconds, transfer_route, walk_route, walk_speed_mph):
         self.walk_speed_mph = walk_speed_mph
