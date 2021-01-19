@@ -200,6 +200,12 @@ class Traverser:
 
         return self._stops_at_ends_of_solution_routes
 
+    def get_time_to_nearest_station(self):
+        if self._time_to_nearest_station is None:
+            self.reset_time_to_nearest_station(None)
+
+        return self._time_to_nearest_station
+
     def get_total_minimum_time(self):
         if self._total_minimum_time is None:
             self._total_minimum_time = self.data_munger.get_total_minimum_time()
