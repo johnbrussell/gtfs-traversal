@@ -7,7 +7,7 @@ import math
 from datetime import timedelta, datetime
 
 
-class Traverser(Solver):
+class Traverser():
     def __init__(self, analysis, data, progress_between_pruning_progress_dict, prune_thoroughness, start_time,
                  stop_join_string, transfer_duration_seconds, transfer_route, walk_route, walk_speed_mph):
         self.walk_speed_mph = walk_speed_mph
@@ -18,6 +18,7 @@ class Traverser(Solver):
         self.ANALYSIS = analysis
         self.expansions_to_prune = progress_between_pruning_progress_dict
         self.prune_severity = prune_thoroughness
+        self._solver = Solver()
         self._string_shortener = StringShortener()
 
         self._best_duration = None
