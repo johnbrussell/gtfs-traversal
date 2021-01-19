@@ -1,6 +1,7 @@
 from gtfs_traversal.data_munger import DataMunger
 from gtfs_traversal.expansion_queue import ExpansionQueue
 from gtfs_traversal.data_structures import *
+from gtfs_traversal.nearest_station_finder import NearestStationFinder
 from gtfs_traversal.solver import Solver
 from gtfs_traversal.string_shortener import StringShortener
 import math
@@ -32,6 +33,7 @@ class Traverser:
         self._stop_locations = None
         self._stop_locations_to_solve = None
         self._stops_at_ends_of_solution_routes = None
+        self._time_to_nearest_station = None
         self._total_minimum_time = None
         self._trip_schedules = None
         self._walking_coordinates = None
@@ -42,6 +44,8 @@ class Traverser:
             start_time=start_time,
             stop_join_string=stop_join_string,
         )
+
+        self._nearest_station_finder = NearestStationFinder()
 
         self._solver = Solver(
             walk_speed_mph=walk_speed_mph,
@@ -324,6 +328,17 @@ class Traverser:
                 self._progress_dict[parent].children.remove(node_to_eliminate)
                 if len(self._progress_dict[parent].children) == 0:
                     nodes_to_eliminate.add(parent)
+
+    def reset_time_to_nearest_station(self, known_best_time):
+        abs_max_walk_time = None if known_best_time is None else known_best_time - self.get_total_minimum_time()
+        all_stations = self.data_munger.get_all_stop_coordinates().keys()
+        times_to_nearest_station = {
+            station: self._nearest_station_finder.travel_time_mins_to_nearest_station()
+            for station in all_stations
+        }
+        self._time_to_nearest_station = {
+            station: time for station, time in times_to_nearest_station.items() if time <= abs_max_walk_time
+        } if abs_max_walk_time is not None else times_to_nearest_station
 
     def reset_walking_coordinates(self, known_best_time):
         abs_max_walk_time = None if known_best_time is None else known_best_time - self.get_total_minimum_time()
