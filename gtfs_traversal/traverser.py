@@ -18,7 +18,6 @@ class Traverser():
         self.ANALYSIS = analysis
         self.expansions_to_prune = progress_between_pruning_progress_dict
         self.prune_severity = prune_thoroughness
-        self._solver = Solver()
         self._string_shortener = StringShortener()
 
         self._best_duration = None
@@ -44,25 +43,9 @@ class Traverser():
             stop_join_string=stop_join_string,
         )
 
-    def walk_time_seconds(self, lat1, lat2, long1, long2):
-        origin_lat = self.to_radians_from_degrees(lat1)
-        origin_long = self.to_radians_from_degrees(long1)
-        dest_lat = self.to_radians_from_degrees(lat2)
-        dest_long = self.to_radians_from_degrees(long2)
-
-        delta_lat = (origin_lat - dest_lat) / 2
-        delta_long = (origin_long - dest_long) / 2
-        delta_lat = math.pow(math.sin(delta_lat), 2)
-        delta_long = math.pow(math.sin(delta_long), 2)
-        origin_lat = math.cos(origin_lat)
-        dest_lat = math.cos(dest_lat)
-        haversine = delta_lat + origin_lat * dest_lat * delta_long
-        haversine = 2 * 3959 * math.asin(math.sqrt(haversine))
-        return haversine * 3600 / self.walk_speed_mph
-
-    @staticmethod
-    def to_radians_from_degrees(degrees):
-        return degrees * math.pi / 180
+        self._solver = Solver(
+            walk_speed_mph=walk_speed_mph,
+        )
 
     def add_separators_to_stop_name(self, stop_name):
         return f'{self.STOP_JOIN_STRING}{stop_name}{self.STOP_JOIN_STRING}'
@@ -261,8 +244,8 @@ class Traverser():
 
         current_coordinates = walking_coordinates[location_status.location]
         stop_walk_times = {
-            stop: self.walk_time_seconds(current_coordinates.lat, coordinates.lat,
-                                         current_coordinates.long, coordinates.long)
+            stop: self._solver.walk_time_seconds(current_coordinates.lat, coordinates.lat,
+                                                 current_coordinates.long, coordinates.long)
             for stop, coordinates in walking_coordinates.items()
         }
 
@@ -351,8 +334,8 @@ class Traverser():
             # find walk time to farthest station from stop1
             max_walk_time = 0
             for stop2 in solution_stops:
-                wts = self.walk_time_seconds(all_coordinates[stop1].lat, all_coordinates[stop2].lat,
-                                             all_coordinates[stop1].long, all_coordinates[stop2].long)
+                wts = self._solver.walk_time_seconds(all_coordinates[stop1].lat, all_coordinates[stop2].lat,
+                                                     all_coordinates[stop1].long, all_coordinates[stop2].long)
                 max_walk_time = max(wts, max_walk_time)
 
             # If a global ceiling is more strict than the time to the farthest station, use the global ceiling
@@ -365,8 +348,8 @@ class Traverser():
                 if stop3 in self._walking_coordinates:
                     continue
 
-                wts = self.walk_time_seconds(all_coordinates[stop1].lat, coordinates.lat,
-                                             all_coordinates[stop1].long, coordinates.long)
+                wts = self._solver.walk_time_seconds(all_coordinates[stop1].lat, coordinates.lat,
+                                                     all_coordinates[stop1].long, coordinates.long)
                 if wts <= max_walk_time:
                     self._walking_coordinates[stop3] = coordinates
 

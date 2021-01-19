@@ -536,8 +536,8 @@ class TestSolver(unittest.TestCase):
 
             stop_coordinates = subject.data_munger.get_all_stop_coordinates().copy()
             wonderland_coordinates = stop_coordinates.pop('Wonderland')
-            walking_times = {(station, subject.walk_time_seconds(coordinates.lat, wonderland_coordinates.lat,
-                                                                 coordinates.long, wonderland_coordinates.long))
+            walking_times = {(station, subject._solver.walk_time_seconds(coordinates.lat, wonderland_coordinates.lat,
+                                                                         coordinates.long, wonderland_coordinates.long))
                              for station, coordinates in stop_coordinates.items()}
             expected = {
                 (
@@ -907,7 +907,7 @@ class TestSolver(unittest.TestCase):
 
                 return 100
 
-            with patch.object(subject, 'walk_time_seconds', new=walk_time_seconds):
+            with patch.object(subject._solver, 'walk_time_seconds', new=walk_time_seconds):
                 subject.reset_walking_coordinates(known_best_time=None)
 
             coordinates = subject.data_munger.get_all_stop_coordinates()
@@ -932,7 +932,7 @@ class TestSolver(unittest.TestCase):
 
             coordinates = subject.data_munger.get_all_stop_coordinates()
 
-            with patch.object(subject, 'walk_time_seconds', new=walk_time_seconds):
+            with patch.object(subject._solver, 'walk_time_seconds', new=walk_time_seconds):
                 subject.reset_walking_coordinates(known_best_time=None)
                 self.assertEqual(len(subject.get_walking_coordinates()), len(coordinates) - 1)
 
@@ -946,31 +946,6 @@ class TestSolver(unittest.TestCase):
 
         test_no_known_best_time()
         test_known_best_time()
-
-    def test_walk_time_seconds(self):
-        def get_solver_with_speed(*, mph):
-            return Traverser(analysis=None, data=None, progress_between_pruning_progress_dict=None,
-                             prune_thoroughness=None, start_time=None, stop_join_string=None,
-                             transfer_duration_seconds=None, transfer_route=None, walk_route=None, walk_speed_mph=mph)
-
-        def test_zero_time_at_any_speed_for_no_distance():
-            self.assertEqual(get_solver_with_speed(mph=0.5).walk_time_seconds(2, 2, -40, -40), 0)
-            self.assertEqual(get_solver_with_speed(mph=0.5).walk_time_seconds(0, 0, 0, 0), 0)
-            self.assertEqual(get_solver_with_speed(mph=0.5).walk_time_seconds(-30, -30, 30, 30), 0)
-
-        def test_time_accuracy_1():
-            actual = get_solver_with_speed(mph=0.5).walk_time_seconds(42.2402, 42.2449, -70.89, -70.8715)
-            self.assertGreater(actual, 7200*(1-.001))
-            self.assertLess(actual, 7200*(1+.001))
-
-        def test_time_accuracy_2():
-            actual = get_solver_with_speed(mph=10).walk_time_seconds(42.2334, 42.2477, -71.0061, -71.003)
-            self.assertGreater(actual, 360*(1-.001))
-            self.assertLess(actual, 360*(1+.001))
-
-        test_zero_time_at_any_speed_for_no_distance()
-        test_time_accuracy_1()
-        test_time_accuracy_2()
 
 
 class MockData:
