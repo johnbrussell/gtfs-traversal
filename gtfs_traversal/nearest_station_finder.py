@@ -2,5 +2,6 @@ class NearestStationFinder:
     def __init__(self):
         pass
 
-    def travel_time_mins_to_nearest_station(self):
+    @staticmethod
+    def travel_time_secs_to_nearest_station():
         return 0

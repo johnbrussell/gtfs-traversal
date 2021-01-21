@@ -252,22 +252,22 @@ class Traverser:
         if location_status.location not in walking_coordinates:
             return []
 
+        max_walk_time = known_best_time - self._progress_dict[location_status].duration - \
+            self._progress_dict[location_status].minimum_remaining_time \
+            if known_best_time is not None else None
+
         current_coordinates = walking_coordinates[location_status.location]
         stop_walk_times = {
             stop: self._solver.walk_time_seconds(current_coordinates.lat, coordinates.lat,
                                                  current_coordinates.long, coordinates.long)
             for stop, coordinates in walking_coordinates.items()
+            if max_walk_time is None or self._time_to_nearest_station[stop] <= max_walk_time
         }
 
         # Filtering walk times to exclude non-solution stops whose next stop is closer doesn't seem to improve speed.
         #  But, this was determined before working to reduce the number of walking expansions - 0ef8ae6 can revert this
 
         del stop_walk_times[location_status.location]
-        if known_best_time is None:
-            max_walk_time = max(stop_walk_times.values()) + 1
-        else:
-            max_walk_time = known_best_time - self._progress_dict[location_status].duration - \
-                            self._progress_dict[location_status].minimum_remaining_time
 
         return [
             (
@@ -278,7 +278,7 @@ class Traverser:
                              expanded=False, eliminated=False)
             )
             for loc, wts in stop_walk_times.items()
-            if wts < max_walk_time
+            if max_walk_time is None or wts + self._time_to_nearest_station[loc] <= max_walk_time
         ]
 
     def last_improving_ancestor(self, location):
@@ -339,7 +339,7 @@ class Traverser:
         abs_max_walk_time = None if known_best_time is None else known_best_time - self.get_total_minimum_time()
         all_stations = self.data_munger.get_all_stop_coordinates().keys()
         times_to_nearest_station = {
-            station: self._nearest_station_finder.travel_time_mins_to_nearest_station()
+            station: self._nearest_station_finder.travel_time_secs_to_nearest_station()
             for station in all_stations
         }
         self._time_to_nearest_station = {
@@ -364,14 +364,15 @@ class Traverser:
                 max_walk_time = min(max_walk_time, abs_max_walk_time)
 
             # add any station closer to stop1 than max_walk_time to self._walking_coordinates if it's below the global
-            #  logical walk time ceiling
+            #  logical walk time ceiling and the travel time to the nearest solution stop is below the global walk
+            #  time ceiling
             for stop3, coordinates in all_coordinates.items():
                 if stop3 in self._walking_coordinates:
                     continue
 
                 wts = self._solver.walk_time_seconds(all_coordinates[stop1].lat, coordinates.lat,
                                                      all_coordinates[stop1].long, coordinates.long)
-                if wts <= max_walk_time:
+                if wts + self._time_to_nearest_station[stop3] <= max_walk_time:
                     self._walking_coordinates[stop3] = coordinates
 
     def start_time_in_seconds(self):

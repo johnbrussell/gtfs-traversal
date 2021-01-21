@@ -475,6 +475,9 @@ class TestSolver(unittest.TestCase):
                 duration=1200, children=None, parent=input_progress_parent, arrival_trip=DEFAULT_TRANSFER_ROUTE,
                 trip_stop_no='1', minimum_remaining_time=3600, expanded=False, eliminated=False)
             subject._progress_dict[input_location_status] = input_progress
+            subject._time_to_nearest_station = {
+                station: 0 for station in subject.data_munger.get_all_stop_coordinates().keys()
+            }
 
             expected = []
             actual = subject.get_walking_data(input_location_status, 1000000)
@@ -494,6 +497,9 @@ class TestSolver(unittest.TestCase):
                 duration=1200, children=None, parent=input_progress_parent, arrival_trip=DEFAULT_TRANSFER_ROUTE,
                 trip_stop_no='1', minimum_remaining_time=timedelta(hours=1), expanded=False, eliminated=False)
             subject._progress_dict[input_location_status] = input_progress
+            subject._time_to_nearest_station = {
+                station: 0 for station in subject.data_munger.get_all_stop_coordinates().keys()
+            }
 
             expected = []
             actual = subject.get_walking_data(input_location_status, 1000000)
@@ -513,9 +519,51 @@ class TestSolver(unittest.TestCase):
                 duration=20 * 60, children=None, parent=input_progress_parent, arrival_trip=DEFAULT_TRANSFER_ROUTE,
                 trip_stop_no='1', minimum_remaining_time=60 * 60, expanded=False, eliminated=False)
             subject._progress_dict[input_location_status] = input_progress
+            subject._time_to_nearest_station = {
+                station: 0 for station in subject.data_munger.get_all_stop_coordinates().keys()
+            }
 
             expected = set()
             actual = set(subject.get_walking_data(input_location_status, 10000))
+            self.assertSetEqual(expected, actual)
+
+        def test_with_insufficient_time_to_travel():
+            analysis = MockAnalysis()
+            subject = Traverser(analysis=analysis, data=MockData(), progress_between_pruning_progress_dict=None,
+                                prune_thoroughness=None, start_time=DEFAULT_START_TIME, stop_join_string='~~',
+                                transfer_duration_seconds=None, transfer_route=DEFAULT_TRANSFER_ROUTE,
+                                walk_route='walk route', walk_speed_mph=3)
+
+            input_location_status = LocationStatusInfo(
+                location='Wonderland', arrival_route=DEFAULT_TRANSFER_ROUTE, unvisited='~~Lynn~~')
+            input_progress_parent = LocationStatusInfo(location='Wonderland', arrival_route=2, unvisited='~~Lynn~~')
+            input_progress = ProgressInfo(
+                duration=20 * 60, children=None, parent=input_progress_parent, arrival_trip=DEFAULT_TRANSFER_ROUTE,
+                trip_stop_no='1', minimum_remaining_time=60 * 60, expanded=False, eliminated=False)
+            subject._progress_dict[input_location_status] = input_progress
+            subject._time_to_nearest_station = {
+                station: 0 for station in subject.data_munger.get_all_stop_coordinates().keys()
+            }
+            subject._time_to_nearest_station['Heath Street'] = 1000001
+
+            stop_coordinates = subject.data_munger.get_all_stop_coordinates().copy()
+            wonderland_coordinates = stop_coordinates.pop('Wonderland')
+            walking_times = {(station, subject._solver.walk_time_seconds(coordinates.lat, wonderland_coordinates.lat,
+                                                                         coordinates.long, wonderland_coordinates.long))
+                             for station, coordinates in stop_coordinates.items()}
+
+            expected = {
+                (
+                    LocationStatusInfo(location=station, arrival_route='walk route', unvisited='~~Lynn~~'),
+                    ProgressInfo(duration=input_progress.duration + time, children=None,
+                                 parent=input_location_status, arrival_trip='walk route', trip_stop_no='walk route',
+                                 minimum_remaining_time=input_progress.minimum_remaining_time,
+                                 expanded=False, eliminated=False)
+                )
+                for station, time in walking_times
+                if station != 'Heath Street'
+            }
+            actual = set(subject.get_walking_data(input_location_status, 1000000))
             self.assertSetEqual(expected, actual)
 
         def test_calculates_correct_result():
@@ -533,6 +581,9 @@ class TestSolver(unittest.TestCase):
                 duration=20 * 60, children=None, parent=input_progress_parent, arrival_trip=DEFAULT_TRANSFER_ROUTE,
                 trip_stop_no='1', minimum_remaining_time=60 * 60, expanded=False, eliminated=False)
             subject._progress_dict[input_location_status] = input_progress
+            subject._time_to_nearest_station = {
+                station: 0 for station in subject.data_munger.get_all_stop_coordinates().keys()
+            }
 
             stop_coordinates = subject.data_munger.get_all_stop_coordinates().copy()
             wonderland_coordinates = stop_coordinates.pop('Wonderland')
@@ -555,6 +606,7 @@ class TestSolver(unittest.TestCase):
         test_at_start()
         test_after_walking_route()
         test_with_insufficient_time_to_walk()
+        test_with_insufficient_time_to_travel()
         test_calculates_correct_result()
 
     def test_initialize_progress_dict(self):
@@ -901,7 +953,7 @@ class TestSolver(unittest.TestCase):
                                 transfer_duration_seconds=1, transfer_route='transfer', walk_route='walk',
                                 walk_speed_mph=1)
             all_stations = ['Wonderland', 'Heath Street', 'Back of the Hill', 'Bowdoin', 'Lynn', 'Alewife', 'Lechmere']
-            with patch.object(subject._nearest_station_finder, 'travel_time_mins_to_nearest_station', return_value=2):
+            with patch.object(subject._nearest_station_finder, 'travel_time_secs_to_nearest_station', return_value=2):
                 subject.reset_time_to_nearest_station(known_best_time=None)
             expected = {station: 2 for station in all_stations}
             actual = subject._time_to_nearest_station
@@ -914,7 +966,7 @@ class TestSolver(unittest.TestCase):
                                 transfer_duration_seconds=1, transfer_route='transfer', walk_route='walk',
                                 walk_speed_mph=1)
 
-            with patch.object(subject._nearest_station_finder, 'travel_time_mins_to_nearest_station', return_value=2):
+            with patch.object(subject._nearest_station_finder, 'travel_time_secs_to_nearest_station', return_value=2):
                 subject.reset_time_to_nearest_station(known_best_time=1)
             expected = dict()
             actual = subject._time_to_nearest_station
@@ -936,6 +988,8 @@ class TestSolver(unittest.TestCase):
                     return 1000000
 
                 return 100
+
+            subject.reset_time_to_nearest_station(None)
 
             with patch.object(subject._solver, 'walk_time_seconds', new=walk_time_seconds):
                 subject.reset_walking_coordinates(known_best_time=None)
@@ -960,6 +1014,8 @@ class TestSolver(unittest.TestCase):
                     return 200000
                 return 500  # Everything else is close
 
+            subject.reset_time_to_nearest_station(None)
+
             coordinates = subject.data_munger.get_all_stop_coordinates()
 
             with patch.object(subject._solver, 'walk_time_seconds', new=walk_time_seconds):
@@ -974,8 +1030,32 @@ class TestSolver(unittest.TestCase):
             self.assertTrue('Heath Street' not in subject.get_walking_coordinates())
             self.assertTrue('Lechmere' not in subject.get_walking_coordinates())
 
+        def test_insufficient_travel_time():
+            subject = Traverser(analysis=MockAnalysis(route_types_to_solve=[1]),
+                                data=MockData(), progress_between_pruning_progress_dict=5,
+                                prune_thoroughness=.1, start_time=DEFAULT_START_TIME, stop_join_string='~~',
+                                transfer_duration_seconds=1, transfer_route='transfer', walk_route='walk',
+                                walk_speed_mph=1)
+
+            subject.reset_time_to_nearest_station(None)
+            subject._time_to_nearest_station['Back of the Hill'] = 1001
+
+            coordinates = subject.data_munger.get_all_stop_coordinates()
+
+            with patch.object(subject._solver, 'walk_time_seconds', return_value=100):
+                subject.reset_walking_coordinates(known_best_time=None)
+                self.assertEqual(len(subject.get_walking_coordinates()), len(coordinates) - 1)
+
+                # This example has minimum time of 9000, so this is max 1000 walking time
+                subject.reset_walking_coordinates(known_best_time=10000)
+
+            coordinates = subject.data_munger.get_all_stop_coordinates()
+            self.assertEqual(len(subject.get_walking_coordinates()), len(coordinates) - 1)
+            self.assertTrue('Back of the Hill' not in subject.get_walking_coordinates())
+
         test_no_known_best_time()
         test_known_best_time()
+        test_insufficient_travel_time()
 
 
 class MockData:
