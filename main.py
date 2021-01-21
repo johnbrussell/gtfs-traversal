@@ -3,9 +3,8 @@ if __name__ == "__main__":
 
     import gtfs_parsing.analyses.analyses as gtfs_analyses
     from gtfs_parsing.data_structures.data_structures import gtfsSchedules, uniqueRouteInfo
-    from gtfs_traversal.data_munger import DataMunger
     from gtfs_traversal.read_data import *
-    from gtfs_traversal.solver import Solver
+    from gtfs_traversal.traverser import Traverser
 
     STOP_JOIN_STRING = '~~'
     TRANSFER_ROUTE = 'transfer'
@@ -49,17 +48,10 @@ if __name__ == "__main__":
 
     data = remove_trips_that_do_not_operate_within_analysis_timeframe(data)
 
-    data_munger = DataMunger(
-        analysis=analysis,
-        data=data,
-        start_time=start_time,
-        stop_join_string=STOP_JOIN_STRING,
-    )
-
-    solver = Solver(analysis=analysis, data=data, progress_between_pruning_progress_dict=10000, prune_thoroughness=.001,
-                    start_time=start_time, stop_join_string=STOP_JOIN_STRING,
-                    transfer_duration_seconds=TRANSFER_DURATION_SECONDS, transfer_route=TRANSFER_ROUTE,
-                    walk_route=WALK_ROUTE, walk_speed_mph=WALK_SPEED_MPH)
+    traverser = Traverser(analysis=analysis, data=data, progress_between_pruning_progress_dict=10000,
+                          prune_thoroughness=.001, start_time=start_time, stop_join_string=STOP_JOIN_STRING,
+                          transfer_duration_seconds=TRANSFER_DURATION_SECONDS, transfer_route=TRANSFER_ROUTE,
+                          walk_route=WALK_ROUTE, walk_speed_mph=WALK_SPEED_MPH)
 
     # end_date_midnight
     best_time = None
@@ -68,7 +60,7 @@ if __name__ == "__main__":
     # start_time = datetime(year=2018, month=10, day=13, hour=22, minute=25)
     while start_time < end_date_midnight:
         print(start_time)
-        new_best_time, new_best_progress_dictionary, earliest_departure_time = solver.find_solution(
+        new_best_time, new_best_progress_dictionary, earliest_departure_time = traverser.find_solution(
             start_time, best_time)
         assert new_best_time is not None
         if best_time is None or new_best_time < best_time:
@@ -83,5 +75,5 @@ if __name__ == "__main__":
 
     print('best start time:', best_start_time)
     print('best time:', best_time)
-    solver.print_path(best_progress_dictionary)
+    traverser.print_path(best_progress_dictionary)
     print("finished successfully.")
