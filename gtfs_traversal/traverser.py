@@ -261,7 +261,7 @@ class Traverser:
             stop: self._solver.walk_time_seconds(current_coordinates.lat, coordinates.lat,
                                                  current_coordinates.long, coordinates.long)
             for stop, coordinates in walking_coordinates.items()
-            if max_walk_time is None or self._time_to_nearest_station[stop] <= max_walk_time
+            if max_walk_time is None or self.get_time_to_nearest_station()[stop] <= max_walk_time
         }
 
         # Filtering walk times to exclude non-solution stops whose next stop is closer doesn't seem to improve speed.
@@ -278,7 +278,7 @@ class Traverser:
                              expanded=False, eliminated=False)
             )
             for loc, wts in stop_walk_times.items()
-            if max_walk_time is None or wts + self._time_to_nearest_station[loc] <= max_walk_time
+            if max_walk_time is None or wts + self.get_time_to_nearest_station()[loc] <= max_walk_time
         ]
 
     def last_improving_ancestor(self, location):
@@ -373,7 +373,7 @@ class Traverser:
 
                 wts = self._solver.walk_time_seconds(all_coordinates[stop1].lat, coordinates.lat,
                                                      all_coordinates[stop1].long, coordinates.long)
-                if wts + self._time_to_nearest_station[stop3] <= max_walk_time:
+                if wts + self.get_time_to_nearest_station()[stop3] <= max_walk_time:
                     self._walking_coordinates[stop3] = coordinates
 
     def start_time_in_seconds(self):
