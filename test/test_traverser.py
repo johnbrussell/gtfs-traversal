@@ -15,8 +15,8 @@ class TestSolver(unittest.TestCase):
     def test_add_child_to_parent(self):
         def test_first_child():
             subject = Traverser(analysis=MockAnalysis(), data=MockData(), progress_between_pruning_progress_dict=None,
-                                prune_thoroughness=None, start_time=None, stop_join_string='~~',
-                                transfer_duration_seconds=None, transfer_route=None, walk_route=None, walk_speed_mph=None)
+                                prune_thoroughness=None, stop_join_string='~~', transfer_duration_seconds=None,
+                                transfer_route=None, walk_route=None, walk_speed_mph=None)
             parent = LocationStatusInfo(location='1', arrival_route=1, unvisited=None)
             parent_progress = ProgressInfo(duration=None, arrival_trip=None, trip_stop_no=None, parent=None,
                                            children=None, minimum_remaining_time=None, expanded=None, eliminated=None)
@@ -32,8 +32,8 @@ class TestSolver(unittest.TestCase):
 
         def test_sibling():
             subject = Traverser(analysis=MockAnalysis(), data=MockData(), progress_between_pruning_progress_dict=None,
-                                prune_thoroughness=None, start_time=None, stop_join_string='~~',
-                                transfer_duration_seconds=None, transfer_route=None, walk_route=None, walk_speed_mph=None)
+                                prune_thoroughness=None, stop_join_string='~~', transfer_duration_seconds=None,
+                                transfer_route=None, walk_route=None, walk_speed_mph=None)
             child_1 = LocationStatusInfo(location='2', arrival_route=2, unvisited=None)
             parent = LocationStatusInfo(location='1', arrival_route=1, unvisited=None)
             parent_progress = ProgressInfo(duration=None, arrival_trip=None, trip_stop_no=None, parent=None,
@@ -55,8 +55,8 @@ class TestSolver(unittest.TestCase):
     def test_add_new_nodes_to_progress_dict(self):
         def test_improvement():
             subject = Traverser(analysis=MockAnalysis(), data=MockData(), progress_between_pruning_progress_dict=None,
-                                prune_thoroughness=None, start_time=None, stop_join_string='~~',
-                                transfer_duration_seconds=None, transfer_route=None, walk_route=None, walk_speed_mph=None)
+                                prune_thoroughness=None, stop_join_string='~~', transfer_duration_seconds=None,
+                                transfer_route=None, walk_route=None, walk_speed_mph=None)
             new_location = LocationStatusInfo(location='Wonderland', arrival_route=1, unvisited='~~Lynn~~')
             subject._progress_dict = {
                 new_location:
@@ -105,8 +105,8 @@ class TestSolver(unittest.TestCase):
 
         def test_solution():
             subject = Traverser(analysis=MockAnalysis(), data=MockData(), progress_between_pruning_progress_dict=None,
-                                prune_thoroughness=None, start_time=None, stop_join_string='~~',
-                                transfer_duration_seconds=None, transfer_route=None, walk_route=None, walk_speed_mph=None)
+                                prune_thoroughness=None, stop_join_string='~~', transfer_duration_seconds=None,
+                                transfer_route=None, walk_route=None, walk_speed_mph=None)
             new_location = LocationStatusInfo(location='Wonderland', arrival_route=1, unvisited='~~')
             other_location = LocationStatusInfo(location='Lynn', arrival_route=3, unvisited='~~')
             other_location_progress = ProgressInfo(
@@ -168,8 +168,8 @@ class TestSolver(unittest.TestCase):
     def test_expand(self):
         def test_solved():
             subject = Traverser(analysis=MockAnalysis(), data=MockData(), progress_between_pruning_progress_dict=None,
-                                prune_thoroughness=None, start_time=None, stop_join_string='~~',
-                                transfer_duration_seconds=None, transfer_route=None, walk_route=None, walk_speed_mph=None)
+                                prune_thoroughness=None, stop_join_string='~~', transfer_duration_seconds=None,
+                                transfer_route=None, walk_route=None, walk_speed_mph=None)
             location_status = LocationStatusInfo(location=1, arrival_route=2, unvisited='~~')
             progress = ProgressInfo(duration=None, arrival_trip=None, trip_stop_no=None, parent=None, children=None,
                                     minimum_remaining_time=None, expanded=False, eliminated=False)
@@ -183,8 +183,8 @@ class TestSolver(unittest.TestCase):
 
         def test_expanded():
             subject = Traverser(analysis=MockAnalysis(), data=MockData(), progress_between_pruning_progress_dict=None,
-                                prune_thoroughness=None, start_time=None, stop_join_string='~~',
-                                transfer_duration_seconds=None, transfer_route=None, walk_route=None, walk_speed_mph=None)
+                                prune_thoroughness=None, stop_join_string='~~', transfer_duration_seconds=None,
+                                transfer_route=None, walk_route=None, walk_speed_mph=None)
             location_status = LocationStatusInfo(location=1, arrival_route=2, unvisited='~~stop~~')
             progress = ProgressInfo(duration=None, arrival_trip=None, trip_stop_no=None, parent=None, children=None,
                                     minimum_remaining_time=None, expanded=True, eliminated=False)
@@ -198,8 +198,8 @@ class TestSolver(unittest.TestCase):
 
         def test_eliminated():
             subject = Traverser(analysis=MockAnalysis(), data=MockData(), progress_between_pruning_progress_dict=None,
-                                prune_thoroughness=None, start_time=None, stop_join_string='~~',
-                                transfer_duration_seconds=None, transfer_route=None, walk_route=None, walk_speed_mph=None)
+                                prune_thoroughness=None, stop_join_string='~~', transfer_duration_seconds=None,
+                                transfer_route=None, walk_route=None, walk_speed_mph=None)
             location_status = LocationStatusInfo(location=1, arrival_route=2, unvisited='~~stop~~')
             progress = ProgressInfo(duration=None, arrival_trip=None, trip_stop_no=None, parent=None, children=None,
                                     minimum_remaining_time=None, expanded=False, eliminated=True)
@@ -213,8 +213,8 @@ class TestSolver(unittest.TestCase):
 
         def test_calculate_expansion():
             subject = Traverser(analysis=MockAnalysis(), data=MockData(), progress_between_pruning_progress_dict=None,
-                                prune_thoroughness=None, start_time=None, stop_join_string='~~',
-                                transfer_duration_seconds=None, transfer_route=None, walk_route=None, walk_speed_mph=None)
+                                prune_thoroughness=None, stop_join_string='~~', transfer_duration_seconds=None,
+                                transfer_route=None, walk_route=None, walk_speed_mph=None)
             location_status = LocationStatusInfo(location=1, arrival_route=2, unvisited='~~stop~~')
             progress = ProgressInfo(duration=None, arrival_trip=None, trip_stop_no=None, parent=None, children=None,
                                     minimum_remaining_time=None, expanded=False, eliminated=False)
@@ -242,8 +242,8 @@ class TestSolver(unittest.TestCase):
     def test_get_new_minimum_remaining_time(self):
         def test_route_not_on_solution_set():
             subject = Traverser(analysis=MockAnalysis(), data=MockData(), progress_between_pruning_progress_dict=None,
-                                prune_thoroughness=None, start_time=None, stop_join_string=None,
-                                transfer_duration_seconds=None, transfer_route=None, walk_route=None, walk_speed_mph=None)
+                                prune_thoroughness=None, stop_join_string=None, transfer_duration_seconds=None,
+                                transfer_route=None, walk_route=None, walk_speed_mph=None)
             input_time = 400
             expected = input_time
             actual = subject.get_new_minimum_remaining_time(input_time, None, 'not a route', None)
@@ -251,9 +251,10 @@ class TestSolver(unittest.TestCase):
 
         def test_route_on_solution_set():
             subject = Traverser(analysis=MockAnalysis(), data=MockData(), progress_between_pruning_progress_dict=None,
-                                prune_thoroughness=None, start_time=DEFAULT_START_TIME, stop_join_string='##',
-                                transfer_duration_seconds=5, transfer_route=None, walk_route=None, walk_speed_mph=None)
+                                prune_thoroughness=None, stop_join_string='##', transfer_duration_seconds=5,
+                                transfer_route=None, walk_route=None, walk_speed_mph=None)
             subject._string_shortener = MockStringShortener()
+            subject._start_time = DEFAULT_START_TIME
             input_time = 400 * 60
             expected = 60 * 60
             actual = subject.get_new_minimum_remaining_time(input_time, '##Bowdoin##Lynn##Wonderland##', 3,
@@ -266,9 +267,8 @@ class TestSolver(unittest.TestCase):
     def test_get_new_nodes(self):
         def test_after_transfer():
             subject = Traverser(analysis=MockAnalysis(), data=MockData(), progress_between_pruning_progress_dict=None,
-                                prune_thoroughness=None, start_time=DEFAULT_START_TIME, stop_join_string='~~',
-                                transfer_duration_seconds=None, transfer_route='transfer route', walk_route=None,
-                                walk_speed_mph=None)
+                                prune_thoroughness=None, stop_join_string='~~', transfer_duration_seconds=None,
+                                transfer_route='transfer route', walk_route=None, walk_speed_mph=None)
             known_best_time = 'arg2'
             location_status_info = LocationStatusInfo(location=None, arrival_route='transfer route', unvisited=None)
             expected = ['after transfer']
@@ -282,9 +282,8 @@ class TestSolver(unittest.TestCase):
 
         def test_after_walk():
             subject = Traverser(analysis=MockAnalysis(), data=MockData(), progress_between_pruning_progress_dict=None,
-                                prune_thoroughness=None, start_time=DEFAULT_START_TIME, stop_join_string='~~',
-                                transfer_duration_seconds=53, transfer_route='transfer route', walk_route='walk route',
-                                walk_speed_mph=None)
+                                prune_thoroughness=None, stop_join_string='~~', transfer_duration_seconds=53,
+                                transfer_route='transfer route', walk_route='walk route', walk_speed_mph=None)
             location_status_info = LocationStatusInfo(location=None, arrival_route='walk route', unvisited=None)
             progress_info = ProgressInfo(duration=47, arrival_trip=None,
                                          trip_stop_no=None, parent=None, children=None,
@@ -303,8 +302,8 @@ class TestSolver(unittest.TestCase):
 
         def test_after_service():
             subject = Traverser(analysis=MockAnalysis(), data=MockData(), progress_between_pruning_progress_dict=None,
-                                prune_thoroughness=None, start_time=DEFAULT_START_TIME, stop_join_string='~~',
-                                transfer_duration_seconds=None, transfer_route=None, walk_route=None, walk_speed_mph=None)
+                                prune_thoroughness=None, stop_join_string='~~', transfer_duration_seconds=None,
+                                transfer_route=None, walk_route=None, walk_speed_mph=None)
             location_status_info = LocationStatusInfo(location='Wonderland', arrival_route=1, unvisited=None)
             progress_info = ProgressInfo(duration=None, arrival_trip=None, trip_stop_no=None, parent=None,
                                          children=None,
@@ -328,9 +327,8 @@ class TestSolver(unittest.TestCase):
     def test_get_next_stop_data_for_trip(self):
         def test_last_stop():
             subject = Traverser(analysis=MockAnalysis(), data=MockData(), progress_between_pruning_progress_dict=None,
-                                prune_thoroughness=None, start_time=DEFAULT_START_TIME, stop_join_string='~~',
-                                transfer_duration_seconds=None, transfer_route=DEFAULT_TRANSFER_ROUTE, walk_route=None,
-                                walk_speed_mph=None)
+                                prune_thoroughness=None, stop_join_string='~~', transfer_duration_seconds=None,
+                                transfer_route=DEFAULT_TRANSFER_ROUTE, walk_route=None, walk_speed_mph=None)
 
             input_location_status = LocationStatusInfo(
                 location='Back of the Hill', arrival_route=1, unvisited='~~Lynn~~Bowdoin~~Back of the Hill~~')
@@ -347,9 +345,8 @@ class TestSolver(unittest.TestCase):
 
         def test_not_last_stop():
             subject = Traverser(analysis=MockAnalysis(), data=MockData(), progress_between_pruning_progress_dict=None,
-                                prune_thoroughness=None, start_time=DEFAULT_START_TIME, stop_join_string='~~',
-                                transfer_duration_seconds=4, transfer_route=DEFAULT_TRANSFER_ROUTE, walk_route=None,
-                                walk_speed_mph=None)
+                                prune_thoroughness=None, stop_join_string='~~', transfer_duration_seconds=4,
+                                transfer_route=DEFAULT_TRANSFER_ROUTE, walk_route=None, walk_speed_mph=None)
             subject._string_shortener = MockStringShortener()
 
             input_location_status = LocationStatusInfo(
@@ -379,9 +376,8 @@ class TestSolver(unittest.TestCase):
     def test_get_node_after_boarding_route(self):
         def test_not_last_stop():
             subject = Traverser(analysis=MockAnalysis(), data=MockData(), progress_between_pruning_progress_dict=None,
-                                prune_thoroughness=None, start_time=DEFAULT_START_TIME, stop_join_string='~~',
-                                transfer_duration_seconds=None, transfer_route=DEFAULT_TRANSFER_ROUTE, walk_route=None,
-                                walk_speed_mph=None)
+                                prune_thoroughness=None, stop_join_string='~~', transfer_duration_seconds=None,
+                                transfer_route=DEFAULT_TRANSFER_ROUTE, walk_route=None, walk_speed_mph=None)
 
             input_location_status = LocationStatusInfo(
                 location='Bowdoin', arrival_route=DEFAULT_TRANSFER_ROUTE,
@@ -406,9 +402,8 @@ class TestSolver(unittest.TestCase):
 
         def test_last_stop():
             subject = Traverser(analysis=MockAnalysis(), data=MockData(), progress_between_pruning_progress_dict=None,
-                                prune_thoroughness=None, start_time=DEFAULT_START_TIME, stop_join_string='~~',
-                                transfer_duration_seconds=None, transfer_route=DEFAULT_TRANSFER_ROUTE, walk_route=None,
-                                walk_speed_mph=None)
+                                prune_thoroughness=None, stop_join_string='~~', transfer_duration_seconds=None,
+                                transfer_route=DEFAULT_TRANSFER_ROUTE, walk_route=None, walk_speed_mph=None)
 
             input_location_status = LocationStatusInfo(
                 location='Back of the Hill', arrival_route=DEFAULT_TRANSFER_ROUTE,
@@ -431,9 +426,8 @@ class TestSolver(unittest.TestCase):
     def test_get_nodes_after_transfer(self):
         analysis = MockAnalysis()
         subject = Traverser(analysis=analysis, data=MockData(), progress_between_pruning_progress_dict=None,
-                            prune_thoroughness=None, start_time=DEFAULT_START_TIME, stop_join_string='~~',
-                            transfer_duration_seconds=None, transfer_route=DEFAULT_TRANSFER_ROUTE, walk_route=None,
-                            walk_speed_mph=None)
+                            prune_thoroughness=None, stop_join_string='~~', transfer_duration_seconds=None,
+                            transfer_route=DEFAULT_TRANSFER_ROUTE, walk_route=None, walk_speed_mph=None)
 
         known_best_time = 5000
         input_location_status = LocationStatusInfo(
@@ -462,9 +456,8 @@ class TestSolver(unittest.TestCase):
         def test_after_walking_route():
             analysis = MockAnalysis()
             subject = Traverser(analysis=analysis, data=MockData(), progress_between_pruning_progress_dict=None,
-                                prune_thoroughness=None, start_time=DEFAULT_START_TIME, stop_join_string='~~',
-                                transfer_duration_seconds=None, transfer_route=DEFAULT_TRANSFER_ROUTE,
-                                walk_route='walk route', walk_speed_mph=3)
+                                prune_thoroughness=None, stop_join_string='~~', transfer_duration_seconds=None,
+                                transfer_route=DEFAULT_TRANSFER_ROUTE, walk_route='walk route', walk_speed_mph=3)
 
             input_location_status = LocationStatusInfo(
                 location='Wonderland', arrival_route=DEFAULT_TRANSFER_ROUTE, unvisited='~~Lynn~~')
@@ -486,9 +479,8 @@ class TestSolver(unittest.TestCase):
         def test_at_start():
             analysis = MockAnalysis()
             subject = Traverser(analysis=analysis, data=MockData(), progress_between_pruning_progress_dict=None,
-                                prune_thoroughness=None, start_time=DEFAULT_START_TIME, stop_join_string='~~',
-                                transfer_duration_seconds=None, transfer_route=DEFAULT_TRANSFER_ROUTE,
-                                walk_route='walk route', walk_speed_mph=3)
+                                prune_thoroughness=None, stop_join_string='~~', transfer_duration_seconds=None,
+                                transfer_route=DEFAULT_TRANSFER_ROUTE, walk_route='walk route', walk_speed_mph=3)
 
             input_location_status = LocationStatusInfo(
                 location='Wonderland', arrival_route=DEFAULT_TRANSFER_ROUTE, unvisited='~~Lynn~~')
@@ -508,9 +500,8 @@ class TestSolver(unittest.TestCase):
         def test_with_insufficient_time_to_walk():
             analysis = MockAnalysis()
             subject = Traverser(analysis=analysis, data=MockData(), progress_between_pruning_progress_dict=None,
-                                prune_thoroughness=None, start_time=DEFAULT_START_TIME, stop_join_string='~~',
-                                transfer_duration_seconds=None, transfer_route=DEFAULT_TRANSFER_ROUTE,
-                                walk_route='walk route', walk_speed_mph=3)
+                                prune_thoroughness=None, stop_join_string='~~', transfer_duration_seconds=None,
+                                transfer_route=DEFAULT_TRANSFER_ROUTE, walk_route='walk route', walk_speed_mph=3)
 
             input_location_status = LocationStatusInfo(
                 location='Wonderland', arrival_route=DEFAULT_TRANSFER_ROUTE, unvisited='~~Lynn~~')
@@ -530,9 +521,8 @@ class TestSolver(unittest.TestCase):
         def test_with_insufficient_time_to_travel():
             analysis = MockAnalysis()
             subject = Traverser(analysis=analysis, data=MockData(), progress_between_pruning_progress_dict=None,
-                                prune_thoroughness=None, start_time=DEFAULT_START_TIME, stop_join_string='~~',
-                                transfer_duration_seconds=None, transfer_route=DEFAULT_TRANSFER_ROUTE,
-                                walk_route='walk route', walk_speed_mph=3)
+                                prune_thoroughness=None, stop_join_string='~~', transfer_duration_seconds=None,
+                                transfer_route=DEFAULT_TRANSFER_ROUTE, walk_route='walk route', walk_speed_mph=3)
 
             input_location_status = LocationStatusInfo(
                 location='Wonderland', arrival_route=DEFAULT_TRANSFER_ROUTE, unvisited='~~Lynn~~')
@@ -569,9 +559,8 @@ class TestSolver(unittest.TestCase):
         def test_calculates_correct_result():
             analysis = MockAnalysis()
             subject = Traverser(analysis=analysis, data=MockData(), progress_between_pruning_progress_dict=None,
-                                prune_thoroughness=None, start_time=DEFAULT_START_TIME, stop_join_string='~~',
-                                transfer_duration_seconds=None, transfer_route=DEFAULT_TRANSFER_ROUTE,
-                                walk_route='walk route', walk_speed_mph=3)
+                                prune_thoroughness=None, stop_join_string='~~', transfer_duration_seconds=None,
+                                transfer_route=DEFAULT_TRANSFER_ROUTE, walk_route='walk route', walk_speed_mph=3)
 
             input_location_status = LocationStatusInfo(
                 location='Wonderland', arrival_route=DEFAULT_TRANSFER_ROUTE, unvisited='~~Lynn~~')
@@ -612,8 +601,8 @@ class TestSolver(unittest.TestCase):
     def test_initialize_progress_dict(self):
         def test_start_of_route():
             subject = Traverser(analysis=MockAnalysis(), data=MockData(), progress_between_pruning_progress_dict=None,
-                                prune_thoroughness=None, start_time=DEFAULT_START_TIME, stop_join_string='~~',
-                                transfer_duration_seconds=None, transfer_route=None, walk_route=None, walk_speed_mph=None)
+                                prune_thoroughness=None, stop_join_string='~~', transfer_duration_seconds=None,
+                                transfer_route=None, walk_route=None, walk_speed_mph=None)
             actual_dict, actual_start_time = subject.initialize_progress_dict(DEFAULT_START_TIME +
                                                                               timedelta(hours=7.01))
 
@@ -649,10 +638,12 @@ class TestSolver(unittest.TestCase):
 
         def test_middle_of_route():
             subject = Traverser(analysis=MockAnalysis(), data=MockData(), progress_between_pruning_progress_dict=None,
-                                prune_thoroughness=None, start_time=DEFAULT_START_TIME, stop_join_string='~~',
-                                transfer_duration_seconds=None, transfer_route=None, walk_route=None, walk_speed_mph=None)
-            actual_dict, actual_start_time = subject.initialize_progress_dict(DEFAULT_START_TIME +
-                                                                              timedelta(hours=8.01))
+                                prune_thoroughness=None, stop_join_string='~~', transfer_duration_seconds=None,
+                                transfer_route=None, walk_route=None, walk_speed_mph=None)
+            with patch.object(subject.data_munger, 'get_total_minimum_time', return_value=19800) as tmt_patch:
+                actual_dict, actual_start_time = subject.initialize_progress_dict(DEFAULT_START_TIME +
+                                                                                  timedelta(hours=8.01))
+                tmt_patch.assert_called_once_with(DEFAULT_START_TIME + timedelta(hours=8.01))
 
             sample_unvisited_string = {key.unvisited for key in actual_dict.keys()}.pop()
             expected_start_time = DEFAULT_START_TIME + timedelta(hours=9)
@@ -689,8 +680,8 @@ class TestSolver(unittest.TestCase):
 
         def test_no_valid_departures():
             subject = Traverser(analysis=MockAnalysis(), data=MockData(), progress_between_pruning_progress_dict=None,
-                                prune_thoroughness=None, start_time=DEFAULT_START_TIME, stop_join_string='~~',
-                                transfer_duration_seconds=None, transfer_route=None, walk_route=None, walk_speed_mph=None)
+                                prune_thoroughness=None, stop_join_string='~~', transfer_duration_seconds=None,
+                                transfer_route=None, walk_route=None, walk_speed_mph=None)
             actual_dict, actual_start_time = subject.initialize_progress_dict(DEFAULT_START_TIME +
                                                                               timedelta(hours=11.01))
 
@@ -707,9 +698,8 @@ class TestSolver(unittest.TestCase):
     def test_last_improving_ancestor(self):
         def test_close_to_start():
             subject = Traverser(analysis=MockAnalysis(), data=MockData(), progress_between_pruning_progress_dict=None,
-                                prune_thoroughness=None, start_time=DEFAULT_START_TIME, stop_join_string='~~',
-                                transfer_duration_seconds=None, transfer_route='transfer', walk_route=None,
-                                walk_speed_mph=None)
+                                prune_thoroughness=None, stop_join_string='~~', transfer_duration_seconds=None,
+                                transfer_route='transfer', walk_route=None, walk_speed_mph=None)
             subject._progress_dict = {
                 LocationStatusInfo(location='1', arrival_route='1', unvisited='~~1~~2~~3~~'):
                     ProgressInfo(duration=0, arrival_trip=None, trip_stop_no=1, children=None, parent=None,
@@ -723,9 +713,8 @@ class TestSolver(unittest.TestCase):
 
         def test_deep():
             subject = Traverser(analysis=MockAnalysis(), data=MockData(), progress_between_pruning_progress_dict=None,
-                                prune_thoroughness=None, start_time=DEFAULT_START_TIME, stop_join_string='~~',
-                                transfer_duration_seconds=None, transfer_route='transfer', walk_route='walk',
-                                walk_speed_mph=None)
+                                prune_thoroughness=None, stop_join_string='~~', transfer_duration_seconds=None,
+                                transfer_route='transfer', walk_route='walk', walk_speed_mph=None)
             location_1 = LocationStatusInfo(location='1', arrival_route='1', unvisited='~~1~~2~~3~~')
             location_2 = LocationStatusInfo(location='2', arrival_route='1', unvisited='~~3~~')
             location_3 = LocationStatusInfo(location='2', arrival_route='transfer', unvisited='~~3~~')
@@ -770,9 +759,8 @@ class TestSolver(unittest.TestCase):
     def test_location_has_been_reached_faster(self):
         def test_parent_does_not_count():
             subject = Traverser(analysis=MockAnalysis(), data=MockData(), progress_between_pruning_progress_dict=None,
-                                prune_thoroughness=None, start_time=DEFAULT_START_TIME, stop_join_string='~~',
-                                transfer_duration_seconds=None, transfer_route='transfer', walk_route=None,
-                                walk_speed_mph=None)
+                                prune_thoroughness=None, stop_join_string='~~', transfer_duration_seconds=None,
+                                transfer_route='transfer', walk_route=None, walk_speed_mph=None)
             location_1 = LocationStatusInfo(location='1', arrival_route='1', unvisited='~~1~~2~~3~~')
             subject._progress_dict = {
                 location_1:
@@ -784,9 +772,8 @@ class TestSolver(unittest.TestCase):
 
         def test_faster_path_causes_elimination():
             subject = Traverser(analysis=MockAnalysis(), data=MockData(), progress_between_pruning_progress_dict=None,
-                                prune_thoroughness=None, start_time=DEFAULT_START_TIME, stop_join_string='~~',
-                                transfer_duration_seconds=None, transfer_route='transfer', walk_route='walk',
-                                walk_speed_mph=None)
+                                prune_thoroughness=None, stop_join_string='~~', transfer_duration_seconds=None,
+                                transfer_route='transfer', walk_route='walk', walk_speed_mph=None)
             location_1 = LocationStatusInfo(location='1', arrival_route='1', unvisited='~~1~~2~~3~~4~~')
             location_2 = LocationStatusInfo(location='2', arrival_route='1', unvisited='~~3~~4~~')
             location_3 = LocationStatusInfo(location='2', arrival_route='transfer', unvisited='~~3~~4~~')
@@ -821,9 +808,8 @@ class TestSolver(unittest.TestCase):
 
         def test_slower_path_does_not_cause_elimination():
             subject = Traverser(analysis=MockAnalysis(), data=MockData(), progress_between_pruning_progress_dict=None,
-                                prune_thoroughness=None, start_time=DEFAULT_START_TIME, stop_join_string='~~',
-                                transfer_duration_seconds=None, transfer_route='transfer', walk_route='walk',
-                                walk_speed_mph=None)
+                                prune_thoroughness=None, stop_join_string='~~', transfer_duration_seconds=None,
+                                transfer_route='transfer', walk_route='walk', walk_speed_mph=None)
             location_1 = LocationStatusInfo(location='1', arrival_route='1', unvisited='~~1~~2~~3~~4~~')
             location_2 = LocationStatusInfo(location='2', arrival_route='1', unvisited='~~3~~4~~')
             location_3 = LocationStatusInfo(location='2', arrival_route='transfer', unvisited='~~3~~4~~')
@@ -900,9 +886,9 @@ class TestSolver(unittest.TestCase):
             6: child_progress_info._replace(children=set(), eliminated=True, parent=None),
             7: grandchild_progress_info._replace(eliminated=True, parent=None)
         }
-        subject = Traverser(analysis=None, data=None, progress_between_pruning_progress_dict=None, prune_thoroughness=None,
-                            start_time=None, stop_join_string=None, transfer_duration_seconds=None, transfer_route=None,
-                            walk_route=None, walk_speed_mph=None)
+        subject = Traverser(analysis=None, data=None, progress_between_pruning_progress_dict=None,
+                            prune_thoroughness=None, stop_join_string=None, transfer_duration_seconds=None,
+                            transfer_route=None, walk_route=None, walk_speed_mph=None)
         subject._progress_dict = input_progress_dict
         to_preserve = set()
         to_preserve.add(3)
@@ -911,9 +897,9 @@ class TestSolver(unittest.TestCase):
         self.assertDictEqual(expected, actual)
 
     def test_prune_progress_dict(self):
-        subject = Traverser(analysis=None, data=None, progress_between_pruning_progress_dict=None, prune_thoroughness=.5,
-                            start_time=None, stop_join_string='~~', transfer_duration_seconds=None, transfer_route=None,
-                            walk_route=None, walk_speed_mph=None)
+        subject = Traverser(analysis=None, data=None, progress_between_pruning_progress_dict=None,
+                            prune_thoroughness=.5, stop_join_string='~~', transfer_duration_seconds=None,
+                            transfer_route=None, walk_route=None, walk_speed_mph=None)
         location_1 = LocationStatusInfo(location='1', arrival_route=1, unvisited='~~a~~b~~c~~')
         location_2 = LocationStatusInfo(location='2', arrival_route=2, unvisited='~~a~~c~~d~~b~~')
         location_3 = LocationStatusInfo(location='3', arrival_route=3, unvisited='~~a~~')
@@ -948,8 +934,7 @@ class TestSolver(unittest.TestCase):
     def test_reset_time_to_nearest_station(self):
         def test_no_known_best_time():
             subject = Traverser(analysis=MockAnalysis(route_types_to_solve=[1]), data=MockData(),
-                                progress_between_pruning_progress_dict=5,
-                                prune_thoroughness=.1, start_time=DEFAULT_START_TIME, stop_join_string='~~',
+                                progress_between_pruning_progress_dict=5, prune_thoroughness=.1, stop_join_string='~~',
                                 transfer_duration_seconds=1, transfer_route='transfer', walk_route='walk',
                                 walk_speed_mph=1)
             all_stations = ['Wonderland', 'Heath Street', 'Back of the Hill', 'Bowdoin', 'Lynn', 'Alewife', 'Lechmere']
@@ -961,10 +946,10 @@ class TestSolver(unittest.TestCase):
 
         def test_known_best_time():
             subject = Traverser(analysis=MockAnalysis(route_types_to_solve=[1]), data=MockData(),
-                                progress_between_pruning_progress_dict=5,
-                                prune_thoroughness=.1, start_time=DEFAULT_START_TIME, stop_join_string='~~',
+                                progress_between_pruning_progress_dict=5, prune_thoroughness=.1, stop_join_string='~~',
                                 transfer_duration_seconds=1, transfer_route='transfer', walk_route='walk',
                                 walk_speed_mph=1)
+            subject._start_time = DEFAULT_START_TIME
 
             with patch.object(subject._nearest_station_finder, 'travel_time_secs_to_nearest_station', return_value=2):
                 subject.reset_time_to_nearest_station(known_best_time=1)
@@ -978,8 +963,7 @@ class TestSolver(unittest.TestCase):
     def test_reset_walking_coordinates(self):
         def test_no_known_best_time():
             subject = Traverser(analysis=MockAnalysis(route_types_to_solve=[1]), data=MockData(),
-                                progress_between_pruning_progress_dict=5,
-                                prune_thoroughness=.1, start_time=DEFAULT_START_TIME, stop_join_string='~~',
+                                progress_between_pruning_progress_dict=5, prune_thoroughness=.1, stop_join_string='~~',
                                 transfer_duration_seconds=1, transfer_route='transfer', walk_route='walk',
                                 walk_speed_mph=1)
 
@@ -989,7 +973,8 @@ class TestSolver(unittest.TestCase):
 
                 return 100
 
-            subject.reset_time_to_nearest_station(None)
+            with patch.object(subject._nearest_station_finder, 'travel_time_secs_to_nearest_station', return_value=0):
+                subject.reset_time_to_nearest_station(None)
 
             with patch.object(subject._solver, 'walk_time_seconds', new=walk_time_seconds):
                 subject.reset_walking_coordinates(known_best_time=None)
@@ -999,11 +984,11 @@ class TestSolver(unittest.TestCase):
             self.assertTrue('Heath Street' not in subject.get_walking_coordinates())
 
         def test_known_best_time():
-            subject = Traverser(analysis=MockAnalysis(route_types_to_solve=[1]),
-                                data=MockData(), progress_between_pruning_progress_dict=5,
-                                prune_thoroughness=.1, start_time=DEFAULT_START_TIME, stop_join_string='~~',
+            subject = Traverser(analysis=MockAnalysis(route_types_to_solve=[1]), data=MockData(),
+                                progress_between_pruning_progress_dict=5, prune_thoroughness=.1, stop_join_string='~~',
                                 transfer_duration_seconds=1, transfer_route='transfer', walk_route='walk',
                                 walk_speed_mph=1)
+            subject._start_time = DEFAULT_START_TIME
 
             def walk_time_seconds(lat1, lat2, long1, long2):
                 if long1 == 3 or long2 == 3:  # Heath Street is very far
@@ -1031,13 +1016,14 @@ class TestSolver(unittest.TestCase):
             self.assertTrue('Lechmere' not in subject.get_walking_coordinates())
 
         def test_insufficient_travel_time():
-            subject = Traverser(analysis=MockAnalysis(route_types_to_solve=[1]),
-                                data=MockData(), progress_between_pruning_progress_dict=5,
-                                prune_thoroughness=.1, start_time=DEFAULT_START_TIME, stop_join_string='~~',
+            subject = Traverser(analysis=MockAnalysis(route_types_to_solve=[1]), data=MockData(),
+                                progress_between_pruning_progress_dict=5, prune_thoroughness=.1, stop_join_string='~~',
                                 transfer_duration_seconds=1, transfer_route='transfer', walk_route='walk',
                                 walk_speed_mph=1)
+            subject._start_time = DEFAULT_START_TIME
 
-            subject.reset_time_to_nearest_station(None)
+            with patch.object(subject._nearest_station_finder, 'travel_time_secs_to_nearest_station', return_value=0):
+                subject.reset_time_to_nearest_station(None)
             subject._time_to_nearest_station['Back of the Hill'] = 1001
 
             coordinates = subject.data_munger.get_all_stop_coordinates()

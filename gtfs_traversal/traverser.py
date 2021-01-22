@@ -9,8 +9,8 @@ from datetime import timedelta, datetime
 
 
 class Traverser:
-    def __init__(self, analysis, data, progress_between_pruning_progress_dict, prune_thoroughness, start_time,
-                 stop_join_string, transfer_duration_seconds, transfer_route, walk_route, walk_speed_mph):
+    def __init__(self, analysis, data, progress_between_pruning_progress_dict, prune_thoroughness, stop_join_string,
+                 transfer_duration_seconds, transfer_route, walk_route, walk_speed_mph):
         self.walk_speed_mph = walk_speed_mph
         self.STOP_JOIN_STRING = stop_join_string
         self.TRANSFER_ROUTE = transfer_route
@@ -38,12 +38,7 @@ class Traverser:
         self._trip_schedules = None
         self._walking_coordinates = None
 
-        self.data_munger = DataMunger(
-            analysis=analysis,
-            data=data,
-            start_time=start_time,
-            stop_join_string=stop_join_string,
-        )
+        self.data_munger = DataMunger(analysis=analysis, data=data, stop_join_string=stop_join_string)
 
         self._nearest_station_finder = NearestStationFinder(data_munger=self.data_munger)
 
@@ -92,7 +87,8 @@ class Traverser:
         new_unvisited_stop_ids = new_unvisited_stop_string.strip(self.STOP_JOIN_STRING).split(self.STOP_JOIN_STRING) \
             if not self.is_solution(new_unvisited_stop_string) else []
         new_unvisited_stops = [self._string_shortener.lengthen(stop_id) for stop_id in new_unvisited_stop_ids]
-        new_minimum_remaining_travel_time = self.data_munger.get_minimum_remaining_time(new_unvisited_stops)
+        new_minimum_remaining_travel_time = self.data_munger.get_minimum_remaining_time(new_unvisited_stops,
+                                                                                        self._start_time)
 
         new_minimum_remaining_transfer_time = \
             self.data_munger.get_minimum_remaining_transfers(route, new_unvisited_stops) * \
@@ -206,9 +202,9 @@ class Traverser:
 
         return self._time_to_nearest_station
 
-    def get_total_minimum_time(self):
+    def get_total_minimum_time(self, start_time):
         if self._total_minimum_time is None:
-            self._total_minimum_time = self.data_munger.get_total_minimum_time()
+            self._total_minimum_time = self.data_munger.get_total_minimum_time(start_time)
 
         return self._total_minimum_time
 
@@ -336,7 +332,8 @@ class Traverser:
                     nodes_to_eliminate.add(parent)
 
     def reset_time_to_nearest_station(self, known_best_time):
-        abs_max_walk_time = None if known_best_time is None else known_best_time - self.get_total_minimum_time()
+        abs_max_walk_time = None if known_best_time is None else \
+            known_best_time - self.get_total_minimum_time(self._start_time)
         all_stations = self.data_munger.get_all_stop_coordinates().keys()
         solution_stations = self.data_munger.get_unique_stops_to_solve()
         times_to_nearest_station = {
@@ -348,7 +345,8 @@ class Traverser:
         } if abs_max_walk_time is not None else times_to_nearest_station
 
     def reset_walking_coordinates(self, known_best_time):
-        abs_max_walk_time = None if known_best_time is None else known_best_time - self.get_total_minimum_time()
+        abs_max_walk_time = None if known_best_time is None else \
+            known_best_time - self.get_total_minimum_time(self._start_time)
         all_coordinates = self.data_munger.get_all_stop_coordinates()
         solution_stops = self.data_munger.get_unique_stops_to_solve()
         self._walking_coordinates = dict()
@@ -470,7 +468,7 @@ class Traverser:
                                                    unvisited=self.get_initial_unsolved_string())
                 progress_info = ProgressInfo(duration=0, parent=None, children=None,
                                              arrival_trip=trip, trip_stop_no=stop_number,
-                                             minimum_remaining_time=self.get_total_minimum_time(),
+                                             minimum_remaining_time=self.get_total_minimum_time(begin_time),
                                              expanded=False, eliminated=False)
                 progress_dict[location_info] = progress_info
                 if departure_time <= best_departure_time:
