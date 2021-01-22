@@ -3,5 +3,7 @@ class NearestStationFinder:
         pass
 
     @staticmethod
-    def travel_time_secs_to_nearest_station():
-        return 0
+    def travel_time_secs_to_nearest_station(origin, solutions):
+        if origin in solutions:
+            return 0
+        return 1

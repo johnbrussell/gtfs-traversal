@@ -338,8 +338,9 @@ class Traverser:
     def reset_time_to_nearest_station(self, known_best_time):
         abs_max_walk_time = None if known_best_time is None else known_best_time - self.get_total_minimum_time()
         all_stations = self.data_munger.get_all_stop_coordinates().keys()
+        solution_stations = self.data_munger.get_unique_stops_to_solve()
         times_to_nearest_station = {
-            station: self._nearest_station_finder.travel_time_secs_to_nearest_station()
+            station: self._nearest_station_finder.travel_time_secs_to_nearest_station(station, solution_stations)
             for station in all_stations
         }
         self._time_to_nearest_station = {
