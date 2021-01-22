@@ -45,7 +45,7 @@ class Traverser:
             stop_join_string=stop_join_string,
         )
 
-        self._nearest_station_finder = NearestStationFinder()
+        self._nearest_station_finder = NearestStationFinder(data_munger=self.data_munger)
 
         self._solver = Solver(
             walk_speed_mph=walk_speed_mph,
