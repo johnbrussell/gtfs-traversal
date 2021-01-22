@@ -371,6 +371,9 @@ class Traverser:
 
                 wts = self._solver.walk_time_seconds(all_coordinates[stop1].lat, coordinates.lat,
                                                      all_coordinates[stop1].long, coordinates.long)
+
+                # hm, what if there is a transfer between stops that are distant but have very fast travel times to
+                #  solution stops?
                 if wts + self.get_time_to_nearest_station()[stop3] <= max_walk_time:
                     self._walking_coordinates[stop3] = coordinates
 
