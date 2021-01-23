@@ -999,7 +999,8 @@ class TestSolver(unittest.TestCase):
                     return 200000
                 return 500  # Everything else is close
 
-            subject.reset_time_to_nearest_station(None)
+            with patch.object(subject._nearest_station_finder, 'travel_time_secs_to_nearest_station', return_value=0):
+                subject.reset_time_to_nearest_station(None)
 
             coordinates = subject.data_munger.get_all_stop_coordinates()
 

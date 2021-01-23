@@ -263,7 +263,8 @@ class Traverser:
         # Filtering walk times to exclude non-solution stops whose next stop is closer doesn't seem to improve speed.
         #  But, this was determined before working to reduce the number of walking expansions - 0ef8ae6 can revert this
 
-        del stop_walk_times[location_status.location]
+        if location_status.location in stop_walk_times:
+            del stop_walk_times[location_status.location]
 
         return [
             (
@@ -337,7 +338,8 @@ class Traverser:
         all_stations = self.data_munger.get_all_stop_coordinates().keys()
         solution_stations = self.data_munger.get_unique_stops_to_solve()
         times_to_nearest_station = {
-            station: self._nearest_station_finder.travel_time_secs_to_nearest_station(station, solution_stations)
+            station: self._nearest_station_finder.travel_time_secs_to_nearest_station(station, solution_stations,
+                                                                                      self._start_time)
             for station in all_stations
         }
         self._time_to_nearest_station = {
