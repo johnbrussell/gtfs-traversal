@@ -18,6 +18,12 @@ class NearestStationFinder:
             return 0
         return self._find_travel_time_secs(origin, solutions, analysis_start_time)
 
+    def _find_next_travel_time_secs(self, route, trip, origin, origin_stop_number, next_stop_number):
+        self._initialize_progress_dict(route, trip, origin, origin_stop_number)
+        self._exp_queue = ExpansionQueue(1, STOP_JOIN_STRING)
+        return self._data_munger.get_travel_time_between_stops_in_seconds(
+            trip, origin_stop_number, next_stop_number)
+
     def _find_travel_time_secs(self, origin, solutions, analysis_start_time):
         best_travel_time = 24 * 60 * 60
         for route in self._routes_at_station(origin):
@@ -33,10 +39,8 @@ class NearestStationFinder:
                 departure_time, trip = self._data_munger.first_trip_after(departure_time, route, origin)
                 if trip is not None:
                     if int(next_stop_number) > int(origin_stop_number):
-                        self._initialize_progress_dict(route, trip, origin, origin_stop_number)
-                        self._exp_queue = ExpansionQueue(1, STOP_JOIN_STRING)
-                        travel_time = self._data_munger.get_travel_time_between_stops_in_seconds(
-                            trip, origin_stop_number, next_stop_number)
+                        travel_time = self._find_next_travel_time_secs(route, trip, origin, origin_stop_number,
+                                                                       next_stop_number)
                         best_travel_time = min(travel_time, best_travel_time)
                     else:
                         print(f"trip {trip} potentially visits stop {next_stop} multiple times")
