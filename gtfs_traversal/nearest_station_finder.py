@@ -21,6 +21,7 @@ class NearestStationFinder:
     def _find_next_travel_time_secs(self, route, trip, origin, origin_stop_number, next_stop_number):
         self._initialize_progress_dict(route, trip, origin, origin_stop_number)
         self._exp_queue = ExpansionQueue(1, STOP_JOIN_STRING)
+        self._exp_queue.add(self._progress_dict.keys())
         return self._data_munger.get_travel_time_between_stops_in_seconds(
             trip, origin_stop_number, next_stop_number)
 
