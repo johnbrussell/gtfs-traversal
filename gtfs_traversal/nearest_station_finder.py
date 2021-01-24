@@ -1,12 +1,17 @@
 from datetime import timedelta
 
 from gtfs_traversal.data_structures import *
+from gtfs_traversal.expansion_queue import ExpansionQueue
+
+
+STOP_JOIN_STRING = '~~'
 
 
 class NearestStationFinder:
     def __init__(self, data_munger):
         self._data_munger = data_munger
-        self._progress_dict = dict()
+        self._exp_queue = None
+        self._progress_dict = None
 
     def travel_time_secs_to_nearest_station(self, origin, solutions, analysis_start_time):
         if origin in solutions:
@@ -29,6 +34,7 @@ class NearestStationFinder:
                 if trip is not None:
                     if int(next_stop_number) > int(origin_stop_number):
                         self._initialize_progress_dict(route, trip, origin, origin_stop_number)
+                        self._exp_queue = ExpansionQueue(1, STOP_JOIN_STRING)
                         travel_time = self._data_munger.get_travel_time_between_stops_in_seconds(
                             trip, origin_stop_number, next_stop_number)
                         best_travel_time = min(travel_time, best_travel_time)
@@ -41,7 +47,7 @@ class NearestStationFinder:
 
     @staticmethod
     def _get_initial_unsolved_string():
-        return "any solution stop"
+        return f"{STOP_JOIN_STRING}any solution stop{STOP_JOIN_STRING}"
 
     def _initialize_progress_dict(self, route, trip, origin, origin_stop_number):
         location_info = LocationStatusInfo(location=origin, arrival_route=route,
