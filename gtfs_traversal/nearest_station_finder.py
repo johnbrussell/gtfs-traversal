@@ -18,15 +18,20 @@ class NearestStationFinder:
             return 0
         return self._find_travel_time_secs(origin, solutions, analysis_start_time)
 
-    def _find_next_travel_time_secs(self, route, trip, origin, origin_stop_number, next_stop_number):
+    def _expand(self, known_best_time):
+        return known_best_time
+
+    def _find_next_travel_time_secs(self, route, trip, origin, origin_stop_number, next_stop_number, known_best_time):
         self._initialize_progress_dict(route, trip, origin, origin_stop_number)
         self._exp_queue = ExpansionQueue(1, STOP_JOIN_STRING)
         self._exp_queue.add(self._progress_dict.keys())
+        while not self._exp_queue.is_empty():
+            known_best_time = self._expand(known_best_time)
         return self._data_munger.get_travel_time_between_stops_in_seconds(
             trip, origin_stop_number, next_stop_number)
 
     def _find_travel_time_secs(self, origin, solutions, analysis_start_time):
-        best_travel_time = 24 * 60 * 60
+        best_travel_time = None
         for route in self._routes_at_station(origin):
             next_stop = self._data_munger.get_next_stop_id(origin, route)
             if next_stop is None:
@@ -41,8 +46,9 @@ class NearestStationFinder:
                 if trip is not None:
                     if int(next_stop_number) > int(origin_stop_number):
                         travel_time = self._find_next_travel_time_secs(route, trip, origin, origin_stop_number,
-                                                                       next_stop_number)
-                        best_travel_time = min(travel_time, best_travel_time)
+                                                                       next_stop_number, best_travel_time)
+                        best_travel_time = min(travel_time,
+                                               best_travel_time if best_travel_time is not None else travel_time)
                     else:
                         print(f"trip {trip} potentially visits stop {next_stop} multiple times")
                     departure_time += timedelta(seconds=1)
