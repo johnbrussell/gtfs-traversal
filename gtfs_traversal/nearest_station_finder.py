@@ -1,9 +1,12 @@
 from datetime import timedelta
 
+from gtfs_traversal.data_structures import *
+
 
 class NearestStationFinder:
     def __init__(self, data_munger):
         self._data_munger = data_munger
+        self._progress_dict = dict()
 
     def travel_time_secs_to_nearest_station(self, origin, solutions, analysis_start_time):
         if origin in solutions:
@@ -25,6 +28,7 @@ class NearestStationFinder:
                 departure_time, trip = self._data_munger.first_trip_after(departure_time, route, origin)
                 if trip is not None:
                     if int(next_stop_number) > int(origin_stop_number):
+                        self._initialize_progress_dict(route, trip, origin, origin_stop_number)
                         travel_time = self._data_munger.get_travel_time_between_stops_in_seconds(
                             trip, origin_stop_number, next_stop_number)
                         best_travel_time = min(travel_time, best_travel_time)
@@ -34,6 +38,18 @@ class NearestStationFinder:
 
         # Currently returns minimum travel time in seconds to next stop
         return best_travel_time
+
+    @staticmethod
+    def _get_initial_unsolved_string():
+        return "any solution stop"
+
+    def _initialize_progress_dict(self, route, trip, origin, origin_stop_number):
+        location_info = LocationStatusInfo(location=origin, arrival_route=route,
+                                           unvisited=self._get_initial_unsolved_string())
+        progress_info = ProgressInfo(duration=0, parent=None, children=None,
+                                     arrival_trip=trip, trip_stop_no=origin_stop_number,
+                                     minimum_remaining_time=0, expanded=False, eliminated=False)
+        self._progress_dict = {location_info: progress_info}
 
     def _routes_at_station(self, station):
         return self._data_munger.get_routes_at_stop(station)
