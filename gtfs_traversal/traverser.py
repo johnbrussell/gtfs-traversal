@@ -481,7 +481,8 @@ class Traverser:
 
         progress_dict = {location: progress for location, progress in progress_dict.items() if
                          location in optimal_start_locations}
-        return progress_dict, best_departure_time
+        self._progress_dict = progress_dict
+        self._start_time = best_departure_time
 
     def prunable_nodes(self):
         return [k for k, v in self._progress_dict.items() if v.eliminated]
@@ -519,7 +520,7 @@ class Traverser:
                 print(stop)
 
     def find_solution(self, begin_time, known_best_time):
-        self._progress_dict, self._start_time = self.initialize_progress_dict(begin_time)
+        self.initialize_progress_dict(begin_time)
         self._exp_queue = ExpansionQueue(len(self.data_munger.get_unique_stops_to_solve()), self.STOP_JOIN_STRING)
         if len(self._progress_dict) > 0:
             self._exp_queue.add(self._progress_dict.keys())

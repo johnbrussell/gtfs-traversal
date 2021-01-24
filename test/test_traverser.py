@@ -603,8 +603,9 @@ class TestSolver(unittest.TestCase):
             subject = Traverser(analysis=MockAnalysis(), data=MockData(), progress_between_pruning_progress_dict=None,
                                 prune_thoroughness=None, stop_join_string='~~', transfer_duration_seconds=None,
                                 transfer_route=None, walk_route=None, walk_speed_mph=None)
-            actual_dict, actual_start_time = subject.initialize_progress_dict(DEFAULT_START_TIME +
-                                                                              timedelta(hours=7.01))
+            subject.initialize_progress_dict(DEFAULT_START_TIME + timedelta(hours=7.01))
+            actual_dict = subject._progress_dict
+            actual_start_time = subject._start_time
 
             sample_unvisited_string = {key.unvisited for key in actual_dict.keys()}.pop()
             expected_start_time = DEFAULT_START_TIME + timedelta(hours=8)
@@ -641,10 +642,11 @@ class TestSolver(unittest.TestCase):
                                 prune_thoroughness=None, stop_join_string='~~', transfer_duration_seconds=None,
                                 transfer_route=None, walk_route=None, walk_speed_mph=None)
             with patch.object(subject.data_munger, 'get_total_minimum_time', return_value=19800) as tmt_patch:
-                actual_dict, actual_start_time = subject.initialize_progress_dict(DEFAULT_START_TIME +
-                                                                                  timedelta(hours=8.01))
+                subject.initialize_progress_dict(DEFAULT_START_TIME + timedelta(hours=8.01))
                 tmt_patch.assert_called_once_with(DEFAULT_START_TIME + timedelta(hours=8.01))
 
+            actual_dict = subject._progress_dict
+            actual_start_time = subject._start_time
             sample_unvisited_string = {key.unvisited for key in actual_dict.keys()}.pop()
             expected_start_time = DEFAULT_START_TIME + timedelta(hours=9)
 
@@ -682,8 +684,9 @@ class TestSolver(unittest.TestCase):
             subject = Traverser(analysis=MockAnalysis(), data=MockData(), progress_between_pruning_progress_dict=None,
                                 prune_thoroughness=None, stop_join_string='~~', transfer_duration_seconds=None,
                                 transfer_route=None, walk_route=None, walk_speed_mph=None)
-            actual_dict, actual_start_time = subject.initialize_progress_dict(DEFAULT_START_TIME +
-                                                                              timedelta(hours=11.01))
+            subject.initialize_progress_dict(DEFAULT_START_TIME + timedelta(hours=11.01))
+            actual_dict = subject._progress_dict
+            actual_start_time = subject._start_time
 
             expected_start_time = None
             expected_dict = {}
