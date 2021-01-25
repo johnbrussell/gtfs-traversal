@@ -2,7 +2,10 @@ import unittest
 
 from datetime import datetime
 from gtfs_traversal.data_munger import DataMunger
+from gtfs_traversal.data_structures import *
+from gtfs_traversal.expansion_queue import ExpansionQueue
 from gtfs_traversal.nearest_station_finder import NearestStationFinder
+from unittest.mock import patch
 
 
 DEFAULT_START_DATE = '2020-01-01'
@@ -10,6 +13,85 @@ DEFAULT_START_TIME = datetime.strptime(DEFAULT_START_DATE, '%Y-%m-%d')
 
 
 class TestNearestStationFinder(unittest.TestCase):
+    def test_expand(self):
+        def test_solved():
+            subject = NearestStationFinder(data_munger=None)
+            location_status = LocationStatusInfo(location=1, arrival_route=2, unvisited='~~')
+            progress = ProgressInfo(duration=None, arrival_trip=None, trip_stop_no=None, parent=None, children=None,
+                                    minimum_remaining_time=None, expanded=False, eliminated=False)
+            subject._progress_dict = dict()
+            subject._exp_queue = ExpansionQueue(1, '~~')
+            subject._progress_dict[location_status] = progress
+
+            expected = None
+            with patch.object(subject._exp_queue, 'pop', return_value=location_status) as pop_patch:
+                actual = subject._expand(None)
+                pop_patch.assert_called_once_with(subject._progress_dict)
+
+            self.assertEqual(expected, actual)
+            self.assertEqual(subject._progress_dict[location_status], progress)
+
+        def test_expanded():
+            subject = NearestStationFinder(data_munger=None)
+            location_status = LocationStatusInfo(location=1, arrival_route=2, unvisited='~~stop~~')
+            progress = ProgressInfo(duration=None, arrival_trip=None, trip_stop_no=None, parent=None, children=None,
+                                    minimum_remaining_time=None, expanded=True, eliminated=False)
+            subject._progress_dict = dict()
+            subject._exp_queue = ExpansionQueue(1, '~~')
+            subject._progress_dict[location_status] = progress
+
+            expected = None
+            with patch.object(subject._exp_queue, 'pop', return_value=location_status):
+                actual = subject._expand(None)
+
+            self.assertEqual(expected, actual)
+            self.assertEqual(subject._progress_dict[location_status], progress)
+
+        def test_eliminated():
+            subject = NearestStationFinder(data_munger=None)
+            location_status = LocationStatusInfo(location=1, arrival_route=2, unvisited='~~stop~~')
+            progress = ProgressInfo(duration=None, arrival_trip=None, trip_stop_no=None, parent=None, children=None,
+                                    minimum_remaining_time=None, expanded=False, eliminated=True)
+            subject._progress_dict = dict()
+            subject._exp_queue = ExpansionQueue(1, '~~')
+            subject._progress_dict[location_status] = progress
+
+            expected = None
+            with patch.object(subject._exp_queue, 'pop', return_value=location_status):
+                actual = subject._expand(None)
+
+            self.assertEqual(expected, actual)
+            self.assertEqual(subject._progress_dict[location_status], progress)
+
+        def test_calculate_expansion():
+            subject = NearestStationFinder(data_munger=None)
+            location_status = LocationStatusInfo(location=1, arrival_route=2, unvisited='~~stop~~')
+            progress = ProgressInfo(duration=None, arrival_trip=None, trip_stop_no=None, parent=None, children=None,
+                                    minimum_remaining_time=None, expanded=False, eliminated=False)
+            subject._progress_dict = dict()
+            subject._exp_queue = ExpansionQueue(1, '~~')
+            subject._progress_dict[location_status] = progress
+            expanded_progress = ProgressInfo(duration=None, arrival_trip=None, trip_stop_no=None, parent=None,
+                                             children=None, minimum_remaining_time=None, expanded=True,
+                                             eliminated=False)
+
+            expected = 3
+
+            with patch.object(subject, '_get_new_nodes') as get_new_nodes_patch:
+                with patch.object(subject, '_add_new_nodes_to_progress_dict', return_value=3) as add_new_nodes_patch:
+                    with patch.object(subject._exp_queue, 'pop', return_value=location_status):
+                        actual = subject._expand(None)
+                    get_new_nodes_patch.assert_called_once()
+                    add_new_nodes_patch.assert_called_once()
+
+            self.assertEqual(expected, actual)
+            self.assertEqual(subject._progress_dict[location_status], expanded_progress)
+
+        test_solved()
+        test_eliminated()
+        test_expanded()
+        test_calculate_expansion()
+
     def test__find_travel_time_secs(self):
         def test_returns_minimum_time_to_next_stop():
             data_munger = DataMunger(MockAnalysis(route_types_to_solve=[2]), MockData(), '~~')

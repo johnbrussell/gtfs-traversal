@@ -18,8 +18,22 @@ class NearestStationFinder:
             return 0
         return self._find_travel_time_secs(origin, solutions, analysis_start_time)
 
-    def _expand(self, known_best_time):
+    def _add_new_nodes_to_progress_dict(self, new_nodes, known_best_time, location_status):
         return known_best_time
+
+    def _expand(self, known_best_time):
+        location_status = self._exp_queue.pop(self._progress_dict)
+
+        if self._is_solution(location_status.unvisited) \
+                or self._progress_dict[location_status].expanded \
+                or self._progress_dict[location_status].eliminated:
+            return known_best_time
+
+        self._progress_dict[location_status] = self._progress_dict[location_status]._replace(expanded=True)
+
+        new_nodes = self._get_new_nodes(location_status, known_best_time)
+
+        return self._add_new_nodes_to_progress_dict(new_nodes, known_best_time, location_status)
 
     def _find_next_travel_time_secs(self, route, trip, origin, origin_stop_number, next_stop_number, known_best_time):
         self._initialize_progress_dict(route, trip, origin, origin_stop_number)
@@ -60,6 +74,9 @@ class NearestStationFinder:
     def _get_initial_unsolved_string():
         return f"{STOP_JOIN_STRING}any solution stop{STOP_JOIN_STRING}"
 
+    def _get_new_nodes(self, location_status, known_best_time):
+        return []
+
     def _initialize_progress_dict(self, route, trip, origin, origin_stop_number):
         location_info = LocationStatusInfo(location=origin, arrival_route=route,
                                            unvisited=self._get_initial_unsolved_string())
@@ -67,6 +84,10 @@ class NearestStationFinder:
                                      arrival_trip=trip, trip_stop_no=origin_stop_number,
                                      minimum_remaining_time=0, expanded=False, eliminated=False)
         self._progress_dict = {location_info: progress_info}
+
+    @staticmethod
+    def _is_solution(unvisited_string):
+        return unvisited_string == STOP_JOIN_STRING
 
     def _routes_at_station(self, station):
         return self._data_munger.get_routes_at_stop(station)
