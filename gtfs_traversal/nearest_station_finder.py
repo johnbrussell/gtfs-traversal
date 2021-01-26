@@ -5,6 +5,8 @@ from gtfs_traversal.expansion_queue import ExpansionQueue
 
 
 STOP_JOIN_STRING = '~~'
+TRANSFER_ROUTE = 'transfer route'
+WALK_ROUTE = 'walk route'
 
 
 class NearestStationFinder:
@@ -75,7 +77,24 @@ class NearestStationFinder:
         return f"{STOP_JOIN_STRING}any solution stop{STOP_JOIN_STRING}"
 
     def _get_new_nodes(self, location_status, known_best_time):
+        if location_status.arrival_route == TRANSFER_ROUTE:
+            return self._get_nodes_after_transfer(location_status, known_best_time)
+
+        transfer_node = self._get_transfer_data(location_status)
+
+        if location_status.arrival_route == WALK_ROUTE:
+            return [transfer_node]
+
+        return [transfer_node, self._get_next_stop_data_for_trip(location_status)]
+
+    def _get_next_stop_data_for_trip(self, location_status):
+        return None
+
+    def _get_nodes_after_transfer(self, location_status, known_best_time):
         return []
+
+    def _get_transfer_data(self, location_status):
+        return None
 
     def _initialize_progress_dict(self, route, trip, origin, origin_stop_number):
         location_info = LocationStatusInfo(location=origin, arrival_route=route,
