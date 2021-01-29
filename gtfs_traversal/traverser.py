@@ -9,7 +9,12 @@ from gtfs_traversal.solver import Solver
 
 class Traverser(Solver):
     def _get_nearest_station_finder(self):
-        return NearestStationFinder(data_munger=self._data_munger)
+        return NearestStationFinder(analysis=self._analysis, data=self._data_munger.data,
+                                    progress_between_pruning_progress_dict=self._expansions_to_prune,
+                                    prune_thoroughness=self._prune_severity, stop_join_string=self._stop_join_string,
+                                    transfer_duration_seconds=self._transfer_duration_seconds,
+                                    transfer_route=self._transfer_route, walk_route=self._walk_route,
+                                    walk_speed_mph=self._walk_speed_mph)
 
     def _reset_time_to_nearest_station(self, known_best_time):
         abs_max_walk_time = None if known_best_time is None else \
