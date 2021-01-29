@@ -22,8 +22,8 @@ class Traverser(Solver):
         all_stations = self._data_munger.get_all_stop_coordinates().keys()
         solution_stations = self._data_munger.get_unique_stops_to_solve()
         times_to_nearest_station = {
-            station: self._get_nearest_station_finder().travel_time_secs_to_nearest_station(station, solution_stations,
-                                                                                            self._start_time)
+            station: self._get_nearest_station_finder().travel_time_secs_to_nearest_solution_station(station, solution_stations,
+                                                                                                     self._start_time)
             for station in all_stations
         }
         self._time_to_nearest_station = {
