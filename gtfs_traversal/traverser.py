@@ -16,20 +16,6 @@ class Traverser(Solver):
                                     transfer_route=self._transfer_route, walk_route=self._walk_route,
                                     walk_speed_mph=self._walk_speed_mph)
 
-    def _reset_time_to_nearest_station(self, known_best_time):
-        abs_max_walk_time = None if known_best_time is None else \
-            known_best_time - self._get_total_minimum_time(self._start_time)
-        all_stations = self._data_munger.get_all_stop_coordinates().keys()
-        solution_stations = self._data_munger.get_unique_stops_to_solve()
-        times_to_nearest_station = {
-            station: self._get_nearest_station_finder().travel_time_secs_to_nearest_solution_station(station, solution_stations,
-                                                                                                     self._start_time)
-            for station in all_stations
-        }
-        self._time_to_nearest_station = {
-            station: time for station, time in times_to_nearest_station.items() if time <= abs_max_walk_time
-        } if abs_max_walk_time is not None else times_to_nearest_station
-
     def initialize_progress_dict(self, begin_time):
         progress_dict = dict()
         best_departure_time = None

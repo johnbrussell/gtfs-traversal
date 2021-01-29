@@ -224,7 +224,7 @@ class Solver:
 
     def _get_time_to_nearest_station(self):
         if self._time_to_nearest_station is None:
-            self._reset_time_to_nearest_station(None)
+            self._reset_time_to_nearest_station()
 
         return self._time_to_nearest_station
 
@@ -390,7 +390,7 @@ class Solver:
 
         return True
 
-    def _reset_time_to_nearest_station(self, known_best_time):
+    def _reset_time_to_nearest_station(self):
         self._time_to_nearest_station = {
             station: 0 for station in self._data_munger.get_all_stop_coordinates().keys()
         }

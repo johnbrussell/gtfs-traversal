@@ -146,35 +146,6 @@ class TestSolver(unittest.TestCase):
         self.assertDictEqual(expected_progress_dict, actual_progress_dict)
         self.assertDictEqual(expected_expansion_queue_queue, actual_expansion_queue_queue)
 
-    def test_reset_time_to_nearest_station(self):
-        def test_no_known_best_time():
-            subject = Traverser(analysis=MockAnalysis(route_types_to_solve=[1]), data=MockData(),
-                                progress_between_pruning_progress_dict=5, prune_thoroughness=.1, stop_join_string='~~',
-                                transfer_duration_seconds=1, transfer_route='transfer', walk_route='walk',
-                                walk_speed_mph=1)
-            all_stations = ['Wonderland', 'Heath Street', 'Back of the Hill', 'Bowdoin', 'Lynn', 'Alewife', 'Lechmere']
-            with patch.object(subject, '_get_nearest_station_finder', return_value=MockNearestStationFinder(2)):
-                subject._reset_time_to_nearest_station(known_best_time=None)
-            expected = {station: 2 for station in all_stations}
-            actual = subject._time_to_nearest_station
-            self.assertDictEqual(actual, expected)
-
-        def test_known_best_time():
-            subject = Traverser(analysis=MockAnalysis(route_types_to_solve=[1]), data=MockData(),
-                                progress_between_pruning_progress_dict=5, prune_thoroughness=.1, stop_join_string='~~',
-                                transfer_duration_seconds=1, transfer_route='transfer', walk_route='walk',
-                                walk_speed_mph=1)
-            subject._start_time = DEFAULT_START_TIME
-
-            with patch.object(subject, '_get_nearest_station_finder', return_value=MockNearestStationFinder(2)):
-                subject._reset_time_to_nearest_station(known_best_time=1)
-            expected = dict()
-            actual = subject._time_to_nearest_station
-            self.assertDictEqual(actual, expected)
-
-        test_known_best_time()
-        test_no_known_best_time()
-
 
 class MockData:
     def __init__(self):
