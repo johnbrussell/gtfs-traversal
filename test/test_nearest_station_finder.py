@@ -13,151 +13,21 @@ DEFAULT_START_TIME = datetime.strptime(DEFAULT_START_DATE, '%Y-%m-%d')
 
 
 class TestNearestStationFinder(unittest.TestCase):
-    def test_expand(self):
-        def test_solved():
-            subject = NearestStationFinder(data_munger=None)
-            location_status = LocationStatusInfo(location=1, arrival_route=2, unvisited='~~')
-            progress = ProgressInfo(duration=None, arrival_trip=None, trip_stop_no=None, parent=None, children=None,
-                                    minimum_remaining_time=None, expanded=False, eliminated=False)
-            subject._progress_dict = dict()
-            subject._exp_queue = ExpansionQueue(1, '~~')
-            subject._progress_dict[location_status] = progress
-
-            expected = None
-            with patch.object(subject._exp_queue, 'pop', return_value=location_status) as pop_patch:
-                actual = subject._expand(None)
-                pop_patch.assert_called_once_with(subject._progress_dict)
-
-            self.assertEqual(expected, actual)
-            self.assertEqual(subject._progress_dict[location_status], progress)
-
-        def test_expanded():
-            subject = NearestStationFinder(data_munger=None)
-            location_status = LocationStatusInfo(location=1, arrival_route=2, unvisited='~~stop~~')
-            progress = ProgressInfo(duration=None, arrival_trip=None, trip_stop_no=None, parent=None, children=None,
-                                    minimum_remaining_time=None, expanded=True, eliminated=False)
-            subject._progress_dict = dict()
-            subject._exp_queue = ExpansionQueue(1, '~~')
-            subject._progress_dict[location_status] = progress
-
-            expected = None
-            with patch.object(subject._exp_queue, 'pop', return_value=location_status):
-                actual = subject._expand(None)
-
-            self.assertEqual(expected, actual)
-            self.assertEqual(subject._progress_dict[location_status], progress)
-
-        def test_eliminated():
-            subject = NearestStationFinder(data_munger=None)
-            location_status = LocationStatusInfo(location=1, arrival_route=2, unvisited='~~stop~~')
-            progress = ProgressInfo(duration=None, arrival_trip=None, trip_stop_no=None, parent=None, children=None,
-                                    minimum_remaining_time=None, expanded=False, eliminated=True)
-            subject._progress_dict = dict()
-            subject._exp_queue = ExpansionQueue(1, '~~')
-            subject._progress_dict[location_status] = progress
-
-            expected = None
-            with patch.object(subject._exp_queue, 'pop', return_value=location_status):
-                actual = subject._expand(None)
-
-            self.assertEqual(expected, actual)
-            self.assertEqual(subject._progress_dict[location_status], progress)
-
-        def test_calculate_expansion():
-            subject = NearestStationFinder(data_munger=None)
-            location_status = LocationStatusInfo(location=1, arrival_route=2, unvisited='~~stop~~')
-            progress = ProgressInfo(duration=None, arrival_trip=None, trip_stop_no=None, parent=None, children=None,
-                                    minimum_remaining_time=None, expanded=False, eliminated=False)
-            subject._progress_dict = dict()
-            subject._exp_queue = ExpansionQueue(1, '~~')
-            subject._progress_dict[location_status] = progress
-            expanded_progress = ProgressInfo(duration=None, arrival_trip=None, trip_stop_no=None, parent=None,
-                                             children=None, minimum_remaining_time=None, expanded=True,
-                                             eliminated=False)
-
-            expected = 3
-
-            with patch.object(subject, '_get_new_nodes') as get_new_nodes_patch:
-                with patch.object(subject, '_add_new_nodes_to_progress_dict', return_value=3) as add_new_nodes_patch:
-                    with patch.object(subject._exp_queue, 'pop', return_value=location_status):
-                        actual = subject._expand(None)
-                    get_new_nodes_patch.assert_called_once()
-                    add_new_nodes_patch.assert_called_once()
-
-            self.assertEqual(expected, actual)
-            self.assertEqual(subject._progress_dict[location_status], expanded_progress)
-
-        test_solved()
-        test_eliminated()
-        test_expanded()
-        test_calculate_expansion()
-
     def test__find_travel_time_secs(self):
         def test_returns_minimum_time_to_next_stop():
             data_munger = DataMunger(MockAnalysis(route_types_to_solve=[2]), MockData(), '~~')
             solutions = data_munger.get_unique_stops_to_solve()
             origin = 'Wonderland'
-            subject = NearestStationFinder(data_munger=data_munger)
+            subject = NearestStationFinder(analysis=MockAnalysis(), data=MockData(),
+                                           progress_between_pruning_progress_dict=None, prune_thoroughness=None,
+                                           stop_join_string='~~', transfer_duration_seconds=None, transfer_route=None,
+                                           walk_route=None, walk_speed_mph=None)
 
             expected = 20 * 60
             actual = subject._find_travel_time_secs(origin, solutions, DEFAULT_START_TIME)
             self.assertEqual(expected, actual)
 
         test_returns_minimum_time_to_next_stop()
-
-    def test_get_new_nodes(self):
-        def test_after_transfer():
-            subject = NearestStationFinder(data_munger=None)
-            subject._progress_dict = dict()
-            subject._exp_queue = ExpansionQueue(1, '~~')
-            known_best_time = 'arg2'
-            location_status_info = LocationStatusInfo(location=None, arrival_route='transfer route', unvisited=None)
-            expected = ['after transfer']
-            with patch.object(subject, '_get_nodes_after_transfer', return_value=['after transfer']) as \
-                    mock_after_transfer:
-                subject._progress_dict[location_status_info] = None
-                actual = subject._get_new_nodes(location_status_info, known_best_time)
-                mock_after_transfer.assert_called_once_with(location_status_info, known_best_time)
-
-            self.assertEqual(actual, expected)
-
-        def test_after_walk():
-            subject = NearestStationFinder(data_munger=None)
-            location_status_info = LocationStatusInfo(location=None, arrival_route='walk route', unvisited=None)
-            progress_info = ProgressInfo(duration=47, arrival_trip=None, trip_stop_no=None, parent=None, children=None,
-                                         minimum_remaining_time=60, expanded=None, eliminated=None)
-            subject._progress_dict = dict()
-            subject._exp_queue = ExpansionQueue(1, '~~')
-            subject._progress_dict[location_status_info] = progress_info
-            known_best_time = 'arg2'
-
-            expected = [None]
-            actual = subject._get_new_nodes(location_status_info, known_best_time)
-
-            self.assertEqual(actual, expected)
-
-        def test_after_service():
-            subject = NearestStationFinder(data_munger=None)
-            subject._progress_dict = dict()
-            subject._exp_queue = ExpansionQueue(1, '~~')
-            location_status_info = LocationStatusInfo(location='Wonderland', arrival_route=1, unvisited=None)
-            progress_info = ProgressInfo(duration=None, arrival_trip=None, trip_stop_no=None, parent=None,
-                                         children=None, minimum_remaining_time=None, expanded=None, eliminated=None)
-            expected = ['transfer data', 'after service']
-            known_best_time = 'arg2'
-            with patch.object(subject, '_get_next_stop_data_for_trip', return_value='after service') as \
-                    mock_after_service:
-                with patch.object(subject, '_get_transfer_data', return_value='transfer data') as mock_transfer_data:
-                    subject._progress_dict[location_status_info] = progress_info
-                    actual = subject._get_new_nodes(location_status_info, known_best_time)
-                    mock_after_service.assert_called_once_with(location_status_info)
-                    mock_transfer_data.assert_called_once_with(location_status_info)
-
-            self.assertEqual(actual, expected)
-
-        test_after_transfer()
-        test_after_walk()
-        test_after_service()
 
 
 class MockData:
