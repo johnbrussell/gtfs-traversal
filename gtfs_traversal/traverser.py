@@ -1,11 +1,12 @@
+import math
+from datetime import timedelta, datetime
+
 from gtfs_traversal.data_munger import DataMunger
-from gtfs_traversal.expansion_queue import ExpansionQueue
 from gtfs_traversal.data_structures import *
+from gtfs_traversal.expansion_queue import ExpansionQueue
 from gtfs_traversal.nearest_station_finder import NearestStationFinder
 from gtfs_traversal.solver import Solver
 from gtfs_traversal.string_shortener import StringShortener
-import math
-from datetime import timedelta, datetime
 
 
 class Traverser:
@@ -44,6 +45,14 @@ class Traverser:
 
         self._solver = Solver(
             walk_speed_mph=walk_speed_mph,
+            analysis=analysis,
+            data=data,
+            progress_between_pruning_progress_dict=progress_between_pruning_progress_dict,
+            prune_thoroughness=prune_thoroughness,
+            stop_join_string=stop_join_string,
+            transfer_duration_seconds=transfer_duration_seconds,
+            transfer_route=transfer_route,
+            walk_route=walk_route,
         )
 
     def add_separators_to_stop_name(self, stop_name):
