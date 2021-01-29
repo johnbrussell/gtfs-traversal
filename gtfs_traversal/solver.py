@@ -247,10 +247,10 @@ class Solver:
                 self._location_has_been_reached_faster(new_location_status, new_duration, location_status):
             return None
         return (new_location_status,
-                ProgressInfo(duration=new_duration,
-                             arrival_trip=self._transfer_route, trip_stop_no=self._transfer_route, parent=location_status,
-                             minimum_remaining_time=minimum_remaining_time, children=None,
-                             expanded=False, eliminated=False))
+                ProgressInfo(duration=new_duration, arrival_trip=self._transfer_route,
+                             trip_stop_no=self._transfer_route, parent=location_status,
+                             minimum_remaining_time=minimum_remaining_time, children=None, expanded=False,
+                             eliminated=False))
 
     def _get_trip_schedules(self):
         if self._trip_schedules is not None:
