@@ -538,8 +538,8 @@ class TestSolver(unittest.TestCase):
 
             stop_coordinates = subject.data_munger.get_all_stop_coordinates().copy()
             wonderland_coordinates = stop_coordinates.pop('Wonderland')
-            walking_times = {(station, subject._solver.walk_time_seconds(coordinates.lat, wonderland_coordinates.lat,
-                                                                         coordinates.long, wonderland_coordinates.long))
+            walking_times = {(station, subject.walk_time_seconds(coordinates.lat, wonderland_coordinates.lat,
+                                                                 coordinates.long, wonderland_coordinates.long))
                              for station, coordinates in stop_coordinates.items()}
 
             expected = {
@@ -576,8 +576,8 @@ class TestSolver(unittest.TestCase):
 
             stop_coordinates = subject.data_munger.get_all_stop_coordinates().copy()
             wonderland_coordinates = stop_coordinates.pop('Wonderland')
-            walking_times = {(station, subject._solver.walk_time_seconds(coordinates.lat, wonderland_coordinates.lat,
-                                                                         coordinates.long, wonderland_coordinates.long))
+            walking_times = {(station, subject.walk_time_seconds(coordinates.lat, wonderland_coordinates.lat,
+                                                                 coordinates.long, wonderland_coordinates.long))
                              for station, coordinates in stop_coordinates.items()}
             expected = {
                 (
@@ -941,7 +941,7 @@ class TestSolver(unittest.TestCase):
                                 transfer_duration_seconds=1, transfer_route='transfer', walk_route='walk',
                                 walk_speed_mph=1)
             all_stations = ['Wonderland', 'Heath Street', 'Back of the Hill', 'Bowdoin', 'Lynn', 'Alewife', 'Lechmere']
-            with patch.object(subject._nearest_station_finder, 'travel_time_secs_to_nearest_station', return_value=2):
+            with patch.object(subject, '_get_nearest_station_finder', return_value=MockNearestStationFinder(2)):
                 subject.reset_time_to_nearest_station(known_best_time=None)
             expected = {station: 2 for station in all_stations}
             actual = subject._time_to_nearest_station
@@ -954,7 +954,7 @@ class TestSolver(unittest.TestCase):
                                 walk_speed_mph=1)
             subject._start_time = DEFAULT_START_TIME
 
-            with patch.object(subject._nearest_station_finder, 'travel_time_secs_to_nearest_station', return_value=2):
+            with patch.object(subject, '_get_nearest_station_finder', return_value=MockNearestStationFinder(2)):
                 subject.reset_time_to_nearest_station(known_best_time=1)
             expected = dict()
             actual = subject._time_to_nearest_station
@@ -976,10 +976,10 @@ class TestSolver(unittest.TestCase):
 
                 return 100
 
-            with patch.object(subject._nearest_station_finder, 'travel_time_secs_to_nearest_station', return_value=0):
+            with patch.object(subject, '_get_nearest_station_finder', return_value=MockNearestStationFinder(0)):
                 subject.reset_time_to_nearest_station(None)
 
-            with patch.object(subject._solver, 'walk_time_seconds', new=walk_time_seconds):
+            with patch.object(subject, 'walk_time_seconds', new=walk_time_seconds):
                 subject.reset_walking_coordinates(known_best_time=None)
 
             coordinates = subject.data_munger.get_all_stop_coordinates()
@@ -1002,12 +1002,12 @@ class TestSolver(unittest.TestCase):
                     return 200000
                 return 500  # Everything else is close
 
-            with patch.object(subject._nearest_station_finder, 'travel_time_secs_to_nearest_station', return_value=0):
+            with patch.object(subject, '_get_nearest_station_finder', return_value=MockNearestStationFinder(0)):
                 subject.reset_time_to_nearest_station(None)
 
             coordinates = subject.data_munger.get_all_stop_coordinates()
 
-            with patch.object(subject._solver, 'walk_time_seconds', new=walk_time_seconds):
+            with patch.object(subject, 'walk_time_seconds', new=walk_time_seconds):
                 subject.reset_walking_coordinates(known_best_time=None)
                 self.assertEqual(len(subject.get_walking_coordinates()), len(coordinates) - 1)
 
@@ -1026,13 +1026,13 @@ class TestSolver(unittest.TestCase):
                                 walk_speed_mph=1)
             subject._start_time = DEFAULT_START_TIME
 
-            with patch.object(subject._nearest_station_finder, 'travel_time_secs_to_nearest_station', return_value=0):
+            with patch.object(subject, '_get_nearest_station_finder', return_value=MockNearestStationFinder(0)):
                 subject.reset_time_to_nearest_station(None)
             subject._time_to_nearest_station['Back of the Hill'] = 1001
 
             coordinates = subject.data_munger.get_all_stop_coordinates()
 
-            with patch.object(subject._solver, 'walk_time_seconds', return_value=100):
+            with patch.object(subject, 'walk_time_seconds', return_value=100):
                 subject.reset_walking_coordinates(known_best_time=None)
                 self.assertEqual(len(subject.get_walking_coordinates()), len(coordinates) - 1)
 
@@ -1126,3 +1126,11 @@ class MockStringShortener:
     @staticmethod
     def shorten(string):
         return string
+
+
+class MockNearestStationFinder:
+    def __init__(self, travel_time_secs_to_nearest_station):
+        self.travel_time_to_nearest_station = travel_time_secs_to_nearest_station
+
+    def travel_time_secs_to_nearest_station(self, _station, _solution_stations, _start_time):
+        return self.travel_time_to_nearest_station

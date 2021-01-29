@@ -1,62 +1,15 @@
 import math
 from datetime import timedelta, datetime
 
-from gtfs_traversal.data_munger import DataMunger
 from gtfs_traversal.data_structures import *
 from gtfs_traversal.expansion_queue import ExpansionQueue
 from gtfs_traversal.nearest_station_finder import NearestStationFinder
 from gtfs_traversal.solver import Solver
-from gtfs_traversal.string_shortener import StringShortener
 
 
-class Traverser:
-    def __init__(self, analysis, data, progress_between_pruning_progress_dict, prune_thoroughness, stop_join_string,
-                 transfer_duration_seconds, transfer_route, walk_route, walk_speed_mph):
-        self.walk_speed_mph = walk_speed_mph
-        self.STOP_JOIN_STRING = stop_join_string
-        self.TRANSFER_ROUTE = transfer_route
-        self.WALK_ROUTE = walk_route
-        self.TRANSFER_DURATION_SECONDS = transfer_duration_seconds
-        self.ANALYSIS = analysis
-        self.expansions_to_prune = progress_between_pruning_progress_dict
-        self.prune_severity = prune_thoroughness
-        self._string_shortener = StringShortener()
-
-        self._best_duration = None
-        self._exp_queue = None
-        self._initial_unsolved_string = None
-        self._initialization_time = datetime.now()
-        self._off_course_stop_locations = None
-        self._progress_dict = dict()
-        self._route_trips = None
-        self._start_time = None
-        self._start_time_in_seconds = None
-        self._stop_locations = None
-        self._stop_locations_to_solve = None
-        self._stops_at_ends_of_solution_routes = None
-        self._time_to_nearest_station = None
-        self._total_minimum_time = None
-        self._trip_schedules = None
-        self._walking_coordinates = None
-
-        self.data_munger = DataMunger(analysis=analysis, data=data, stop_join_string=stop_join_string)
-
-        self._nearest_station_finder = NearestStationFinder(data_munger=self.data_munger)
-
-        self._solver = Solver(
-            walk_speed_mph=walk_speed_mph,
-            analysis=analysis,
-            data=data,
-            progress_between_pruning_progress_dict=progress_between_pruning_progress_dict,
-            prune_thoroughness=prune_thoroughness,
-            stop_join_string=stop_join_string,
-            transfer_duration_seconds=transfer_duration_seconds,
-            transfer_route=transfer_route,
-            walk_route=walk_route,
-        )
-
+class Traverser(Solver):
     def add_separators_to_stop_name(self, stop_name):
-        return f'{self.STOP_JOIN_STRING}{stop_name}{self.STOP_JOIN_STRING}'
+        return f'{self.stop_join_string}{stop_name}{self.stop_join_string}'
 
     def eliminate_stops_from_string(self, stops, uneliminated):
         for stop in stops:
@@ -65,7 +18,7 @@ class Traverser:
 
     def eliminate_stop_from_string(self, name, uneliminated):
         return uneliminated.replace(self.add_separators_to_stop_name(self._string_shortener.shorten(name)),
-                                    self.STOP_JOIN_STRING)
+                                    self.stop_join_string)
 
     def expand(self, location_status, known_best_time):
         if self.is_solution(location_status.unvisited) \
@@ -81,11 +34,14 @@ class Traverser:
 
     def get_initial_unsolved_string(self):
         if self._initial_unsolved_string is None:
-            self._initial_unsolved_string = self.STOP_JOIN_STRING + \
-                self.STOP_JOIN_STRING.join(self._string_shortener.shorten(stop)
-                                           for stop in self.data_munger.get_unique_stops_to_solve()) + \
-                self.STOP_JOIN_STRING
+            self._initial_unsolved_string = \
+                self.stop_join_string + self.stop_join_string.join(
+                    self._string_shortener.shorten(stop) for stop in self.data_munger.get_unique_stops_to_solve()) + \
+                self.stop_join_string
         return self._initial_unsolved_string
+
+    def _get_nearest_station_finder(self):
+        return NearestStationFinder(data_munger=self.data_munger)
 
     def get_new_minimum_remaining_time(self, old_minimum_remaining_time, unvisited_stops_string, route,
                                        new_unvisited_stop_string):
@@ -93,7 +49,7 @@ class Traverser:
         if unvisited_stops_string == new_unvisited_stop_string:
             return old_minimum_remaining_time
 
-        new_unvisited_stop_ids = new_unvisited_stop_string.strip(self.STOP_JOIN_STRING).split(self.STOP_JOIN_STRING) \
+        new_unvisited_stop_ids = new_unvisited_stop_string.strip(self.stop_join_string).split(self.stop_join_string) \
             if not self.is_solution(new_unvisited_stop_string) else []
         new_unvisited_stops = [self._string_shortener.lengthen(stop_id) for stop_id in new_unvisited_stop_ids]
         new_minimum_remaining_travel_time = self.data_munger.get_minimum_remaining_time(new_unvisited_stops,
@@ -101,7 +57,7 @@ class Traverser:
 
         new_minimum_remaining_transfer_time = \
             self.data_munger.get_minimum_remaining_transfers(route, new_unvisited_stops) * \
-            self.TRANSFER_DURATION_SECONDS
+            self.transfer_duration_seconds
         return new_minimum_remaining_travel_time + new_minimum_remaining_transfer_time
 
     def get_next_stop_data_for_trip(self, location_status):
@@ -132,12 +88,12 @@ class Traverser:
         )
 
     def get_new_nodes(self, location_status, known_best_time):
-        if location_status.arrival_route == self.TRANSFER_ROUTE:
+        if location_status.arrival_route == self.transfer_route:
             return self.get_nodes_after_transfer(location_status, known_best_time)
 
         transfer_node = self.get_transfer_data(location_status)
 
-        if location_status.arrival_route == self.WALK_ROUTE:
+        if location_status.arrival_route == self.walk_route:
             return [transfer_node]
 
         return [transfer_node, self.get_next_stop_data_for_trip(location_status)]
@@ -220,16 +176,16 @@ class Traverser:
     def get_transfer_data(self, location_status):
         progress = self._progress_dict[location_status]
         minimum_remaining_time = max(
-            0, progress.minimum_remaining_time - self.TRANSFER_DURATION_SECONDS)
-        new_location_status = location_status._replace(arrival_route=self.TRANSFER_ROUTE)
-        new_duration = progress.duration + self.TRANSFER_DURATION_SECONDS
+            0, progress.minimum_remaining_time - self.transfer_duration_seconds)
+        new_location_status = location_status._replace(arrival_route=self.transfer_route)
+        new_duration = progress.duration + self.transfer_duration_seconds
         if location_status.location in self.get_stop_locations_to_solve() and \
                 location_status.arrival_route not in self.data_munger.get_unique_routes_to_solve() and \
                 self.location_has_been_reached_faster(new_location_status, new_duration, location_status):
             return None
         return (new_location_status,
                 ProgressInfo(duration=new_duration,
-                             arrival_trip=self.TRANSFER_ROUTE, trip_stop_no=self.TRANSFER_ROUTE, parent=location_status,
+                             arrival_trip=self.transfer_route, trip_stop_no=self.transfer_route, parent=location_status,
                              minimum_remaining_time=minimum_remaining_time, children=None,
                              expanded=False, eliminated=False))
 
@@ -252,7 +208,7 @@ class Traverser:
 
         if progress.parent is None:
             return []
-        if progress.parent.arrival_route == self.WALK_ROUTE:
+        if progress.parent.arrival_route == self.walk_route:
             return []
         if location_status.location not in walking_coordinates:
             return []
@@ -263,8 +219,8 @@ class Traverser:
 
         current_coordinates = walking_coordinates[location_status.location]
         stop_walk_times = {
-            stop: self._solver.walk_time_seconds(current_coordinates.lat, coordinates.lat,
-                                                 current_coordinates.long, coordinates.long)
+            stop: self.walk_time_seconds(current_coordinates.lat, coordinates.lat,
+                                         current_coordinates.long, coordinates.long)
             for stop, coordinates in walking_coordinates.items()
             if max_walk_time is None or self.get_time_to_nearest_station()[stop] <= max_walk_time
         }
@@ -277,9 +233,9 @@ class Traverser:
 
         return [
             (
-                LocationStatusInfo(location=loc, arrival_route=self.WALK_ROUTE, unvisited=location_status.unvisited),
+                LocationStatusInfo(location=loc, arrival_route=self.walk_route, unvisited=location_status.unvisited),
                 ProgressInfo(duration=progress.duration + wts,
-                             arrival_trip=self.WALK_ROUTE, trip_stop_no=self.WALK_ROUTE, parent=location_status,
+                             arrival_trip=self.walk_route, trip_stop_no=self.walk_route, parent=location_status,
                              minimum_remaining_time=progress.minimum_remaining_time, children=None,
                              expanded=False, eliminated=False)
             )
@@ -347,8 +303,8 @@ class Traverser:
         all_stations = self.data_munger.get_all_stop_coordinates().keys()
         solution_stations = self.data_munger.get_unique_stops_to_solve()
         times_to_nearest_station = {
-            station: self._nearest_station_finder.travel_time_secs_to_nearest_station(station, solution_stations,
-                                                                                      self._start_time)
+            station: self._get_nearest_station_finder().travel_time_secs_to_nearest_station(station, solution_stations,
+                                                                                            self._start_time)
             for station in all_stations
         }
         self._time_to_nearest_station = {
@@ -365,8 +321,8 @@ class Traverser:
             # find walk time to farthest station from stop1
             max_walk_time = 0
             for stop2 in solution_stops:
-                wts = self._solver.walk_time_seconds(all_coordinates[stop1].lat, all_coordinates[stop2].lat,
-                                                     all_coordinates[stop1].long, all_coordinates[stop2].long)
+                wts = self.walk_time_seconds(all_coordinates[stop1].lat, all_coordinates[stop2].lat,
+                                             all_coordinates[stop1].long, all_coordinates[stop2].long)
                 max_walk_time = max(wts, max_walk_time)
 
             # If a global ceiling is more strict than the time to the farthest station, use the global ceiling
@@ -380,8 +336,8 @@ class Traverser:
                 if stop3 in self._walking_coordinates:
                     continue
 
-                wts = self._solver.walk_time_seconds(all_coordinates[stop1].lat, coordinates.lat,
-                                                     all_coordinates[stop1].long, coordinates.long)
+                wts = self.walk_time_seconds(all_coordinates[stop1].lat, coordinates.lat,
+                                             all_coordinates[stop1].long, coordinates.long)
 
                 # hm, what if there is a transfer between stops that are distant but have very fast travel times to
                 #  solution stops?
@@ -456,7 +412,7 @@ class Traverser:
         self._progress_dict[parent].children.add(child)
 
     def is_solution(self, stops_string):
-        return stops_string == self.STOP_JOIN_STRING
+        return stops_string == self.stop_join_string
 
     @staticmethod
     def minimum_possible_duration(progress):
@@ -498,7 +454,7 @@ class Traverser:
 
     def prune_progress_dict(self):
         def ineffectiveness(node):
-            return len(node.unvisited.split(self.STOP_JOIN_STRING))
+            return len(node.unvisited.split(self.stop_join_string))
 
         prunable_nodes = self.prunable_nodes()
         num_nodes_to_prune = math.floor(self.prune_severity * float(len(prunable_nodes)))
@@ -530,7 +486,7 @@ class Traverser:
 
     def find_solution(self, begin_time, known_best_time):
         self.initialize_progress_dict(begin_time)
-        self._exp_queue = ExpansionQueue(len(self.data_munger.get_unique_stops_to_solve()), self.STOP_JOIN_STRING)
+        self._exp_queue = ExpansionQueue(len(self.data_munger.get_unique_stops_to_solve()), self.stop_join_string)
         if len(self._progress_dict) > 0:
             self._exp_queue.add(self._progress_dict.keys())
 
