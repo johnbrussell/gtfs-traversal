@@ -23,7 +23,7 @@ class TestSolver(unittest.TestCase):
             sample_unvisited_string = {key.unvisited for key in actual_dict.keys()}.pop()
             expected_start_time = DEFAULT_START_TIME + timedelta(hours=8)
 
-            all_stations = subject.data_munger.get_unique_stops_to_solve()
+            all_stations = subject._data_munger.get_unique_stops_to_solve()
             for station in all_stations:
                 self.assertTrue(station not in sample_unvisited_string)
                 self.assertTrue(station in subject._string_shortener._shorten_dict)
@@ -54,7 +54,7 @@ class TestSolver(unittest.TestCase):
             subject = Traverser(analysis=MockAnalysis(), data=MockData(), progress_between_pruning_progress_dict=None,
                                 prune_thoroughness=None, stop_join_string='~~', transfer_duration_seconds=None,
                                 transfer_route=None, walk_route=None, walk_speed_mph=None)
-            with patch.object(subject.data_munger, 'get_total_minimum_time', return_value=19800) as tmt_patch:
+            with patch.object(subject._data_munger, 'get_total_minimum_time', return_value=19800) as tmt_patch:
                 subject.initialize_progress_dict(DEFAULT_START_TIME + timedelta(hours=8.01))
                 tmt_patch.assert_called_once_with(DEFAULT_START_TIME + timedelta(hours=8.01))
 
@@ -63,7 +63,7 @@ class TestSolver(unittest.TestCase):
             sample_unvisited_string = {key.unvisited for key in actual_dict.keys()}.pop()
             expected_start_time = DEFAULT_START_TIME + timedelta(hours=9)
 
-            all_stations = subject.data_munger.get_unique_stops_to_solve()
+            all_stations = subject._data_munger.get_unique_stops_to_solve()
             for station in all_stations:
                 self.assertTrue(station not in sample_unvisited_string)
                 self.assertTrue(station in subject._string_shortener._shorten_dict)

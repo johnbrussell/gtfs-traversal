@@ -9,13 +9,13 @@ from gtfs_traversal.solver import Solver
 
 class Traverser(Solver):
     def _get_nearest_station_finder(self):
-        return NearestStationFinder(data_munger=self.data_munger)
+        return NearestStationFinder(data_munger=self._data_munger)
 
     def _reset_time_to_nearest_station(self, known_best_time):
         abs_max_walk_time = None if known_best_time is None else \
             known_best_time - self._get_total_minimum_time(self._start_time)
-        all_stations = self.data_munger.get_all_stop_coordinates().keys()
-        solution_stations = self.data_munger.get_unique_stops_to_solve()
+        all_stations = self._data_munger.get_all_stop_coordinates().keys()
+        solution_stations = self._data_munger.get_unique_stops_to_solve()
         times_to_nearest_station = {
             station: self._get_nearest_station_finder().travel_time_secs_to_nearest_station(station, solution_stations,
                                                                                             self._start_time)
@@ -29,10 +29,10 @@ class Traverser(Solver):
         progress_dict = dict()
         best_departure_time = None
         optimal_start_locations = set()
-        for stop in self.data_munger.get_unique_stops_to_solve():
-            for route in self.data_munger.get_solution_routes_at_stop(stop):
+        for stop in self._data_munger.get_unique_stops_to_solve():
+            for route in self._data_munger.get_solution_routes_at_stop(stop):
                 # This function assumes that each route does not visit any stop multiple times
-                departure_time, trip = self.data_munger.first_trip_after(begin_time, route, stop)
+                departure_time, trip = self._data_munger.first_trip_after(begin_time, route, stop)
                 if trip is None:
                     continue
                 if best_departure_time is None:
@@ -40,7 +40,7 @@ class Traverser(Solver):
                 if departure_time < best_departure_time:
                     best_departure_time = departure_time
                     optimal_start_locations = set()
-                stop_number = self.data_munger.get_stop_number_from_stop_id(stop, route)
+                stop_number = self._data_munger.get_stop_number_from_stop_id(stop, route)
                 location_info = LocationStatusInfo(location=stop, arrival_route=route,
                                                    unvisited=self._get_initial_unsolved_string())
                 progress_info = ProgressInfo(duration=0, parent=None, children=None,
@@ -61,10 +61,10 @@ class Traverser(Solver):
 
     def prune_progress_dict(self):
         def ineffectiveness(node):
-            return len(node.unvisited.split(self.stop_join_string))
+            return len(node.unvisited.split(self._stop_join_string))
 
         prunable_nodes = self.prunable_nodes()
-        num_nodes_to_prune = math.floor(self.prune_severity * float(len(prunable_nodes)))
+        num_nodes_to_prune = math.floor(self._prune_severity * float(len(prunable_nodes)))
         if num_nodes_to_prune == 0:
             return
 
@@ -93,11 +93,11 @@ class Traverser(Solver):
 
     def find_solution(self, begin_time, known_best_time):
         self.initialize_progress_dict(begin_time)
-        self._exp_queue = ExpansionQueue(len(self.data_munger.get_unique_stops_to_solve()), self.stop_join_string)
+        self._exp_queue = ExpansionQueue(len(self._data_munger.get_unique_stops_to_solve()), self._stop_join_string)
         if len(self._progress_dict) > 0:
             self._exp_queue.add(self._progress_dict.keys())
 
-        num_stations = len(self.data_munger.get_unique_stops_to_solve())
+        num_stations = len(self._data_munger.get_unique_stops_to_solve())
         num_start_points = self._exp_queue.len()
         num_completed_stations = 0
         num_initial_start_points = num_start_points
@@ -119,7 +119,7 @@ class Traverser(Solver):
                                          self._exp_queue._num_remaining_stops_to_pop) / stations_denominator * 100.0)
                     print(best_progress, datetime.now() - self._initialization_time, self._exp_queue.len(),
                           len(self._progress_dict), len(self.prunable_nodes()))
-                if num_expansions % self.expansions_to_prune == 0:
+                if num_expansions % self._expansions_to_prune == 0:
                     num_expansions = 0
                     self.prune_progress_dict()
 

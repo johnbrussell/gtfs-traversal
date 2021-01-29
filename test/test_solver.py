@@ -460,7 +460,7 @@ class TestSolver(unittest.TestCase):
                 trip_stop_no='1', minimum_remaining_time=3600, expanded=False, eliminated=False)
             subject._progress_dict[input_location_status] = input_progress
             subject._time_to_nearest_station = {
-                station: 0 for station in subject.data_munger.get_all_stop_coordinates().keys()
+                station: 0 for station in subject._data_munger.get_all_stop_coordinates().keys()
             }
 
             expected = []
@@ -481,7 +481,7 @@ class TestSolver(unittest.TestCase):
                 trip_stop_no='1', minimum_remaining_time=timedelta(hours=1), expanded=False, eliminated=False)
             subject._progress_dict[input_location_status] = input_progress
             subject._time_to_nearest_station = {
-                station: 0 for station in subject.data_munger.get_all_stop_coordinates().keys()
+                station: 0 for station in subject._data_munger.get_all_stop_coordinates().keys()
             }
 
             expected = []
@@ -502,7 +502,7 @@ class TestSolver(unittest.TestCase):
                 trip_stop_no='1', minimum_remaining_time=60 * 60, expanded=False, eliminated=False)
             subject._progress_dict[input_location_status] = input_progress
             subject._time_to_nearest_station = {
-                station: 0 for station in subject.data_munger.get_all_stop_coordinates().keys()
+                station: 0 for station in subject._data_munger.get_all_stop_coordinates().keys()
             }
 
             expected = set()
@@ -523,11 +523,11 @@ class TestSolver(unittest.TestCase):
                 trip_stop_no='1', minimum_remaining_time=60 * 60, expanded=False, eliminated=False)
             subject._progress_dict[input_location_status] = input_progress
             subject._time_to_nearest_station = {
-                station: 0 for station in subject.data_munger.get_all_stop_coordinates().keys()
+                station: 0 for station in subject._data_munger.get_all_stop_coordinates().keys()
             }
             subject._time_to_nearest_station['Heath Street'] = 1000001
 
-            stop_coordinates = subject.data_munger.get_all_stop_coordinates().copy()
+            stop_coordinates = subject._data_munger.get_all_stop_coordinates().copy()
             wonderland_coordinates = stop_coordinates.pop('Wonderland')
             walking_times = {(station, subject._walk_time_seconds(coordinates.lat, wonderland_coordinates.lat,
                                                                   coordinates.long, wonderland_coordinates.long))
@@ -561,10 +561,10 @@ class TestSolver(unittest.TestCase):
                 trip_stop_no='1', minimum_remaining_time=60 * 60, expanded=False, eliminated=False)
             subject._progress_dict[input_location_status] = input_progress
             subject._time_to_nearest_station = {
-                station: 0 for station in subject.data_munger.get_all_stop_coordinates().keys()
+                station: 0 for station in subject._data_munger.get_all_stop_coordinates().keys()
             }
 
-            stop_coordinates = subject.data_munger.get_all_stop_coordinates().copy()
+            stop_coordinates = subject._data_munger.get_all_stop_coordinates().copy()
             wonderland_coordinates = stop_coordinates.pop('Wonderland')
             walking_times = {(station, subject._walk_time_seconds(coordinates.lat, wonderland_coordinates.lat,
                                                                   coordinates.long, wonderland_coordinates.long))
@@ -803,7 +803,7 @@ class TestSolver(unittest.TestCase):
             with patch.object(subject, '_walk_time_seconds', new=walk_time_seconds):
                 subject._reset_walking_coordinates(known_best_time=None)
 
-            coordinates = subject.data_munger.get_all_stop_coordinates()
+            coordinates = subject._data_munger.get_all_stop_coordinates()
             self.assertEqual(len(subject._get_walking_coordinates()), len(coordinates) - 1)
             self.assertTrue('Heath Street' not in subject._get_walking_coordinates())
 
@@ -825,7 +825,7 @@ class TestSolver(unittest.TestCase):
 
             subject._reset_time_to_nearest_station(None)
 
-            coordinates = subject.data_munger.get_all_stop_coordinates()
+            coordinates = subject._data_munger.get_all_stop_coordinates()
 
             with patch.object(subject, '_walk_time_seconds', new=walk_time_seconds):
                 subject._reset_walking_coordinates(known_best_time=None)
@@ -834,7 +834,7 @@ class TestSolver(unittest.TestCase):
                 # This example has minimum time of 9000, so this is max 1000 walking time
                 subject._reset_walking_coordinates(known_best_time=10000)
 
-            coordinates = subject.data_munger.get_all_stop_coordinates()
+            coordinates = subject._data_munger.get_all_stop_coordinates()
             self.assertEqual(len(subject._get_walking_coordinates()), len(coordinates) - 2)
             self.assertTrue('Heath Street' not in subject._get_walking_coordinates())
             self.assertTrue('Lechmere' not in subject._get_walking_coordinates())
@@ -849,7 +849,7 @@ class TestSolver(unittest.TestCase):
             subject._reset_time_to_nearest_station(None)
             subject._time_to_nearest_station['Back of the Hill'] = 1001
 
-            coordinates = subject.data_munger.get_all_stop_coordinates()
+            coordinates = subject._data_munger.get_all_stop_coordinates()
 
             with patch.object(subject, '_walk_time_seconds', return_value=100):
                 subject._reset_walking_coordinates(known_best_time=None)
@@ -858,7 +858,7 @@ class TestSolver(unittest.TestCase):
                 # This example has minimum time of 9000, so this is max 1000 walking time
                 subject._reset_walking_coordinates(known_best_time=10000)
 
-            coordinates = subject.data_munger.get_all_stop_coordinates()
+            coordinates = subject._data_munger.get_all_stop_coordinates()
             self.assertEqual(len(subject._get_walking_coordinates()), len(coordinates) - 1)
             self.assertTrue('Back of the Hill' not in subject._get_walking_coordinates())
 

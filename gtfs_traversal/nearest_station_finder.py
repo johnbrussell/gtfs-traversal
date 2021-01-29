@@ -23,22 +23,22 @@ class NearestStationFinder(Solver):
         while not self._exp_queue.is_empty():
             expandee = self._exp_queue.pop(self._progress_dict)
             known_best_time = self._expand(expandee, known_best_time)
-        return self.data_munger.get_travel_time_between_stops_in_seconds(
+        return self._data_munger.get_travel_time_between_stops_in_seconds(
             trip, origin_stop_number, next_stop_number)
 
     def _find_travel_time_secs(self, origin, solutions, analysis_start_time):
         best_travel_time = None
         for route in self._routes_at_station(origin):
-            next_stop = self.data_munger.get_next_stop_id(origin, route)
+            next_stop = self._data_munger.get_next_stop_id(origin, route)
             if next_stop is None:
                 continue
 
             departure_time = analysis_start_time
             trip = 'not none'
-            origin_stop_number = self.data_munger.get_stop_number_from_stop_id(origin, route)
-            next_stop_number = self.data_munger.get_stop_number_from_stop_id(next_stop, route)
+            origin_stop_number = self._data_munger.get_stop_number_from_stop_id(origin, route)
+            next_stop_number = self._data_munger.get_stop_number_from_stop_id(next_stop, route)
             while trip is not None:
-                departure_time, trip = self.data_munger.first_trip_after(departure_time, route, origin)
+                departure_time, trip = self._data_munger.first_trip_after(departure_time, route, origin)
                 if trip is not None:
                     if int(next_stop_number) > int(origin_stop_number):
                         travel_time = self._find_next_travel_time_secs(route, trip, origin, origin_stop_number,
@@ -61,4 +61,4 @@ class NearestStationFinder(Solver):
         self._progress_dict = {location_info: progress_info}
 
     def _routes_at_station(self, station):
-        return self.data_munger.get_routes_at_stop(station)
+        return self._data_munger.get_routes_at_stop(station)
