@@ -51,7 +51,7 @@ class Solver:
         self._progress_dict[new_location] = new_progress
         self._add_child_to_parent(new_progress.parent, new_location)
 
-        if self._is_solution(new_location.unvisited):
+        if self._is_solution(new_location):
             if verbose:
                 print(datetime.now() - self._initialization_time, 'solution:', timedelta(seconds=new_progress.duration))
             best_solution_duration = new_progress.duration
@@ -87,7 +87,7 @@ class Solver:
                                     self._stop_join_string)
 
     def _expand(self, location_status, known_best_time):
-        if self._is_solution(location_status.unvisited) \
+        if self._is_solution(location_status) \
                 or self._progress_dict[location_status].expanded \
                 or self._progress_dict[location_status].eliminated:
             return known_best_time
@@ -106,20 +106,19 @@ class Solver:
                 self._stop_join_string
         return self._initial_unsolved_string
 
-    def _get_new_minimum_remaining_time(self, old_minimum_remaining_time, unvisited_stops_string, route,
-                                        new_unvisited_stop_string):
+    def _get_new_minimum_remaining_time(self, prior_minimum_remaining_time, prior_unvisited_stops_string, location):
         # Both the travel and transfer parts of this function seem to speed things up.
-        if unvisited_stops_string == new_unvisited_stop_string:
-            return old_minimum_remaining_time
+        if prior_unvisited_stops_string == location.unvisited:
+            return prior_minimum_remaining_time
 
-        new_unvisited_stop_ids = new_unvisited_stop_string.strip(self._stop_join_string).split(self._stop_join_string) \
-            if not self._is_solution(new_unvisited_stop_string) else []
+        new_unvisited_stop_ids = location.unvisited.strip(self._stop_join_string).split(self._stop_join_string) \
+            if not self._is_solution(location) else []
         new_unvisited_stops = [self._string_shortener.lengthen(stop_id) for stop_id in new_unvisited_stop_ids]
         new_minimum_remaining_travel_time = self._data_munger.get_minimum_remaining_time(new_unvisited_stops,
                                                                                          self._start_time)
 
         new_minimum_remaining_transfer_time = \
-            self._data_munger.get_minimum_remaining_transfers(route, new_unvisited_stops) * \
+            self._data_munger.get_minimum_remaining_transfers(location.arrival_route, new_unvisited_stops) * \
             self._transfer_duration_seconds
         return new_minimum_remaining_travel_time + new_minimum_remaining_transfer_time
 
@@ -148,13 +147,12 @@ class Solver:
             if self._data_munger.is_solution_route(location_status.arrival_route) else location_status.unvisited
         new_duration = progress.duration + self._data_munger.get_travel_time_between_stops_in_seconds(
             progress.arrival_trip, stop_number, next_stop_no)
+        new_location = LocationStatusInfo(location=next_stop_id, arrival_route=location_status.arrival_route,
+                                          unvisited=new_unvisited_string)
         new_minimum_remaining_time = self._get_new_minimum_remaining_time(progress.minimum_remaining_time,
-                                                                          location_status.unvisited,
-                                                                          location_status.arrival_route,
-                                                                          new_unvisited_string)
+                                                                          location_status.unvisited, new_location)
         return (
-            LocationStatusInfo(location=next_stop_id, arrival_route=location_status.arrival_route,
-                               unvisited=new_unvisited_string),
+            new_location,
             ProgressInfo(duration=new_duration, arrival_trip=progress.arrival_trip,
                          trip_stop_no=next_stop_no, parent=location_status, children=None,
                          minimum_remaining_time=new_minimum_remaining_time,
@@ -306,8 +304,8 @@ class Solver:
             if max_walk_time is None or wts + self._get_time_to_nearest_station()[loc] <= max_walk_time
         ]
 
-    def _is_solution(self, stops_string):
-        return stops_string == self._stop_join_string
+    def _is_solution(self, location):
+        return location.unvisited == self._stop_join_string
 
     @staticmethod
     def _is_too_slow(location, progress_info, best_duration, preserve):

@@ -29,6 +29,26 @@ class TestNearestStationFinder(unittest.TestCase):
 
         test_returns_minimum_time_to_next_stop()
 
+    def test__is_solution(self):
+        def test_returns_true_if_on_solution_stop():
+            subject = NearestStationFinder(analysis=MockAnalysis(route_types_to_solve=[1]), data=MockData(),
+                                           progress_between_pruning_progress_dict=None, prune_thoroughness=None,
+                                           stop_join_string='~~', transfer_duration_seconds=None, transfer_route=None,
+                                           walk_route=None, walk_speed_mph=None)
+            location = LocationStatusInfo(location='Back of the Hill', unvisited='not a stop', arrival_route='Blue')
+            self.assertTrue(subject._is_solution(location))
+
+        def test_returns_false_if_not_on_solution_stop():
+            subject = NearestStationFinder(analysis=MockAnalysis(route_types_to_solve=[1]), data=MockData(),
+                                           progress_between_pruning_progress_dict=None, prune_thoroughness=None,
+                                           stop_join_string='~~', transfer_duration_seconds=None, transfer_route=None,
+                                           walk_route=None, walk_speed_mph=None)
+            location = LocationStatusInfo(location='Wonderland', unvisited='not a stop', arrival_route='Blue')
+            self.assertFalse(subject._is_solution(location))
+
+        test_returns_true_if_on_solution_stop()
+        test_returns_false_if_not_on_solution_stop()
+
 
 class MockData:
     def __init__(self):

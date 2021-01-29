@@ -60,5 +60,8 @@ class NearestStationFinder(Solver):
                                      minimum_remaining_time=0, expanded=False, eliminated=False)
         self._progress_dict = {location_info: progress_info}
 
+    def _is_solution(self, location):
+        return location.location in self._data_munger.get_unique_stops_to_solve()
+
     def _routes_at_station(self, station):
         return self._data_munger.get_routes_at_stop(station)

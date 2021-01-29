@@ -244,7 +244,8 @@ class TestSolver(unittest.TestCase):
                              transfer_route=None, walk_route=None, walk_speed_mph=None)
             input_time = 400
             expected = input_time
-            actual = subject._get_new_minimum_remaining_time(input_time, None, 'not a route', None)
+            location = LocationStatusInfo(location=None, arrival_route=None, unvisited=None)
+            actual = subject._get_new_minimum_remaining_time(input_time, None, location)
             self.assertEqual(expected, actual)
 
         def test_route_on_solution_set():
@@ -255,8 +256,8 @@ class TestSolver(unittest.TestCase):
             subject._start_time = DEFAULT_START_TIME
             input_time = 400 * 60
             expected = 60 * 60
-            actual = subject._get_new_minimum_remaining_time(input_time, '##Bowdoin##Lynn##Wonderland##', 3,
-                                                            '##Wonderland##')
+            location = LocationStatusInfo(location='Lynn', arrival_route=3, unvisited='##Wonderland##')
+            actual = subject._get_new_minimum_remaining_time(input_time, '##Bowdoin##Lynn##Wonderland##', location)
             self.assertEqual(expected, actual)
 
         test_route_not_on_solution_set()
