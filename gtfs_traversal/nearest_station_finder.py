@@ -22,7 +22,7 @@ class NearestStationFinder(Solver):
         self._exp_queue.add(self._progress_dict.keys())
         while not self._exp_queue.is_empty():
             expandee = self._exp_queue.pop(self._progress_dict)
-            known_best_time = self.expand(expandee, known_best_time)
+            known_best_time = self._expand(expandee, known_best_time)
         return self.data_munger.get_travel_time_between_stops_in_seconds(
             trip, origin_stop_number, next_stop_number)
 
@@ -54,7 +54,7 @@ class NearestStationFinder(Solver):
 
     def _initialize_progress_dict(self, route, trip, origin, origin_stop_number):
         location_info = LocationStatusInfo(location=origin, arrival_route=route,
-                                           unvisited=self.get_initial_unsolved_string())
+                                           unvisited=self._get_initial_unsolved_string())
         progress_info = ProgressInfo(duration=0, parent=None, children=None,
                                      arrival_trip=trip, trip_stop_no=origin_stop_number,
                                      minimum_remaining_time=0, expanded=False, eliminated=False)

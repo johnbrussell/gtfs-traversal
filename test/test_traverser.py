@@ -154,7 +154,7 @@ class TestSolver(unittest.TestCase):
                                 walk_speed_mph=1)
             all_stations = ['Wonderland', 'Heath Street', 'Back of the Hill', 'Bowdoin', 'Lynn', 'Alewife', 'Lechmere']
             with patch.object(subject, '_get_nearest_station_finder', return_value=MockNearestStationFinder(2)):
-                subject.reset_time_to_nearest_station(known_best_time=None)
+                subject._reset_time_to_nearest_station(known_best_time=None)
             expected = {station: 2 for station in all_stations}
             actual = subject._time_to_nearest_station
             self.assertDictEqual(actual, expected)
@@ -167,7 +167,7 @@ class TestSolver(unittest.TestCase):
             subject._start_time = DEFAULT_START_TIME
 
             with patch.object(subject, '_get_nearest_station_finder', return_value=MockNearestStationFinder(2)):
-                subject.reset_time_to_nearest_station(known_best_time=1)
+                subject._reset_time_to_nearest_station(known_best_time=1)
             expected = dict()
             actual = subject._time_to_nearest_station
             self.assertDictEqual(actual, expected)

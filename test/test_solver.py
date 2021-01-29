@@ -26,7 +26,7 @@ class TestSolver(unittest.TestCase):
                                                       expanded=None, eliminated=None)
             subject._progress_dict = {parent: parent_progress}
             expected = {parent: parent_progress_with_child}
-            subject.add_child_to_parent(parent, child)
+            subject._add_child_to_parent(parent, child)
             actual = subject._progress_dict
             self.assertDictEqual(expected, actual)
 
@@ -45,7 +45,7 @@ class TestSolver(unittest.TestCase):
                                                       expanded=None, eliminated=None)
             subject._progress_dict = {parent: parent_progress}
             expected = {parent: parent_progress_with_child}
-            subject.add_child_to_parent(parent, child_2)
+            subject._add_child_to_parent(parent, child_2)
             actual = subject._progress_dict
             self.assertDictEqual(expected, actual)
 
@@ -93,9 +93,9 @@ class TestSolver(unittest.TestCase):
             expected_dictionary = {
                 new_location: new_progress_improvement
             }
-            with patch.object(subject, 'add_child_to_parent') as child_patch:
-                actual_duration = subject.add_new_nodes_to_progress_dict(new_nodes, input_best_duration,
-                                                                         known_best_time)
+            with patch.object(subject, '_add_child_to_parent') as child_patch:
+                actual_duration = subject._add_new_nodes_to_progress_dict(new_nodes, input_best_duration,
+                                                                          known_best_time)
                 child_patch.assert_called_once()
             actual_dictionary = subject._progress_dict
             self.assertEqual(expected_duration, actual_duration)
@@ -148,11 +148,11 @@ class TestSolver(unittest.TestCase):
                 new_location: new_progress_solution,
                 other_location: other_location_progress,
             }
-            with patch.object(subject, 'add_child_to_parent') as child_patch:
-                with patch.object(subject, 'mark_slow_nodes_as_eliminated') as elimination_patch:
-                    with patch.object(subject, 'reset_walking_coordinates') as coordinates_patch:
-                        actual_duration = subject.add_new_nodes_to_progress_dict(new_nodes, input_best_duration,
-                                                                                 known_best_time, verbose=False)
+            with patch.object(subject, '_add_child_to_parent') as child_patch:
+                with patch.object(subject, '_mark_slow_nodes_as_eliminated') as elimination_patch:
+                    with patch.object(subject, '_reset_walking_coordinates') as coordinates_patch:
+                        actual_duration = subject._add_new_nodes_to_progress_dict(new_nodes, input_best_duration,
+                                                                                  known_best_time, verbose=False)
                         child_patch.assert_called_once()
                         elimination_patch.assert_called_once()
                         coordinates_patch.assert_called_once_with(expected_duration)
@@ -174,7 +174,7 @@ class TestSolver(unittest.TestCase):
             subject._progress_dict[location_status] = progress
 
             expected = None
-            actual = subject.expand(location_status, None)
+            actual = subject._expand(location_status, None)
 
             self.assertEqual(expected, actual)
             self.assertEqual(subject._progress_dict[location_status], progress)
@@ -189,7 +189,7 @@ class TestSolver(unittest.TestCase):
             subject._progress_dict[location_status] = progress
 
             expected = None
-            actual = subject.expand(location_status, None)
+            actual = subject._expand(location_status, None)
 
             self.assertEqual(expected, actual)
             self.assertEqual(subject._progress_dict[location_status], progress)
@@ -204,7 +204,7 @@ class TestSolver(unittest.TestCase):
             subject._progress_dict[location_status] = progress
 
             expected = None
-            actual = subject.expand(location_status, None)
+            actual = subject._expand(location_status, None)
 
             self.assertEqual(expected, actual)
             self.assertEqual(subject._progress_dict[location_status], progress)
@@ -223,9 +223,9 @@ class TestSolver(unittest.TestCase):
 
             expected = 3
 
-            with patch.object(subject, 'get_new_nodes') as get_new_nodes_patch:
-                with patch.object(subject, 'add_new_nodes_to_progress_dict', return_value=3) as add_new_nodes_patch:
-                    actual = subject.expand(location_status, None)
+            with patch.object(subject, '_get_new_nodes') as get_new_nodes_patch:
+                with patch.object(subject, '_add_new_nodes_to_progress_dict', return_value=3) as add_new_nodes_patch:
+                    actual = subject._expand(location_status, None)
                     get_new_nodes_patch.assert_called_once()
                     add_new_nodes_patch.assert_called_once()
 
@@ -244,7 +244,7 @@ class TestSolver(unittest.TestCase):
                              transfer_route=None, walk_route=None, walk_speed_mph=None)
             input_time = 400
             expected = input_time
-            actual = subject.get_new_minimum_remaining_time(input_time, None, 'not a route', None)
+            actual = subject._get_new_minimum_remaining_time(input_time, None, 'not a route', None)
             self.assertEqual(expected, actual)
 
         def test_route_on_solution_set():
@@ -255,7 +255,7 @@ class TestSolver(unittest.TestCase):
             subject._start_time = DEFAULT_START_TIME
             input_time = 400 * 60
             expected = 60 * 60
-            actual = subject.get_new_minimum_remaining_time(input_time, '##Bowdoin##Lynn##Wonderland##', 3,
+            actual = subject._get_new_minimum_remaining_time(input_time, '##Bowdoin##Lynn##Wonderland##', 3,
                                                             '##Wonderland##')
             self.assertEqual(expected, actual)
 
@@ -270,10 +270,10 @@ class TestSolver(unittest.TestCase):
             known_best_time = 'arg2'
             location_status_info = LocationStatusInfo(location=None, arrival_route='transfer route', unvisited=None)
             expected = ['after transfer']
-            with patch.object(subject, 'get_nodes_after_transfer', return_value=['after transfer']) as \
+            with patch.object(subject, '_get_nodes_after_transfer', return_value=['after transfer']) as \
                     mock_after_transfer:
                 subject._progress_dict[location_status_info] = None
-                actual = subject.get_new_nodes(location_status_info, known_best_time)
+                actual = subject._get_new_nodes(location_status_info, known_best_time)
                 mock_after_transfer.assert_called_once_with(location_status_info, known_best_time)
 
             self.assertEqual(actual, expected)
@@ -292,7 +292,7 @@ class TestSolver(unittest.TestCase):
                          progress_info._replace(duration=100, trip_stop_no='transfer route',
                                                 arrival_trip='transfer route', parent=location_status_info,
                                                 expanded=False, eliminated=False, minimum_remaining_time=7))]
-            actual = subject.get_new_nodes(location_status_info, known_best_time)
+            actual = subject._get_new_nodes(location_status_info, known_best_time)
 
             self.assertEqual(actual, expected)
 
@@ -305,11 +305,11 @@ class TestSolver(unittest.TestCase):
                                          children=None, minimum_remaining_time=None, expanded=None, eliminated=None)
             expected = ['transfer data', 'after service']
             known_best_time = 'arg2'
-            with patch.object(subject, 'get_next_stop_data_for_trip', return_value='after service') as \
+            with patch.object(subject, '_get_next_stop_data_for_trip', return_value='after service') as \
                     mock_after_service:
-                with patch.object(subject, 'get_transfer_data', return_value='transfer data') as mock_transfer_data:
+                with patch.object(subject, '_get_transfer_data', return_value='transfer data') as mock_transfer_data:
                     subject._progress_dict[location_status_info] = progress_info
-                    actual = subject.get_new_nodes(location_status_info, known_best_time)
+                    actual = subject._get_new_nodes(location_status_info, known_best_time)
                     mock_after_service.assert_called_once_with(location_status_info)
                     mock_transfer_data.assert_called_once_with(location_status_info)
 
@@ -333,7 +333,7 @@ class TestSolver(unittest.TestCase):
             subject._progress_dict[input_location_status] = input_progress
 
             expected = None
-            actual = subject.get_next_stop_data_for_trip(input_location_status)
+            actual = subject._get_next_stop_data_for_trip(input_location_status)
 
             self.assertEqual(expected, actual)
 
@@ -360,7 +360,7 @@ class TestSolver(unittest.TestCase):
                              parent=input_location_status, arrival_trip='3-7AM', trip_stop_no='2',
                              minimum_remaining_time=2 * 60 * 60 + 4, expanded=False, eliminated=False)
             )
-            actual = subject.get_next_stop_data_for_trip(input_location_status)
+            actual = subject._get_next_stop_data_for_trip(input_location_status)
 
             self.assertEqual(expected, actual)
 
@@ -389,7 +389,7 @@ class TestSolver(unittest.TestCase):
                 ProgressInfo(duration=122 * 60, children=None, parent=input_location_status, arrival_trip='Blue-6AM',
                              trip_stop_no='2', minimum_remaining_time=60 * 60, expanded=False, eliminated=False)
             )
-            actual = subject.get_node_after_boarding_route(input_location_status, input_new_route)
+            actual = subject._get_node_after_boarding_route(input_location_status, input_new_route)
             self.assertEqual(expected, actual)
 
         def test_last_stop():
@@ -408,7 +408,7 @@ class TestSolver(unittest.TestCase):
             input_new_route = 2
 
             expected = None
-            actual = subject.get_node_after_boarding_route(input_location_status, input_new_route)
+            actual = subject._get_node_after_boarding_route(input_location_status, input_new_route)
             self.assertEqual(expected, actual)
 
         test_not_last_stop()
@@ -431,10 +431,10 @@ class TestSolver(unittest.TestCase):
             trip_stop_no='1', minimum_remaining_time=60 * 60, expanded=False, eliminated=False)
         subject._progress_dict[input_location_status] = input_progress
 
-        with patch.object(Solver, 'get_walking_data', return_value=['walking data']) as mock_walking_data:
-            with patch.object(Solver, 'get_node_after_boarding_route', return_value='new route data') \
+        with patch.object(Solver, '_get_walking_data', return_value=['walking data']) as mock_walking_data:
+            with patch.object(Solver, '_get_node_after_boarding_route', return_value='new route data') \
                     as mock_node_after_boarding_route:
-                actual = subject.get_nodes_after_transfer(input_location_status, known_best_time)
+                actual = subject._get_nodes_after_transfer(input_location_status, known_best_time)
                 mock_walking_data.assert_called_once_with(input_location_status, known_best_time)
                 self.assertEqual(mock_node_after_boarding_route.call_count, 2)
                 mock_node_after_boarding_route.assert_any_call(input_location_status, 1)
@@ -464,7 +464,7 @@ class TestSolver(unittest.TestCase):
             }
 
             expected = []
-            actual = subject.get_walking_data(input_location_status, 1000000)
+            actual = subject._get_walking_data(input_location_status, 1000000)
             self.assertListEqual(expected, actual)
 
         def test_at_start():
@@ -485,7 +485,7 @@ class TestSolver(unittest.TestCase):
             }
 
             expected = []
-            actual = subject.get_walking_data(input_location_status, 1000000)
+            actual = subject._get_walking_data(input_location_status, 1000000)
             self.assertListEqual(expected, actual)
 
         def test_with_insufficient_time_to_walk():
@@ -506,7 +506,7 @@ class TestSolver(unittest.TestCase):
             }
 
             expected = set()
-            actual = set(subject.get_walking_data(input_location_status, 10000))
+            actual = set(subject._get_walking_data(input_location_status, 10000))
             self.assertSetEqual(expected, actual)
 
         def test_with_insufficient_time_to_travel():
@@ -529,8 +529,8 @@ class TestSolver(unittest.TestCase):
 
             stop_coordinates = subject.data_munger.get_all_stop_coordinates().copy()
             wonderland_coordinates = stop_coordinates.pop('Wonderland')
-            walking_times = {(station, subject.walk_time_seconds(coordinates.lat, wonderland_coordinates.lat,
-                                                                 coordinates.long, wonderland_coordinates.long))
+            walking_times = {(station, subject._walk_time_seconds(coordinates.lat, wonderland_coordinates.lat,
+                                                                  coordinates.long, wonderland_coordinates.long))
                              for station, coordinates in stop_coordinates.items()}
 
             expected = {
@@ -544,7 +544,7 @@ class TestSolver(unittest.TestCase):
                 for station, time in walking_times
                 if station != 'Heath Street'
             }
-            actual = set(subject.get_walking_data(input_location_status, 1000000))
+            actual = set(subject._get_walking_data(input_location_status, 1000000))
             self.assertSetEqual(expected, actual)
 
         def test_calculates_correct_result():
@@ -566,8 +566,8 @@ class TestSolver(unittest.TestCase):
 
             stop_coordinates = subject.data_munger.get_all_stop_coordinates().copy()
             wonderland_coordinates = stop_coordinates.pop('Wonderland')
-            walking_times = {(station, subject.walk_time_seconds(coordinates.lat, wonderland_coordinates.lat,
-                                                                 coordinates.long, wonderland_coordinates.long))
+            walking_times = {(station, subject._walk_time_seconds(coordinates.lat, wonderland_coordinates.lat,
+                                                                  coordinates.long, wonderland_coordinates.long))
                              for station, coordinates in stop_coordinates.items()}
             expected = {
                 (
@@ -579,7 +579,7 @@ class TestSolver(unittest.TestCase):
                 )
                 for station, time in walking_times
             }
-            actual = set(subject.get_walking_data(input_location_status, 1000000))
+            actual = set(subject._get_walking_data(input_location_status, 1000000))
             self.assertSetEqual(expected, actual)
 
         test_at_start()
@@ -599,7 +599,7 @@ class TestSolver(unittest.TestCase):
                                  minimum_remaining_time=180, expanded=None, eliminated=False)
             }
             expected = LocationStatusInfo(location='1', arrival_route='1', unvisited='~~1~~2~~3~~')
-            actual = subject.last_improving_ancestor(
+            actual = subject._last_improving_ancestor(
                 LocationStatusInfo(location='1', arrival_route='1', unvisited='~~1~~2~~3~~'))
 
             self.assertEqual(expected, actual)
@@ -637,7 +637,7 @@ class TestSolver(unittest.TestCase):
             }
 
             expected = location_2
-            actual = subject.last_improving_ancestor(location_6)
+            actual = subject._last_improving_ancestor(location_6)
             self.assertEqual(expected, actual)
 
         test_close_to_start()
@@ -656,7 +656,7 @@ class TestSolver(unittest.TestCase):
             }
             new_location = LocationStatusInfo(location='1', arrival_route='transfer', unvisited='~~1~~2~~3')
             self.assertFalse(
-                subject.location_has_been_reached_faster(new_location, new_duration=1, parent=location_1))
+                subject._location_has_been_reached_faster(new_location, new_duration=1, parent=location_1))
 
         def test_faster_path_causes_elimination():
             subject = Solver(analysis=MockAnalysis(), data=MockData(), progress_between_pruning_progress_dict=None,
@@ -687,7 +687,7 @@ class TestSolver(unittest.TestCase):
                                  minimum_remaining_time=30, expanded=None, eliminated=None)
             }
 
-            self.assertTrue(subject.location_has_been_reached_faster(location_6, 220, location_4))
+            self.assertTrue(subject._location_has_been_reached_faster(location_6, 220, location_4))
 
         def test_slower_path_does_not_cause_elimination():
             subject = Solver(analysis=MockAnalysis(), data=MockData(), progress_between_pruning_progress_dict=None,
@@ -718,7 +718,7 @@ class TestSolver(unittest.TestCase):
                                  minimum_remaining_time=30, expanded=None, eliminated=None)
             }
 
-            self.assertFalse(subject.location_has_been_reached_faster(location_6, 220, location_4))
+            self.assertFalse(subject._location_has_been_reached_faster(location_6, 220, location_4))
 
         test_parent_does_not_count()
         test_faster_path_causes_elimination()
@@ -770,7 +770,7 @@ class TestSolver(unittest.TestCase):
         subject._progress_dict = input_progress_dict
         to_preserve = set()
         to_preserve.add(3)
-        subject.mark_slow_nodes_as_eliminated(new_duration, preserve=to_preserve)
+        subject._mark_slow_nodes_as_eliminated(new_duration, preserve=to_preserve)
         actual = subject._progress_dict
         self.assertDictEqual(expected, actual)
 
@@ -780,7 +780,7 @@ class TestSolver(unittest.TestCase):
                          transfer_duration_seconds=1, transfer_route='transfer', walk_route='walk',
                          walk_speed_mph=1)
         all_stations = ['Wonderland', 'Heath Street', 'Back of the Hill', 'Bowdoin', 'Lynn', 'Alewife', 'Lechmere']
-        subject.reset_time_to_nearest_station(known_best_time=None)
+        subject._reset_time_to_nearest_station(known_best_time=None)
         expected = {station: 0 for station in all_stations}
         actual = subject._time_to_nearest_station
         self.assertDictEqual(actual, expected)
@@ -798,14 +798,14 @@ class TestSolver(unittest.TestCase):
 
                 return 100
 
-            subject.reset_time_to_nearest_station(None)
+            subject._reset_time_to_nearest_station(None)
 
-            with patch.object(subject, 'walk_time_seconds', new=walk_time_seconds):
-                subject.reset_walking_coordinates(known_best_time=None)
+            with patch.object(subject, '_walk_time_seconds', new=walk_time_seconds):
+                subject._reset_walking_coordinates(known_best_time=None)
 
             coordinates = subject.data_munger.get_all_stop_coordinates()
-            self.assertEqual(len(subject.get_walking_coordinates()), len(coordinates) - 1)
-            self.assertTrue('Heath Street' not in subject.get_walking_coordinates())
+            self.assertEqual(len(subject._get_walking_coordinates()), len(coordinates) - 1)
+            self.assertTrue('Heath Street' not in subject._get_walking_coordinates())
 
         def test_known_best_time():
             subject = Solver(analysis=MockAnalysis(route_types_to_solve=[1]), data=MockData(),
@@ -823,21 +823,21 @@ class TestSolver(unittest.TestCase):
                     return 200000
                 return 500  # Everything else is close
 
-            subject.reset_time_to_nearest_station(None)
+            subject._reset_time_to_nearest_station(None)
 
             coordinates = subject.data_munger.get_all_stop_coordinates()
 
-            with patch.object(subject, 'walk_time_seconds', new=walk_time_seconds):
-                subject.reset_walking_coordinates(known_best_time=None)
-                self.assertEqual(len(subject.get_walking_coordinates()), len(coordinates) - 1)
+            with patch.object(subject, '_walk_time_seconds', new=walk_time_seconds):
+                subject._reset_walking_coordinates(known_best_time=None)
+                self.assertEqual(len(subject._get_walking_coordinates()), len(coordinates) - 1)
 
                 # This example has minimum time of 9000, so this is max 1000 walking time
-                subject.reset_walking_coordinates(known_best_time=10000)
+                subject._reset_walking_coordinates(known_best_time=10000)
 
             coordinates = subject.data_munger.get_all_stop_coordinates()
-            self.assertEqual(len(subject.get_walking_coordinates()), len(coordinates) - 2)
-            self.assertTrue('Heath Street' not in subject.get_walking_coordinates())
-            self.assertTrue('Lechmere' not in subject.get_walking_coordinates())
+            self.assertEqual(len(subject._get_walking_coordinates()), len(coordinates) - 2)
+            self.assertTrue('Heath Street' not in subject._get_walking_coordinates())
+            self.assertTrue('Lechmere' not in subject._get_walking_coordinates())
 
         def test_insufficient_travel_time():
             subject = Solver(analysis=MockAnalysis(route_types_to_solve=[1]), data=MockData(),
@@ -846,21 +846,21 @@ class TestSolver(unittest.TestCase):
                              walk_speed_mph=1)
             subject._start_time = DEFAULT_START_TIME
 
-            subject.reset_time_to_nearest_station(None)
+            subject._reset_time_to_nearest_station(None)
             subject._time_to_nearest_station['Back of the Hill'] = 1001
 
             coordinates = subject.data_munger.get_all_stop_coordinates()
 
-            with patch.object(subject, 'walk_time_seconds', return_value=100):
-                subject.reset_walking_coordinates(known_best_time=None)
-                self.assertEqual(len(subject.get_walking_coordinates()), len(coordinates) - 1)
+            with patch.object(subject, '_walk_time_seconds', return_value=100):
+                subject._reset_walking_coordinates(known_best_time=None)
+                self.assertEqual(len(subject._get_walking_coordinates()), len(coordinates) - 1)
 
                 # This example has minimum time of 9000, so this is max 1000 walking time
-                subject.reset_walking_coordinates(known_best_time=10000)
+                subject._reset_walking_coordinates(known_best_time=10000)
 
             coordinates = subject.data_munger.get_all_stop_coordinates()
-            self.assertEqual(len(subject.get_walking_coordinates()), len(coordinates) - 1)
-            self.assertTrue('Back of the Hill' not in subject.get_walking_coordinates())
+            self.assertEqual(len(subject._get_walking_coordinates()), len(coordinates) - 1)
+            self.assertTrue('Back of the Hill' not in subject._get_walking_coordinates())
 
         test_no_known_best_time()
         test_known_best_time()
@@ -873,17 +873,17 @@ class TestSolver(unittest.TestCase):
                           transfer_route=None, walk_route=None)
 
         def test_zero_time_at_any_speed_for_no_distance():
-            self.assertEqual(get_solver_with_speed(mph=0.5).walk_time_seconds(2, 2, -40, -40), 0)
-            self.assertEqual(get_solver_with_speed(mph=0.5).walk_time_seconds(0, 0, 0, 0), 0)
-            self.assertEqual(get_solver_with_speed(mph=0.5).walk_time_seconds(-30, -30, 30, 30), 0)
+            self.assertEqual(get_solver_with_speed(mph=0.5)._walk_time_seconds(2, 2, -40, -40), 0)
+            self.assertEqual(get_solver_with_speed(mph=0.5)._walk_time_seconds(0, 0, 0, 0), 0)
+            self.assertEqual(get_solver_with_speed(mph=0.5)._walk_time_seconds(-30, -30, 30, 30), 0)
 
         def test_time_accuracy_1():
-            actual = get_solver_with_speed(mph=0.5).walk_time_seconds(42.2402, 42.2449, -70.89, -70.8715)
+            actual = get_solver_with_speed(mph=0.5)._walk_time_seconds(42.2402, 42.2449, -70.89, -70.8715)
             self.assertGreater(actual, 7200*(1-.001))
             self.assertLess(actual, 7200*(1+.001))
 
         def test_time_accuracy_2():
-            actual = get_solver_with_speed(mph=10).walk_time_seconds(42.2334, 42.2477, -71.0061, -71.003)
+            actual = get_solver_with_speed(mph=10)._walk_time_seconds(42.2334, 42.2477, -71.0061, -71.003)
             self.assertGreater(actual, 360*(1-.001))
             self.assertLess(actual, 360*(1+.001))
 
