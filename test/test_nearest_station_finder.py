@@ -89,8 +89,20 @@ class TestNearestStationFinder(unittest.TestCase):
 
             self.assertEqual(actual, expected)
 
+        def test_calculate_correct_result_without_mocking():
+            subject = NearestStationFinder(analysis=MockAnalysis(route_types_to_solve=[1]), data=MockData(),
+                                           progress_between_pruning_progress_dict=None, prune_thoroughness=None,
+                                           stop_join_string='~~', transfer_duration_seconds=60,
+                                           transfer_route='transfer_route', walk_route='walk_route', walk_speed_mph=1)
+
+            expected = 1200
+            actual = subject.travel_time_secs_to_nearest_solution_station('Lechmere', ['Back of the Hill'],
+                                                                          DEFAULT_START_TIME)
+            self.assertLess(abs(expected - actual), 0.001)
+
         test_return_0_for_solution_station()
         test_calculate_correct_result_with_mocking()
+        test_calculate_correct_result_without_mocking()
 
 
 class MockData:

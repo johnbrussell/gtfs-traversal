@@ -58,6 +58,9 @@ class NearestStationFinder(Solver):
             self._initial_unsolved_string = self._stop_join_string + "any_solution_stop" + self._stop_join_string
         return self._initial_unsolved_string
 
+    def _get_total_minimum_time(self, start_time):
+        return 0
+
     def _initialize_progress_dict(self, origin, earliest_departure_time):
         self._progress_dict = dict()
         departure_time = self._find_next_departure_time(origin, earliest_departure_time)
