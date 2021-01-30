@@ -1,11 +1,9 @@
 import unittest
-
-from datetime import datetime
-from gtfs_traversal.data_munger import DataMunger
-from gtfs_traversal.data_structures import *
-from gtfs_traversal.expansion_queue import ExpansionQueue
-from gtfs_traversal.nearest_station_finder import NearestStationFinder
+from datetime import datetime, timedelta
 from unittest.mock import patch
+
+from gtfs_traversal.data_structures import *
+from gtfs_traversal.nearest_station_finder import NearestStationFinder
 
 
 DEFAULT_START_DATE = '2020-01-01'
@@ -13,21 +11,39 @@ DEFAULT_START_TIME = datetime.strptime(DEFAULT_START_DATE, '%Y-%m-%d')
 
 
 class TestNearestStationFinder(unittest.TestCase):
-    def test__find_travel_time_secs(self):
-        def test_returns_minimum_time_to_next_stop():
-            data_munger = DataMunger(MockAnalysis(route_types_to_solve=[2]), MockData(), '~~')
-            solutions = data_munger.get_unique_stops_to_solve()
-            origin = 'Wonderland'
-            subject = NearestStationFinder(analysis=MockAnalysis(), data=MockData(),
-                                           progress_between_pruning_progress_dict=None, prune_thoroughness=None,
-                                           stop_join_string='~~', transfer_duration_seconds=None, transfer_route=None,
-                                           walk_route=None, walk_speed_mph=None)
+    def test__find_next_departure_time(self):
+        subject = NearestStationFinder(analysis=MockAnalysis(route_types_to_solve=[1]), data=MockData(),
+                                       progress_between_pruning_progress_dict=None, prune_thoroughness=None,
+                                       stop_join_string='~~', transfer_duration_seconds=None, transfer_route=None,
+                                       walk_route=None, walk_speed_mph=None)
+        self.assertEqual(subject._find_next_departure_time('Wonderland', DEFAULT_START_TIME + timedelta(hours=5.99)),
+                         DEFAULT_START_TIME + timedelta(hours=6))
+        self.assertEqual(subject._find_next_departure_time('Wonderland', DEFAULT_START_TIME + timedelta(hours=6)),
+                         DEFAULT_START_TIME + timedelta(hours=6))
+        self.assertEqual(subject._find_next_departure_time('Wonderland', DEFAULT_START_TIME + timedelta(hours=6.01)),
+                         DEFAULT_START_TIME + timedelta(hours=7))
+        self.assertEqual(subject._find_next_departure_time('Wonderland', DEFAULT_START_TIME + timedelta(hours=9.01)),
+                         DEFAULT_START_TIME + timedelta(hours=11))
+        self.assertEqual(subject._find_next_departure_time('Wonderland', DEFAULT_START_TIME + timedelta(hours=11.01)),
+                         None)
 
-            expected = 20 * 60
-            actual = subject._find_travel_time_secs(origin, solutions, DEFAULT_START_TIME)
-            self.assertEqual(expected, actual)
+    def test__initialize_progress_dict(self):
+        subject = NearestStationFinder(analysis=MockAnalysis(route_types_to_solve=[1]), data=MockData(),
+                                       progress_between_pruning_progress_dict=None, prune_thoroughness=None,
+                                       stop_join_string='~~', transfer_duration_seconds=None, transfer_route=None,
+                                       walk_route=None, walk_speed_mph=None)
+        subject._initialize_progress_dict('Wonderland', DEFAULT_START_TIME + timedelta(hours=7))
 
-        test_returns_minimum_time_to_next_stop()
+        expected = {
+            LocationStatusInfo(location='Wonderland', arrival_route=1, unvisited='~~any_solution_stop~~'):
+                ProgressInfo(duration=0, arrival_trip='3-6AM', children=None, eliminated=False, expanded=False,
+                             minimum_remaining_time=0, parent=None, trip_stop_no='2'),
+            LocationStatusInfo(location='Wonderland', arrival_route=2, unvisited='~~any_solution_stop~~'):
+                ProgressInfo(duration=0, arrival_trip='18-7AM', children=None, eliminated=False, expanded=False,
+                             minimum_remaining_time=0, parent=None, trip_stop_no='1')
+        }
+        actual = subject._progress_dict
+        self.assertDictEqual(expected, actual)
 
     def test__is_solution(self):
         def test_returns_true_if_on_solution_stop():
@@ -48,6 +64,33 @@ class TestNearestStationFinder(unittest.TestCase):
 
         test_returns_true_if_on_solution_stop()
         test_returns_false_if_not_on_solution_stop()
+
+    def test_travel_time_secs_to_nearest_solution_station(self):
+        def test_return_0_for_solution_station():
+            subject = NearestStationFinder(analysis=MockAnalysis(route_types_to_solve=[1]), data=MockData(),
+                                           progress_between_pruning_progress_dict=None, prune_thoroughness=None,
+                                           stop_join_string='~~', transfer_duration_seconds=None, transfer_route=None,
+                                           walk_route=None, walk_speed_mph=None)
+            self.assertEqual(subject.travel_time_secs_to_nearest_solution_station(
+                'Heath Street', ['Heath Street', 'Bowdoin'], DEFAULT_START_TIME), 0)
+
+        def test_calculate_correct_result_with_mocking():
+            subject = NearestStationFinder(analysis=MockAnalysis(route_types_to_solve=[1]), data=MockData(),
+                                           progress_between_pruning_progress_dict=None, prune_thoroughness=None,
+                                           stop_join_string='~~', transfer_duration_seconds=None, transfer_route=None,
+                                           walk_route=None, walk_speed_mph=None)
+
+            expected = 5
+
+            with patch.object(subject, '_find_next_travel_time_secs', return_value=expected) as travel_time_patch:
+                actual = subject.travel_time_secs_to_nearest_solution_station(
+                    'Wonderland', ['Heath Street', 'Bowdoin', 'Back of the Hill'], DEFAULT_START_TIME)
+                self.assertEqual(travel_time_patch.call_count, 5)  # two departures at 7AM
+
+            self.assertEqual(actual, expected)
+
+        test_return_0_for_solution_station()
+        test_calculate_correct_result_with_mocking()
 
 
 class MockData:
