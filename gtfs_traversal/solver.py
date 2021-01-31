@@ -53,7 +53,7 @@ class Solver:
 
         if self._is_solution(new_location):
             if verbose:
-                print(datetime.now() - self._initialization_time, 'solution:', timedelta(seconds=new_progress.duration))
+                self._announce_solution(new_progress)
             best_solution_duration = new_progress.duration
             self._mark_slow_nodes_as_eliminated(best_solution_duration, preserve={new_location})
             self._reset_walking_coordinates(best_solution_duration)
@@ -76,6 +76,9 @@ class Solver:
 
     def _add_separators_to_stop_name(self, stop_name):
         return f'{self._stop_join_string}{stop_name}{self._stop_join_string}'
+
+    def _announce_solution(self, new_progress):
+        print(datetime.now() - self._initialization_time, 'solution:', timedelta(seconds=new_progress.duration))
 
     def _eliminate_stops_from_string(self, stops, uneliminated):
         for stop in stops:

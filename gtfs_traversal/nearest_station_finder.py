@@ -16,6 +16,9 @@ class NearestStationFinder(Solver):
             return 0
         return self._find_travel_time_secs(origin, analysis_start_time)
 
+    def _announce_solution(self, new_progress):
+        pass
+
     def _find_next_departure_time(self, origin, earliest_departure_time):
         next_departure_time = None
 
