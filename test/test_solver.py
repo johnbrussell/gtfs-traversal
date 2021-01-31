@@ -781,7 +781,7 @@ class TestSolver(unittest.TestCase):
                          transfer_duration_seconds=1, transfer_route='transfer', walk_route='walk',
                          walk_speed_mph=1)
         all_stations = ['Wonderland', 'Heath Street', 'Back of the Hill', 'Bowdoin', 'Lynn', 'Alewife', 'Lechmere']
-        subject._reset_time_to_nearest_station()
+        subject._initialize_time_to_nearest_station()
         expected = {station: 0 for station in all_stations}
         actual = subject._time_to_nearest_station
         self.assertDictEqual(actual, expected)
@@ -799,7 +799,7 @@ class TestSolver(unittest.TestCase):
 
                 return 100
 
-            subject._reset_time_to_nearest_station()
+            subject._initialize_time_to_nearest_station()
 
             with patch.object(subject, '_walk_time_seconds', new=walk_time_seconds):
                 subject._reset_walking_coordinates(known_best_time=None)
@@ -824,7 +824,7 @@ class TestSolver(unittest.TestCase):
                     return 200000
                 return 500  # Everything else is close
 
-            subject._reset_time_to_nearest_station()
+            subject._initialize_time_to_nearest_station()
 
             coordinates = subject._data_munger.get_all_stop_coordinates()
 
@@ -847,7 +847,7 @@ class TestSolver(unittest.TestCase):
                              walk_speed_mph=1)
             subject._start_time = DEFAULT_START_TIME
 
-            subject._reset_time_to_nearest_station()
+            subject._initialize_time_to_nearest_station()
             subject._time_to_nearest_station['Back of the Hill'] = 1001
 
             coordinates = subject._data_munger.get_all_stop_coordinates()

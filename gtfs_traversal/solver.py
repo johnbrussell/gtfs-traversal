@@ -227,7 +227,7 @@ class Solver:
 
     def _get_time_to_nearest_station(self):
         if self._time_to_nearest_station is None:
-            self._reset_time_to_nearest_station()
+            self._initialize_time_to_nearest_station()
 
         return self._time_to_nearest_station
 
@@ -306,6 +306,11 @@ class Solver:
             for loc, wts in stop_walk_times.items()
             if max_walk_time is None or wts + self._get_time_to_nearest_station()[loc] <= max_walk_time
         ]
+
+    def _initialize_time_to_nearest_station(self):
+        self._time_to_nearest_station = {
+            station: 0 for station in self._data_munger.get_all_stop_coordinates().keys()
+        }
 
     def _is_solution(self, location):
         return location.unvisited == self._stop_join_string
@@ -392,11 +397,6 @@ class Solver:
                 return False
 
         return True
-
-    def _reset_time_to_nearest_station(self):
-        self._time_to_nearest_station = {
-            station: 0 for station in self._data_munger.get_all_stop_coordinates().keys()
-        }
 
     def _reset_walking_coordinates(self, known_best_time):
         abs_max_walk_time = None if known_best_time is None else \
