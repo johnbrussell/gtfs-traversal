@@ -20,6 +20,7 @@ class Solver:
         self._string_shortener = StringShortener()
 
         self._best_duration = None
+        self._expansion_counter = None
         self._exp_queue = None
         self._initial_unsolved_string = None
         self._initialization_time = datetime.now()
@@ -80,6 +81,12 @@ class Solver:
     def _announce_solution(self, new_progress):
         print(datetime.now() - self._initialization_time, 'solution:', timedelta(seconds=new_progress.duration))
 
+    def _count_expansion(self, location):
+        if self._expansion_counter is None:
+            self._expansion_counter = dict()
+
+        self._expansion_counter[location] = self._expansion_counter.get(location, 0) + 1
+
     def _eliminate_stops_from_string(self, stops, uneliminated):
         for stop in stops:
             uneliminated = self._eliminate_stop_from_string(stop, uneliminated)
@@ -132,6 +139,7 @@ class Solver:
         transfer_node = self._get_transfer_data(location_status)
 
         if location_status.arrival_route == self._walk_route:
+            self._count_expansion(location_status.location)
             return [transfer_node]
 
         return [transfer_node, self._get_next_stop_data_for_trip(location_status)]
