@@ -44,8 +44,7 @@ class NearestStationFinder(Solver):
         self._exp_queue = ExpansionQueue(1, STOP_JOIN_STRING)
         self._exp_queue.add(self._progress_dict.keys())
         while not self._exp_queue.is_empty():
-            expandee = self._exp_queue.pop(self._progress_dict)
-            known_best_time = self._expand(expandee, known_best_time)
+            known_best_time = self._expand(known_best_time)
         return known_best_time
 
     def _find_travel_time_secs(self, origin, analysis_start_time):

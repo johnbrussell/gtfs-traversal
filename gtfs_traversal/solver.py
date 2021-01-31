@@ -96,7 +96,9 @@ class Solver:
         return uneliminated.replace(self._add_separators_to_stop_name(self._string_shortener.shorten(name)),
                                     self._stop_join_string)
 
-    def _expand(self, location_status, known_best_time):
+    def _expand(self, known_best_time):
+        location_status = self._exp_queue.pop(self._progress_dict)
+
         if self._is_solution(location_status) \
                 or self._progress_dict[location_status].expanded \
                 or self._progress_dict[location_status].eliminated:

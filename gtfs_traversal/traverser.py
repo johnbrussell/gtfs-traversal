@@ -103,8 +103,7 @@ class Traverser(Solver):
             if self._exp_queue._num_remaining_stops_to_pop == num_stations:
                 num_completed_stations = min(num_initial_start_points - 1, num_initial_start_points - num_start_points)
                 num_start_points = max(num_start_points - 1, 0)
-            expandee = self._exp_queue.pop(self._progress_dict)
-            known_best_time = self._expand(expandee, known_best_time)
+            known_best_time = self._expand(known_best_time)
             if known_best_time is not None:
                 if int((num_stations * num_completed_stations +
                         self._exp_queue._num_remaining_stops_to_pop) / stations_denominator * 100.0) > best_progress:

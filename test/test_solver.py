@@ -172,9 +172,12 @@ class TestSolver(unittest.TestCase):
             progress = ProgressInfo(duration=None, arrival_trip=None, trip_stop_no=None, parent=None, children=None,
                                     minimum_remaining_time=None, expanded=False, eliminated=False)
             subject._progress_dict[location_status] = progress
+            subject._exp_queue = ExpansionQueue(10, None)
 
             expected = None
-            actual = subject._expand(location_status, None)
+
+            with patch.object(subject._exp_queue, 'pop', return_value=location_status):
+                actual = subject._expand(None)
 
             self.assertEqual(expected, actual)
             self.assertEqual(subject._progress_dict[location_status], progress)
@@ -187,9 +190,12 @@ class TestSolver(unittest.TestCase):
             progress = ProgressInfo(duration=None, arrival_trip=None, trip_stop_no=None, parent=None, children=None,
                                     minimum_remaining_time=None, expanded=True, eliminated=False)
             subject._progress_dict[location_status] = progress
+            subject._exp_queue = ExpansionQueue(10, None)
 
             expected = None
-            actual = subject._expand(location_status, None)
+
+            with patch.object(subject._exp_queue, 'pop', return_value=location_status):
+                actual = subject._expand(None)
 
             self.assertEqual(expected, actual)
             self.assertEqual(subject._progress_dict[location_status], progress)
@@ -202,9 +208,12 @@ class TestSolver(unittest.TestCase):
             progress = ProgressInfo(duration=None, arrival_trip=None, trip_stop_no=None, parent=None, children=None,
                                     minimum_remaining_time=None, expanded=False, eliminated=True)
             subject._progress_dict[location_status] = progress
+            subject._exp_queue = ExpansionQueue(10, None)
+
+            with patch.object(subject._exp_queue, 'pop', return_value=location_status):
+                actual = subject._expand(None)
 
             expected = None
-            actual = subject._expand(location_status, None)
 
             self.assertEqual(expected, actual)
             self.assertEqual(subject._progress_dict[location_status], progress)
@@ -220,12 +229,14 @@ class TestSolver(unittest.TestCase):
             expanded_progress = ProgressInfo(duration=None, arrival_trip=None, trip_stop_no=None, parent=None,
                                              children=None, minimum_remaining_time=None, expanded=True,
                                              eliminated=False)
+            subject._exp_queue = ExpansionQueue(10, None)
 
             expected = 3
 
             with patch.object(subject, '_get_new_nodes') as get_new_nodes_patch:
                 with patch.object(subject, '_add_new_nodes_to_progress_dict', return_value=3) as add_new_nodes_patch:
-                    actual = subject._expand(location_status, None)
+                    with patch.object(subject._exp_queue, 'pop', return_value=location_status):
+                        actual = subject._expand(None)
                     get_new_nodes_patch.assert_called_once()
                     add_new_nodes_patch.assert_called_once()
 
