@@ -20,11 +20,11 @@ class Solver:
         self._string_shortener = StringShortener()
 
         self._best_duration = None
-        self._expansion_counter = None
         self._exp_queue = None
         self._initial_unsolved_string = None
         self._initialization_time = datetime.now()
         self._off_course_stop_locations = None
+        self._post_walk_expansion_counter = None
         self._progress_dict = dict()
         self._route_trips = None
         self._start_time = None
@@ -81,11 +81,11 @@ class Solver:
     def _announce_solution(self, new_progress):
         print(datetime.now() - self._initialization_time, 'solution:', timedelta(seconds=new_progress.duration))
 
-    def _count_expansion(self, location):
-        if self._expansion_counter is None:
-            self._expansion_counter = dict()
+    def _count_post_walk_expansion(self, location):
+        if self._post_walk_expansion_counter is None:
+            self._post_walk_expansion_counter = dict()
 
-        self._expansion_counter[location] = self._expansion_counter.get(location, 0) + 1
+        self._post_walk_expansion_counter[location] = self._post_walk_expansion_counter.get(location, 0) + 1
 
     def _eliminate_stops_from_string(self, stops, uneliminated):
         for stop in stops:
@@ -139,7 +139,7 @@ class Solver:
         transfer_node = self._get_transfer_data(location_status)
 
         if location_status.arrival_route == self._walk_route:
-            self._count_expansion(location_status.location)
+            self._count_post_walk_expansion(location_status.location)
             return [transfer_node]
 
         return [transfer_node, self._get_next_stop_data_for_trip(location_status)]

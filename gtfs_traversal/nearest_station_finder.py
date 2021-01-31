@@ -19,7 +19,7 @@ class NearestStationFinder(Solver):
     def _announce_solution(self, new_progress):
         pass
 
-    def _count_expansion(self, location):
+    def _count_post_walk_expansion(self, location):
         pass
 
     def _find_next_departure_time(self, origin, earliest_departure_time):
