@@ -60,7 +60,7 @@ if __name__ == "__main__":
     # start_time = datetime(year=2018, month=10, day=13, hour=22, minute=25)
     while start_time < end_date_midnight:
         print(start_time)
-        new_best_time, new_best_progress_dictionary, earliest_departure_time = traverser.find_solution(
+        new_best_time, new_best_progress_dictionary, earliest_departure_time = traverser.find_solution_at_time(
             start_time, best_time)
         assert new_best_time is not None
         if best_time is None or new_best_time < best_time:

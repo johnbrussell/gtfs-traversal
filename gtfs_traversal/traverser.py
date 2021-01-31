@@ -82,7 +82,7 @@ class Traverser(Solver):
             for stop in path:
                 print(stop)
 
-    def find_solution(self, begin_time, known_best_time):
+    def find_solution_at_time(self, begin_time, known_best_time):
         self.initialize_progress_dict(begin_time)
         self._exp_queue = ExpansionQueue(len(self._data_munger.get_unique_stops_to_solve()), self._stop_join_string)
         if len(self._progress_dict) > 0:
