@@ -95,9 +95,11 @@ class Traverser(Solver):
         stations_denominator = num_initial_start_points * num_stations + 1
         best_progress = 0
 
+        total_expansions = 0
         num_expansions = 0
         while not self._exp_queue.is_empty():
             num_expansions += 1
+            total_expansions += 1
             if self._exp_queue._num_remaining_stops_to_pop == num_stations:
                 num_completed_stations = min(num_initial_start_points - 1, num_initial_start_points - num_start_points)
                 num_start_points = max(num_start_points - 1, 0)
@@ -109,7 +111,7 @@ class Traverser(Solver):
                     best_progress = int((num_stations * num_completed_stations +
                                          self._exp_queue._num_remaining_stops_to_pop) / stations_denominator * 100.0)
                     print(best_progress, datetime.now() - self._initialization_time, self._exp_queue.len(),
-                          len(self._progress_dict), len(self.prunable_nodes()))
+                          len(self._progress_dict), len(self.prunable_nodes()), total_expansions)
                 if num_expansions % self._expansions_to_prune == 0:
                     num_expansions = 0
                     self.prune_progress_dict()
