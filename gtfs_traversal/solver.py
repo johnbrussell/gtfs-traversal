@@ -402,34 +402,11 @@ class Solver:
         abs_max_walk_time = None if known_best_time is None else \
             known_best_time - self._get_total_minimum_time(self._start_time)
         all_coordinates = self._data_munger.get_all_stop_coordinates()
-        solution_stops = self._data_munger.get_unique_stops_to_solve()
+
         self._walking_coordinates = dict()
-        for stop1 in solution_stops:
-            # find walk time to farthest station from stop1
-            max_walk_time = 0
-            for stop2 in solution_stops:
-                wts = self._walk_time_seconds(all_coordinates[stop1].lat, all_coordinates[stop2].lat,
-                                              all_coordinates[stop1].long, all_coordinates[stop2].long)
-                max_walk_time = max(wts, max_walk_time)
-
-            # If a global ceiling is more strict than the time to the farthest station, use the global ceiling
-            if abs_max_walk_time is not None:
-                max_walk_time = min(max_walk_time, abs_max_walk_time)
-
-            # add any station closer to stop1 than max_walk_time to self._walking_coordinates if it's below the global
-            #  logical walk time ceiling and the travel time to the nearest solution stop is below the global walk
-            #  time ceiling
-            for stop3, coordinates in all_coordinates.items():
-                if stop3 in self._walking_coordinates:
-                    continue
-
-                wts = self._walk_time_seconds(all_coordinates[stop1].lat, coordinates.lat,
-                                              all_coordinates[stop1].long, coordinates.long)
-
-                # hm, what if there is a transfer between stops that are distant but have very fast travel times to
-                #  solution stops?
-                if wts + self._get_time_to_nearest_station()[stop3] <= max_walk_time:
-                    self._walking_coordinates[stop3] = coordinates
+        for stop, coordinates in all_coordinates.items():
+            if abs_max_walk_time is None or self._get_time_to_nearest_station()[stop] <= abs_max_walk_time:
+                self._walking_coordinates[stop] = coordinates
 
     def _start_time_in_seconds(self):
         if self._start_time_in_seconds is None:

@@ -793,52 +793,11 @@ class TestSolver(unittest.TestCase):
                              transfer_duration_seconds=1, transfer_route='transfer', walk_route='walk',
                              walk_speed_mph=1)
 
-            def walk_time_seconds(_lat1, _lat2, long1, long2):
-                if long1 == 3 or long2 == 3:
-                    return 1000000
-
-                return 100
-
             subject._initialize_time_to_nearest_station()
-
-            with patch.object(subject, '_walk_time_seconds', new=walk_time_seconds):
-                subject._reset_walking_coordinates(known_best_time=None)
+            subject._reset_walking_coordinates(known_best_time=None)
 
             coordinates = subject._data_munger.get_all_stop_coordinates()
-            self.assertEqual(len(subject._get_walking_coordinates()), len(coordinates) - 1)
-            self.assertTrue('Heath Street' not in subject._get_walking_coordinates())
-
-        def test_known_best_time():
-            subject = Solver(analysis=MockAnalysis(route_types_to_solve=[1]), data=MockData(),
-                             progress_between_pruning_progress_dict=5, prune_thoroughness=.1, stop_join_string='~~',
-                             transfer_duration_seconds=1, transfer_route='transfer', walk_route='walk',
-                             walk_speed_mph=1)
-            subject._start_time = DEFAULT_START_TIME
-
-            def walk_time_seconds(lat1, lat2, long1, long2):
-                if long1 == 3 or long2 == 3:  # Heath Street is very far
-                    return 1000000
-                if lat1 == -5 or lat2 == -5:  # Lechmere is somewhat far
-                    return 1500
-                if (lat1 == 7 or lat2 == 7) and lat1 != -6 and lat2 != -6:  # Lynn far except to Bowdoin
-                    return 200000
-                return 500  # Everything else is close
-
-            subject._initialize_time_to_nearest_station()
-
-            coordinates = subject._data_munger.get_all_stop_coordinates()
-
-            with patch.object(subject, '_walk_time_seconds', new=walk_time_seconds):
-                subject._reset_walking_coordinates(known_best_time=None)
-                self.assertEqual(len(subject._get_walking_coordinates()), len(coordinates) - 1)
-
-                # This example has minimum time of 9000, so this is max 1000 walking time
-                subject._reset_walking_coordinates(known_best_time=10000)
-
-            coordinates = subject._data_munger.get_all_stop_coordinates()
-            self.assertEqual(len(subject._get_walking_coordinates()), len(coordinates) - 2)
-            self.assertTrue('Heath Street' not in subject._get_walking_coordinates())
-            self.assertTrue('Lechmere' not in subject._get_walking_coordinates())
+            self.assertEqual(len(subject._get_walking_coordinates()), len(coordinates))
 
         def test_insufficient_travel_time():
             subject = Solver(analysis=MockAnalysis(route_types_to_solve=[1]), data=MockData(),
@@ -850,21 +809,14 @@ class TestSolver(unittest.TestCase):
             subject._initialize_time_to_nearest_station()
             subject._time_to_nearest_station['Back of the Hill'] = 1001
 
-            coordinates = subject._data_munger.get_all_stop_coordinates()
-
-            with patch.object(subject, '_walk_time_seconds', return_value=100):
-                subject._reset_walking_coordinates(known_best_time=None)
-                self.assertEqual(len(subject._get_walking_coordinates()), len(coordinates) - 1)
-
-                # This example has minimum time of 9000, so this is max 1000 walking time
-                subject._reset_walking_coordinates(known_best_time=10000)
+            # This example has minimum time of 9000, so this is max 1000 walking time
+            subject._reset_walking_coordinates(known_best_time=10000)
 
             coordinates = subject._data_munger.get_all_stop_coordinates()
             self.assertEqual(len(subject._get_walking_coordinates()), len(coordinates) - 1)
             self.assertTrue('Back of the Hill' not in subject._get_walking_coordinates())
 
         test_no_known_best_time()
-        test_known_best_time()
         test_insufficient_travel_time()
 
     def test_walk_time_seconds(self):
