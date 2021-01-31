@@ -11,11 +11,11 @@ DEFAULT_START_TIME = datetime.strptime(DEFAULT_START_DATE, '%Y-%m-%d')
 class TestDataMunger(unittest.TestCase):
     @staticmethod
     def get_blank_subject():
-        return DataMunger(analysis=None, data=None, start_time=None, stop_join_string=None)
+        return DataMunger(analysis=None, data=None, stop_join_string=None)
 
     @staticmethod
     def get_subject_with_mock_data(*, analysis=None):
-        return DataMunger(analysis=analysis, data=MockData(), start_time=DEFAULT_START_TIME, stop_join_string=None)
+        return DataMunger(analysis=analysis, data=MockData(), stop_join_string=None)
 
     def test_first_trip_after(self):
         def test_returns_correct_trip():
@@ -114,7 +114,7 @@ class TestDataMunger(unittest.TestCase):
         subject = self.get_subject_with_mock_data(analysis=MockAnalysis(route_types_to_solve=[1, 2]))
         unvisited_stops = ['Wonderland', 'Back of the Hill', 'Lynn', 'Heath Street']
         expected = 5 * 60 * 60
-        actual = subject.get_minimum_remaining_time(unvisited_stops)
+        actual = subject.get_minimum_remaining_time(unvisited_stops, DEFAULT_START_TIME)
         self.assertEqual(expected, actual)
 
     def test_get_minimum_remaining_transfers(self):
@@ -138,7 +138,7 @@ class TestDataMunger(unittest.TestCase):
                 'Lynn': 30 * 60,
                 'Back of the Hill': 30 * 60
             }
-            actual = subject.get_minimum_stop_times()
+            actual = subject.get_minimum_stop_times(DEFAULT_START_TIME)
 
             for key, value in expected.items():
                 self.assertEqual(value, actual[key])
@@ -149,7 +149,7 @@ class TestDataMunger(unittest.TestCase):
             subject = self.get_blank_subject()
             expected = 'some result'
             subject._minimum_stop_times = expected
-            self.assertEqual(expected, subject.get_minimum_stop_times())
+            self.assertEqual(expected, subject.get_minimum_stop_times(DEFAULT_START_TIME))
 
         test_calculates_correct_result()
         test_memoizes()
@@ -250,13 +250,13 @@ class TestDataMunger(unittest.TestCase):
             subject = self.get_subject_with_mock_data(analysis=MockAnalysis(route_types_to_solve=[1, 2]))
 
             expected = {'Wonderland', 'Back of the Hill'}
-            actual = set(subject.get_transfer_stops())
+            actual = set(subject.get_transfer_stops(DEFAULT_START_TIME))
             self.assertSetEqual(expected, actual)
 
         def test_memoizes():
             subject = self.get_subject_with_mock_data()
             subject._transfer_stops = 'some value'
-            self.assertEqual('some value', subject.get_transfer_stops())
+            self.assertEqual('some value', subject.get_transfer_stops(DEFAULT_START_TIME))
 
         test_finds_midpoint_and_endpoint_transfers()
         test_memoizes()

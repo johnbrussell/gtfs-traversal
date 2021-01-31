@@ -2,10 +2,9 @@ from datetime import datetime, timedelta
 
 
 class DataMunger:
-    def __init__(self, analysis, data, start_time, stop_join_string):
+    def __init__(self, analysis, data, stop_join_string):
         self.analysis = analysis
         self.data = data
-        self.start_time = start_time
         self.stop_join_string = stop_join_string
 
         self._buffered_analysis_end_time = None
@@ -62,7 +61,7 @@ class DataMunger:
     def get_datetime_from_raw_string_time(self, date_at_midnight, time_string):
         return date_at_midnight + timedelta(seconds=self.convert_to_seconds_since_midnight(time_string))
 
-    def get_minimum_stop_times(self):
+    def get_minimum_stop_times(self, start_time):
         if self._minimum_stop_times is not None:
             return self._minimum_stop_times
 
@@ -78,7 +77,7 @@ class DataMunger:
                 # Currently, this function does not support the situation where one trip visits the same stop
                 #  multiple times.
                 # Currently, this function assumes that the first trip of the day along each route is the fastest.
-                best_departure_time, best_trip_id = self.first_trip_after(self.start_time, route, stop)
+                best_departure_time, best_trip_id = self.first_trip_after(start_time, route, stop)
                 if best_trip_id is None:
                     continue
                 stop_number = self.get_stop_number_from_stop_id(stop, route)
@@ -99,7 +98,7 @@ class DataMunger:
         self._minimum_stop_times = minimum_stop_times
         return self._minimum_stop_times
 
-    def get_minimum_remaining_time(self, unvisited_stops):
+    def get_minimum_remaining_time(self, unvisited_stops, start_time):
         total_minimum_remaining_time = 0
         for stop in unvisited_stops:
             routes_at_stop = self.get_routes_at_stop(stop)
@@ -113,9 +112,9 @@ class DataMunger:
                     previous_stop_number = str(int(stop_number) - 1)
                     stops_on_route = self.get_stops_for_route(route)
                     previous_stop = stops_on_route[previous_stop_number].stopId
-                    best_departure_time, best_trip_id = self.first_trip_after(self.start_time, route, previous_stop)
+                    best_departure_time, best_trip_id = self.first_trip_after(start_time, route, previous_stop)
                 else:
-                    best_departure_time, best_trip_id = self.first_trip_after(self.start_time, route, stop)
+                    best_departure_time, best_trip_id = self.first_trip_after(start_time, route, stop)
 
                 if best_trip_id is None:
                     continue
@@ -249,13 +248,13 @@ class DataMunger:
     def get_stops_for_trip(self, trip_id):
         return self.get_trip_schedules()[trip_id].tripStops
 
-    def get_total_minimum_time(self):
+    def get_total_minimum_time(self, start_time):
         total_minimum_time = 0
-        for v in self.get_minimum_stop_times().values():
+        for v in self.get_minimum_stop_times(start_time).values():
             total_minimum_time += v
         return total_minimum_time
 
-    def get_transfer_stops(self):
+    def get_transfer_stops(self, start_time):
         if self._transfer_stops is not None:
             return self._transfer_stops
 
@@ -272,7 +271,7 @@ class DataMunger:
                 if stop_number == '1':
                     endpoint_stops.add(stop)
 
-                best_departure_time, best_trip_id = self.first_trip_after(self.start_time, route, stop)
+                best_departure_time, best_trip_id = self.first_trip_after(start_time, route, stop)
 
                 if best_trip_id is None:
                     endpoint_stops.add(stop)
