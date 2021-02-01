@@ -448,17 +448,19 @@ class Solver:
         return degrees * math.pi / 180
 
     def _travel_time_to_solution_stop_after_walk(self, location_status, progress, known_best_time):
-        location = location_status.location
-
-        if location in self._get_time_to_nearest_station():
-            return self._get_time_to_nearest_station()[location]
-
         if progress.parent is None:
             return 0
         if self._progress_dict[progress.parent].parent is None:
             return 0
         if self._progress_dict[progress.parent].parent.arrival_route != self._walk_route:
             return 0
+
+        location = location_status.location
+
+        # because this time is only valid when not starting with a walk, this cannot be returned before verifying
+        #  that you have just finished a walk
+        if location in self._get_time_to_nearest_station():
+            return self._get_time_to_nearest_station()[location]
 
         num_walk_expansions = self._get_walk_expansions_at_stop(location)
         if num_walk_expansions == 0:
