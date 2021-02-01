@@ -11,9 +11,11 @@ WALK_ROUTE = 'walk route'
 
 
 class NearestStationFinder(Solver):
-    def travel_time_secs_to_nearest_solution_station(self, origin, solutions, analysis_start_time, maximum_time):
+    def travel_time_secs_to_nearest_solution_station(self, origin, solutions, analysis_start_time, maximum_time,
+                                                     known_travel_times):
         if origin in solutions:
             return 0
+        self._time_to_nearest_station = known_travel_times
         return self._find_travel_time_secs(origin, analysis_start_time, maximum_time)
 
     def _announce_solution(self, new_progress):
