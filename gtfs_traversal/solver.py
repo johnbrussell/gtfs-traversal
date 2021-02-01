@@ -437,6 +437,9 @@ class Solver:
 
         self._time_to_nearest_station[station] = time
 
+    def _should_calculate_time_to_nearest_solution_station(self, location):
+        return self._get_walk_expansions_at_stop(location) >= math.sqrt(len(self._get_time_to_nearest_station()))
+
     def _start_time_in_seconds(self):
         if self._start_time_in_seconds is None:
             self._start_time_in_seconds = self._start_time.total_seconds()
@@ -466,8 +469,7 @@ class Solver:
         if num_walk_expansions == 0:
             return 0
 
-        total_places_with_walk_expansions = len(self._get_time_to_nearest_station())
-        if num_walk_expansions >= math.sqrt(total_places_with_walk_expansions) and \
+        if self._should_calculate_time_to_nearest_solution_station(location) and \
                 location not in self._get_time_to_nearest_station():
             travel_time = self._calculate_travel_time_to_solution_stop(location, known_best_time)
             if travel_time is None:
