@@ -426,6 +426,8 @@ class Solver:
             known_best_time - self._get_total_minimum_time(self._start_time)
         all_coordinates = self._data_munger.get_all_stop_coordinates()
 
+        # TODO remove stations with no departures from this (ie., stations at the end of their route)
+
         self._walking_coordinates = dict()
         for stop, coordinates in all_coordinates.items():
             if abs_max_walk_time is None or self._get_time_to_nearest_station().get(stop, 0) <= abs_max_walk_time:
