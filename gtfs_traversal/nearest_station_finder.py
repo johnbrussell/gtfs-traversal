@@ -11,9 +11,9 @@ WALK_ROUTE = 'walk route'
 
 
 class NearestStationFinder(Solver):
-    def travel_time_secs_to_nearest_solution_station(self, origin, solutions, analysis_start_time, maximum_time,
+    def travel_time_secs_to_nearest_solution_station(self, origin, analysis_start_time, maximum_time,
                                                      known_travel_times):
-        if origin in solutions:
+        if self._is_solution_location(origin):
             return 0
         self._time_to_nearest_station = known_travel_times
         return self._find_travel_time_secs(origin, analysis_start_time, maximum_time)
@@ -99,8 +99,11 @@ class NearestStationFinder(Solver):
                 print(f"trip {trip} potentially visits stop {next_stop} multiple times")
         self._start_time = departure_time
 
-    def _is_solution(self, location):
-        return location.location in self._data_munger.get_unique_stops_to_solve()
+    def _is_solution(self, location_status):
+        return self._is_solution_location(location_status.location)
+
+    def _is_solution_location(self, location):
+        return location in self._data_munger.get_unique_stops_to_solve()
 
     def _routes_at_station(self, station):
         return self._data_munger.get_routes_at_stop(station)
