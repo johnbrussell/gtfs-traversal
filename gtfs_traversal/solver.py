@@ -452,6 +452,7 @@ class Solver:
     def _to_radians_from_degrees(degrees):
         return degrees * math.pi / 180
 
+    # TODO consider starting with a walk
     def _travel_time_to_solution_stop_after_walk(self, location_status, progress, known_best_time):
         if progress.parent is None:
             return 0
