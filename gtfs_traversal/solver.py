@@ -327,7 +327,9 @@ class Solver:
         ]
 
     def _initialize_time_to_nearest_station(self):
-        self._time_to_nearest_station = dict()
+        self._time_to_nearest_station = {
+            station: 0 for station in self._data_munger.get_unique_stops_to_solve()
+        }
 
     def _is_solution(self, location):
         return location.unvisited == self._stop_join_string
