@@ -99,3 +99,6 @@ class NearestStationFinder(Solver):
 
     def _routes_at_station(self, station):
         return self._data_munger.get_routes_at_stop(station)
+
+    def _travel_time_to_solution_stop_after_walk(self, location_status, progress, known_best_time):
+        return 0

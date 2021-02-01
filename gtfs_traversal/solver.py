@@ -1,8 +1,8 @@
 import math
-from datetime import datetime, timedelta
+from datetime import datetime
 
 from gtfs_traversal.data_munger import DataMunger
-from gtfs_traversal.data_structures import *
+from gtfs_traversal.nearest_station_finder import *
 from gtfs_traversal.string_shortener import StringShortener
 
 
@@ -80,6 +80,10 @@ class Solver:
 
     def _announce_solution(self, new_progress):
         print(datetime.now() - self._initialization_time, 'solution:', timedelta(seconds=new_progress.duration))
+
+    def _calculate_travel_time_to_solution_stop(self, origin):
+        # must be implemented in subclass
+        return 0
 
     def _count_post_walk_expansion(self, location):
         if self._post_walk_expansion_counter is None:
@@ -276,6 +280,11 @@ class Solver:
 
         return self._walking_coordinates
 
+    def _get_walk_expansions_at_stop(self, stop):
+        if self._post_walk_expansion_counter is None:
+            return 0
+        return self._post_walk_expansion_counter.get(stop, 0)
+
     def _get_walking_data(self, location_status, known_best_time):
         progress = self._progress_dict[location_status]
         walking_coordinates = self._get_walking_coordinates()
@@ -296,7 +305,7 @@ class Solver:
             stop: self._walk_time_seconds(current_coordinates.lat, coordinates.lat,
                                           current_coordinates.long, coordinates.long)
             for stop, coordinates in walking_coordinates.items()
-            if max_walk_time is None or self._get_time_to_nearest_station()[stop] <= max_walk_time
+            if max_walk_time is None or self._get_time_to_nearest_station().get(stop, 0) <= max_walk_time
         }
 
         # Filtering walk times to exclude non-solution stops whose next stop is closer doesn't seem to improve speed.
@@ -314,13 +323,11 @@ class Solver:
                              expanded=False, eliminated=False)
             )
             for loc, wts in stop_walk_times.items()
-            if max_walk_time is None or wts + self._get_time_to_nearest_station()[loc] <= max_walk_time
+            if max_walk_time is None or wts + self._get_time_to_nearest_station().get(loc, 0) <= max_walk_time
         ]
 
     def _initialize_time_to_nearest_station(self):
-        self._time_to_nearest_station = {
-            station: 0 for station in self._data_munger.get_all_stop_coordinates().keys()
-        }
+        self._time_to_nearest_station = dict()
 
     def _is_solution(self, location):
         return location.unvisited == self._stop_join_string
@@ -403,7 +410,10 @@ class Solver:
                 return False
 
         if best_solution_duration is not None:
-            if self._minimum_possible_duration(new_progress) >= best_solution_duration:
+            if self._minimum_possible_duration(new_progress) + \
+                    self._travel_time_to_solution_stop_after_walk(
+                        new_location, new_progress, best_solution_duration) >= \
+                    best_solution_duration:
                 return False
 
         return True
@@ -415,8 +425,14 @@ class Solver:
 
         self._walking_coordinates = dict()
         for stop, coordinates in all_coordinates.items():
-            if abs_max_walk_time is None or self._get_time_to_nearest_station()[stop] <= abs_max_walk_time:
+            if abs_max_walk_time is None or self._get_time_to_nearest_station().get(stop, 0) <= abs_max_walk_time:
                 self._walking_coordinates[stop] = coordinates
+
+    def _set_time_to_nearest_station(self, station, time):
+        if self._time_to_nearest_station is None:
+            self._initialize_time_to_nearest_station()
+
+        self._time_to_nearest_station[station] = time
 
     def _start_time_in_seconds(self):
         if self._start_time_in_seconds is None:
@@ -427,6 +443,33 @@ class Solver:
     @staticmethod
     def _to_radians_from_degrees(degrees):
         return degrees * math.pi / 180
+
+    def _travel_time_to_solution_stop_after_walk(self, location_status, progress, known_best_time):
+        location = location_status.location
+
+        if location in self._get_time_to_nearest_station():
+            return self._get_time_to_nearest_station()[location]
+
+        if progress.parent is None:
+            return 0
+        if self._progress_dict[progress.parent].parent is None:
+            return 0
+        if self._progress_dict[progress.parent].parent.arrival_route != self._walk_route:
+            return 0
+
+        num_walk_expansions = self._get_walk_expansions_at_stop(location)
+        if num_walk_expansions == 0:
+            return 0
+
+        total_places_with_walk_expansions = len(self._get_time_to_nearest_station())
+        if num_walk_expansions >= math.sqrt(total_places_with_walk_expansions) and \
+                location not in self._get_time_to_nearest_station():
+            travel_time = self._calculate_travel_time_to_solution_stop(location)
+            if travel_time is None:
+                travel_time = known_best_time + timedelta(seconds=1)
+            self._set_time_to_nearest_station(location, travel_time)
+
+        return self._get_time_to_nearest_station().get(location, 0)
 
     def _walk_time_seconds(self, lat1, lat2, long1, long2):
         origin_lat = self._to_radians_from_degrees(lat1)

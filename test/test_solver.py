@@ -786,17 +786,6 @@ class TestSolver(unittest.TestCase):
         actual = subject._progress_dict
         self.assertDictEqual(expected, actual)
 
-    def test_reset_time_to_nearest_station(self):
-        subject = Solver(analysis=MockAnalysis(route_types_to_solve=[1]), data=MockData(),
-                         progress_between_pruning_progress_dict=5, prune_thoroughness=.1, stop_join_string='~~',
-                         transfer_duration_seconds=1, transfer_route='transfer', walk_route='walk',
-                         walk_speed_mph=1)
-        all_stations = ['Wonderland', 'Heath Street', 'Back of the Hill', 'Bowdoin', 'Lynn', 'Alewife', 'Lechmere']
-        subject._initialize_time_to_nearest_station()
-        expected = {station: 0 for station in all_stations}
-        actual = subject._time_to_nearest_station
-        self.assertDictEqual(actual, expected)
-
     def test_reset_walking_coordinates(self):
         def test_no_known_best_time():
             subject = Solver(analysis=MockAnalysis(route_types_to_solve=[1]), data=MockData(),
@@ -829,6 +818,234 @@ class TestSolver(unittest.TestCase):
 
         test_no_known_best_time()
         test_insufficient_travel_time()
+
+    def test_travel_time_to_solution_stop_after_walk(self):
+        def test_no_parent():
+            subject = Solver(analysis=MockAnalysis(route_types_to_solve=[1]), data=MockData(),
+                             progress_between_pruning_progress_dict=5, prune_thoroughness=.1, stop_join_string='~~',
+                             transfer_duration_seconds=1, transfer_route='transfer', walk_route='walk',
+                             walk_speed_mph=1)
+            valid_progress_info = ProgressInfo(duration=timedelta(minutes=8), arrival_trip=None, trip_stop_no=None,
+                                               children=None, parent=None, minimum_remaining_time=timedelta(minutes=1),
+                                               expanded=None, eliminated=False)
+            valid_location = LocationStatusInfo(location='Alewife', arrival_route=1, unvisited='~~Lynn~~')
+            subject._progress_dict = {valid_location: valid_progress_info}
+
+            expected = 0
+            actual = subject._travel_time_to_solution_stop_after_walk(valid_location, valid_progress_info, None)
+
+            self.assertEqual(expected, actual)
+
+        def test_no_grandparent():
+            subject = Solver(analysis=MockAnalysis(route_types_to_solve=[1]), data=MockData(),
+                             progress_between_pruning_progress_dict=5, prune_thoroughness=.1, stop_join_string='~~',
+                             transfer_duration_seconds=1, transfer_route='transfer', walk_route='walk',
+                             walk_speed_mph=1)
+            valid_parent_progress_info = ProgressInfo(duration=timedelta(minutes=8), arrival_trip=None,
+                                                      trip_stop_no=None, children=None, parent=None,
+                                                      minimum_remaining_time=timedelta(minutes=1), expanded=None,
+                                                      eliminated=False)
+            valid_parent_location = LocationStatusInfo(location='Alewife', arrival_route='transfer',
+                                                       unvisited='~~Lynn~~')
+            valid_progress_info = ProgressInfo(duration=timedelta(minutes=8), arrival_trip=None, trip_stop_no=None,
+                                               children=None, parent=valid_parent_location,
+                                               minimum_remaining_time=timedelta(minutes=1), expanded=None,
+                                               eliminated=False)
+            valid_location = LocationStatusInfo(location='Alewife', arrival_route=1, unvisited='~~Lynn~~')
+            subject._progress_dict = {
+                valid_location: valid_progress_info,
+                valid_parent_location: valid_parent_progress_info,
+            }
+
+            expected = 0
+            actual = subject._travel_time_to_solution_stop_after_walk(valid_location, valid_progress_info, None)
+
+            self.assertEqual(expected, actual)
+
+        def test_not_after_walk():
+            subject = Solver(analysis=MockAnalysis(route_types_to_solve=[1]), data=MockData(),
+                             progress_between_pruning_progress_dict=5, prune_thoroughness=.1, stop_join_string='~~',
+                             transfer_duration_seconds=1, transfer_route='transfer', walk_route='walk',
+                             walk_speed_mph=1)
+            valid_grandparent_progress_info = ProgressInfo(duration=timedelta(minutes=8), arrival_trip=None,
+                                                           trip_stop_no=None, children=None, parent=None,
+                                                           minimum_remaining_time=timedelta(minutes=1), expanded=None,
+                                                           eliminated=False)
+            valid_grandparent_location = LocationStatusInfo(location='Alewife', arrival_route='not_walk',
+                                                            unvisited='~~Lynn~~')
+            valid_parent_progress_info = ProgressInfo(duration=timedelta(minutes=8), arrival_trip=None,
+                                                      trip_stop_no=None, children=None,
+                                                      parent=valid_grandparent_location,
+                                                      minimum_remaining_time=timedelta(minutes=1), expanded=None,
+                                                      eliminated=False)
+            valid_parent_location = LocationStatusInfo(location='Alewife', arrival_route='transfer',
+                                                       unvisited='~~Lynn~~')
+            valid_progress_info = ProgressInfo(duration=timedelta(minutes=8), arrival_trip=None, trip_stop_no=None,
+                                               children=None, parent=valid_parent_location,
+                                               minimum_remaining_time=timedelta(minutes=1), expanded=None,
+                                               eliminated=False)
+            valid_location = LocationStatusInfo(location='Alewife', arrival_route=1, unvisited='~~Lynn~~')
+            subject._progress_dict = {
+                valid_location: valid_progress_info,
+                valid_parent_location: valid_parent_progress_info,
+                valid_grandparent_location: valid_grandparent_progress_info,
+            }
+
+            expected = 0
+            actual = subject._travel_time_to_solution_stop_after_walk(valid_location, valid_progress_info, None)
+
+            self.assertEqual(expected, actual)
+
+        def test_no_walk_expansions_at_stop():
+            subject = Solver(analysis=MockAnalysis(route_types_to_solve=[1]), data=MockData(),
+                             progress_between_pruning_progress_dict=5, prune_thoroughness=.1, stop_join_string='~~',
+                             transfer_duration_seconds=1, transfer_route='transfer', walk_route='walk',
+                             walk_speed_mph=1)
+            valid_grandparent_progress_info = ProgressInfo(duration=timedelta(minutes=8), arrival_trip=None,
+                                                           trip_stop_no=None, children=None, parent=None,
+                                                           minimum_remaining_time=timedelta(minutes=1), expanded=None,
+                                                           eliminated=False)
+            valid_grandparent_location = LocationStatusInfo(location='Alewife', arrival_route='walk',
+                                                            unvisited='~~Lynn~~')
+            valid_parent_progress_info = ProgressInfo(duration=timedelta(minutes=8), arrival_trip=None,
+                                                      trip_stop_no=None, children=None,
+                                                      parent=valid_grandparent_location,
+                                                      minimum_remaining_time=timedelta(minutes=1), expanded=None,
+                                                      eliminated=False)
+            valid_parent_location = LocationStatusInfo(location='Alewife', arrival_route='transfer',
+                                                       unvisited='~~Lynn~~')
+            valid_progress_info = ProgressInfo(duration=timedelta(minutes=8), arrival_trip=None, trip_stop_no=None,
+                                               children=None, parent=valid_parent_location,
+                                               minimum_remaining_time=timedelta(minutes=1), expanded=None,
+                                               eliminated=False)
+            valid_location = LocationStatusInfo(location='Alewife', arrival_route=1, unvisited='~~Lynn~~')
+            subject._progress_dict = {
+                valid_location: valid_progress_info,
+                valid_parent_location: valid_parent_progress_info,
+                valid_grandparent_location: valid_grandparent_progress_info,
+            }
+
+            expected = 0
+            actual = subject._travel_time_to_solution_stop_after_walk(valid_location, valid_progress_info, None)
+
+            self.assertEqual(expected, actual)
+
+        def test_known_travel_time_to_solution_stop():
+            subject = Solver(analysis=MockAnalysis(route_types_to_solve=[1]), data=MockData(),
+                             progress_between_pruning_progress_dict=5, prune_thoroughness=.1, stop_join_string='~~',
+                             transfer_duration_seconds=1, transfer_route='transfer', walk_route='walk',
+                             walk_speed_mph=1)
+            valid_grandparent_progress_info = ProgressInfo(duration=timedelta(minutes=8), arrival_trip=None,
+                                                           trip_stop_no=None, children=None, parent=None,
+                                                           minimum_remaining_time=timedelta(minutes=1), expanded=None,
+                                                           eliminated=False)
+            valid_grandparent_location = LocationStatusInfo(location='Alewife', arrival_route='walk',
+                                                            unvisited='~~Lynn~~')
+            valid_parent_progress_info = ProgressInfo(duration=timedelta(minutes=8), arrival_trip=None,
+                                                      trip_stop_no=None, children=None,
+                                                      parent=valid_grandparent_location,
+                                                      minimum_remaining_time=timedelta(minutes=1), expanded=None,
+                                                      eliminated=False)
+            valid_parent_location = LocationStatusInfo(location='Alewife', arrival_route='transfer',
+                                                       unvisited='~~Lynn~~')
+            valid_progress_info = ProgressInfo(duration=timedelta(minutes=8), arrival_trip=None, trip_stop_no=None,
+                                               children=None, parent=valid_parent_location,
+                                               minimum_remaining_time=timedelta(minutes=1), expanded=None,
+                                               eliminated=False)
+            valid_location = LocationStatusInfo(location='Alewife', arrival_route=1, unvisited='~~Lynn~~')
+            subject._progress_dict = {
+                valid_location: valid_progress_info,
+                valid_parent_location: valid_parent_progress_info,
+                valid_grandparent_location: valid_grandparent_progress_info,
+            }
+            subject._post_walk_expansion_counter = {'Alewife': 100}
+            subject._time_to_nearest_station = {'Alewife': 9943}
+
+            expected = 9943
+            actual = subject._travel_time_to_solution_stop_after_walk(valid_location, valid_progress_info, None)
+
+            self.assertEqual(expected, actual)
+
+        def test_no_known_travel_time_to_solution_stop_calculated():
+            subject = Solver(analysis=MockAnalysis(route_types_to_solve=[1]), data=MockData(),
+                             progress_between_pruning_progress_dict=5, prune_thoroughness=.1, stop_join_string='~~',
+                             transfer_duration_seconds=1, transfer_route='transfer', walk_route='walk',
+                             walk_speed_mph=1)
+            valid_grandparent_progress_info = ProgressInfo(duration=timedelta(minutes=8), arrival_trip=None,
+                                                           trip_stop_no=None, children=None, parent=None,
+                                                           minimum_remaining_time=timedelta(minutes=1), expanded=None,
+                                                           eliminated=False)
+            valid_grandparent_location = LocationStatusInfo(location='Alewife', arrival_route='walk',
+                                                            unvisited='~~Lynn~~')
+            valid_parent_progress_info = ProgressInfo(duration=timedelta(minutes=8), arrival_trip=None,
+                                                      trip_stop_no=None, children=None,
+                                                      parent=valid_grandparent_location,
+                                                      minimum_remaining_time=timedelta(minutes=1), expanded=None,
+                                                      eliminated=False)
+            valid_parent_location = LocationStatusInfo(location='Alewife', arrival_route='transfer',
+                                                       unvisited='~~Lynn~~')
+            valid_progress_info = ProgressInfo(duration=timedelta(minutes=8), arrival_trip=None, trip_stop_no=None,
+                                               children=None, parent=valid_parent_location,
+                                               minimum_remaining_time=timedelta(minutes=1), expanded=None,
+                                               eliminated=False)
+            valid_location = LocationStatusInfo(location='Alewife', arrival_route=1, unvisited='~~Lynn~~')
+            subject._progress_dict = {
+                valid_location: valid_progress_info,
+                valid_parent_location: valid_parent_progress_info,
+                valid_grandparent_location: valid_grandparent_progress_info,
+            }
+            subject._post_walk_expansion_counter = {'Alewife': 100}
+
+            with patch.object(subject, '_calculate_travel_time_to_solution_stop', return_value=1234) as calc_patch:
+                actual = subject._travel_time_to_solution_stop_after_walk(valid_location, valid_progress_info, None)
+                calc_patch.assert_called_once()
+
+            expected = 1234
+
+            self.assertEqual(expected, actual)
+
+        def test_no_known_travel_time_to_solution_stop_not_calculated():
+            subject = Solver(analysis=MockAnalysis(route_types_to_solve=[1]), data=MockData(),
+                             progress_between_pruning_progress_dict=5, prune_thoroughness=.1, stop_join_string='~~',
+                             transfer_duration_seconds=1, transfer_route='transfer', walk_route='walk',
+                             walk_speed_mph=1)
+            valid_grandparent_progress_info = ProgressInfo(duration=timedelta(minutes=8), arrival_trip=None,
+                                                           trip_stop_no=None, children=None, parent=None,
+                                                           minimum_remaining_time=timedelta(minutes=1), expanded=None,
+                                                           eliminated=False)
+            valid_grandparent_location = LocationStatusInfo(location='Alewife', arrival_route='walk',
+                                                            unvisited='~~Lynn~~')
+            valid_parent_progress_info = ProgressInfo(duration=timedelta(minutes=8), arrival_trip=None,
+                                                      trip_stop_no=None, children=None,
+                                                      parent=valid_grandparent_location,
+                                                      minimum_remaining_time=timedelta(minutes=1), expanded=None,
+                                                      eliminated=False)
+            valid_parent_location = LocationStatusInfo(location='Alewife', arrival_route='transfer',
+                                                       unvisited='~~Lynn~~')
+            valid_progress_info = ProgressInfo(duration=timedelta(minutes=8), arrival_trip=None, trip_stop_no=None,
+                                               children=None, parent=valid_parent_location,
+                                               minimum_remaining_time=timedelta(minutes=1), expanded=None,
+                                               eliminated=False)
+            valid_location = LocationStatusInfo(location='Alewife', arrival_route=1, unvisited='~~Lynn~~')
+            subject._progress_dict = {
+                valid_location: valid_progress_info,
+                valid_parent_location: valid_parent_progress_info,
+                valid_grandparent_location: valid_grandparent_progress_info,
+            }
+            subject._post_walk_expansion_counter = {'Alewife': 1, 'Back of the Hill': 1}
+
+            actual = subject._travel_time_to_solution_stop_after_walk(valid_location, valid_progress_info, None)
+            expected = 0
+
+            self.assertEqual(expected, actual)
+
+        test_no_parent()
+        test_no_grandparent()
+        test_not_after_walk()
+        test_no_walk_expansions_at_stop()
+        test_known_travel_time_to_solution_stop()
+        test_no_known_travel_time_to_solution_stop_calculated()
+        test_no_known_travel_time_to_solution_stop_not_calculated()
 
     def test_walk_time_seconds(self):
         def get_solver_with_speed(*, mph):
