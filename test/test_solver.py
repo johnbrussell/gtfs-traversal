@@ -64,6 +64,7 @@ class TestSolver(unittest.TestCase):
                                  minimum_remaining_time=3600, expanded=False, eliminated=False)
             }
             subject._exp_queue = ExpansionQueue(4, '~~')
+            subject._start_time = DEFAULT_START_TIME
 
             input_best_duration = 7800
             new_progress_eliminated = ProgressInfo(duration=None, arrival_trip=None, trip_stop_no=None, parent=None,
@@ -117,6 +118,7 @@ class TestSolver(unittest.TestCase):
                 other_location: other_location_progress,
             }
             subject._exp_queue = ExpansionQueue(4, '~~')
+            subject._start_time = DEFAULT_START_TIME
 
             input_best_duration = 7800
             new_progress_eliminated = ProgressInfo(duration=None, arrival_trip=None, trip_stop_no=None, parent=None,

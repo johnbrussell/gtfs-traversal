@@ -11,10 +11,10 @@ WALK_ROUTE = 'walk route'
 
 
 class NearestStationFinder(Solver):
-    def travel_time_secs_to_nearest_solution_station(self, origin, solutions, analysis_start_time):
+    def travel_time_secs_to_nearest_solution_station(self, origin, solutions, analysis_start_time, maximum_time):
         if origin in solutions:
             return 0
-        return self._find_travel_time_secs(origin, analysis_start_time)
+        return self._find_travel_time_secs(origin, analysis_start_time, maximum_time)
 
     def _announce_solution(self, new_progress):
         pass
@@ -47,10 +47,13 @@ class NearestStationFinder(Solver):
             known_best_time = self._expand(known_best_time)
         return known_best_time
 
-    def _find_travel_time_secs(self, origin, analysis_start_time):
-        best_travel_time = None
+    def _find_travel_time_secs(self, origin, analysis_start_time, max_time):
+        best_travel_time = max_time
 
         departure_time = self._find_next_departure_time(origin, analysis_start_time)
+        if departure_time is None:
+            return None
+
         while departure_time is not None:
             self._initialize_progress_dict(origin, departure_time)
             best_travel_time = self._find_next_travel_time_secs(departure_time, origin, best_travel_time)

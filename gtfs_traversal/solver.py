@@ -81,7 +81,7 @@ class Solver:
     def _announce_solution(self, new_progress):
         print(datetime.now() - self._initialization_time, 'solution:', timedelta(seconds=new_progress.duration))
 
-    def _calculate_travel_time_to_solution_stop(self, origin):
+    def _calculate_travel_time_to_solution_stop(self, origin, known_best_time):
         # must be implemented in subclass
         return 0
 
@@ -412,7 +412,8 @@ class Solver:
         if best_solution_duration is not None:
             if self._minimum_possible_duration(new_progress) + \
                     self._travel_time_to_solution_stop_after_walk(
-                        new_location, new_progress, best_solution_duration) >= \
+                        new_location, new_progress,
+                        best_solution_duration - self._get_total_minimum_time(self._start_time)) >= \
                     best_solution_duration:
                 return False
 
@@ -464,7 +465,7 @@ class Solver:
         total_places_with_walk_expansions = len(self._get_time_to_nearest_station())
         if num_walk_expansions >= math.sqrt(total_places_with_walk_expansions) and \
                 location not in self._get_time_to_nearest_station():
-            travel_time = self._calculate_travel_time_to_solution_stop(location)
+            travel_time = self._calculate_travel_time_to_solution_stop(location, known_best_time)
             if travel_time is None:
                 travel_time = known_best_time + timedelta(seconds=1)
             self._set_time_to_nearest_station(location, travel_time)
