@@ -165,6 +165,24 @@ class TestSolver(unittest.TestCase):
         test_improvement()
         test_solution()
 
+    def test_calculate_walk_time_to_solution_stop(self):
+        subject = Solver(analysis=MockAnalysis(route_types_to_solve=[1]), data=MockData(),
+                         progress_between_pruning_progress_dict=None, prune_thoroughness=None, stop_join_string='~~',
+                         transfer_duration_seconds=None, transfer_route=None, walk_route=None, walk_speed_mph=2)
+
+        walking_coordinates = {
+            'Alewife': MockStopLocation(42.2402, -70.89),
+            'Wonderland': MockStopLocation(0, 0),
+            'Bowdoin': MockStopLocation(90, 180),
+            'Lynn': MockStopLocation(42.2449, -70.8715),
+        }
+        with patch.object(subject, '_get_walking_coordinates', return_value=walking_coordinates) as walk_patch:
+            actual = subject._calculate_walk_time_to_solution_stop('Alewife')
+
+        expected = 1800
+        self.assertGreater(actual, expected * (1 - 0.001))
+        self.assertLess(actual, expected * (1 + 0.001))
+
     def test_expand(self):
         def test_solved():
             subject = Solver(analysis=MockAnalysis(), data=MockData(), progress_between_pruning_progress_dict=None,
@@ -892,8 +910,9 @@ class TestSolver(unittest.TestCase):
                 valid_parent_location: valid_parent_progress_info,
                 valid_grandparent_location: valid_grandparent_progress_info,
             }
+            subject._set_time_to_nearest_station_with_walk('Alewife', 1)
 
-            expected = 0
+            expected = 1
             actual = subject._travel_time_to_solution_stop_after_walk(valid_location, valid_progress_info, None)
 
             self.assertEqual(expected, actual)
@@ -1005,6 +1024,7 @@ class TestSolver(unittest.TestCase):
             expected = 1234
 
             self.assertEqual(expected, actual)
+            self.assertEqual(subject._get_time_to_nearest_station_with_walk()['Alewife'], 1234)
 
         def test_no_known_travel_time_to_solution_stop_not_calculated():
             subject = Solver(analysis=MockAnalysis(route_types_to_solve=[1]), data=MockData(),

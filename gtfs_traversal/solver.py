@@ -33,6 +33,7 @@ class Solver:
         self._stop_locations_to_solve = None
         self._stops_at_ends_of_solution_routes = None
         self._time_to_nearest_station = None
+        self._time_to_nearest_station_with_walk = None
         self._total_minimum_time = None
         self._trip_schedules = None
         self._walking_coordinates = None
@@ -84,6 +85,13 @@ class Solver:
     def _calculate_travel_time_to_solution_stop(self, origin, known_best_time):
         # must be implemented in subclass
         return 0
+
+    def _calculate_walk_time_to_solution_stop(self, origin):
+        all_coordinates = self._get_walking_coordinates()
+        solution_coordinates = {k: v for k, v in all_coordinates.items()
+                                if k in self._data_munger.get_unique_stops_to_solve()}
+        return min(self._walk_time_seconds(all_coordinates[origin].lat, c.lat, all_coordinates[origin].long, c.long)
+                   for c in solution_coordinates.values())
 
     def _count_post_walk_expansion(self, location):
         if self._post_walk_expansion_counter is None:
@@ -245,6 +253,12 @@ class Solver:
 
         return self._time_to_nearest_station
 
+    def _get_time_to_nearest_station_with_walk(self):
+        if self._time_to_nearest_station_with_walk is None:
+            self._initialize_time_to_nearest_station_with_walk()
+
+        return self._time_to_nearest_station_with_walk
+
     def _get_total_minimum_time(self, start_time):
         if self._total_minimum_time is None:
             self._total_minimum_time = self._data_munger.get_total_minimum_time(start_time)
@@ -328,6 +342,11 @@ class Solver:
 
     def _initialize_time_to_nearest_station(self):
         self._time_to_nearest_station = {
+            station: 0 for station in self._data_munger.get_unique_stops_to_solve()
+        }
+
+    def _initialize_time_to_nearest_station_with_walk(self):
+        self._time_to_nearest_station_with_walk = {
             station: 0 for station in self._data_munger.get_unique_stops_to_solve()
         }
 
@@ -439,6 +458,12 @@ class Solver:
 
         self._time_to_nearest_station[station] = time
 
+    def _set_time_to_nearest_station_with_walk(self, station, time):
+        if self._time_to_nearest_station_with_walk is None:
+            self._initialize_time_to_nearest_station_with_walk()
+
+        self._time_to_nearest_station_with_walk[station] = time
+
     def _should_calculate_time_to_nearest_solution_station(self, location):
         return self._get_walk_expansions_at_stop(location) >= math.sqrt(len(self._get_time_to_nearest_station()))
 
@@ -452,16 +477,15 @@ class Solver:
     def _to_radians_from_degrees(degrees):
         return degrees * math.pi / 180
 
-    # TODO consider starting with a walk
     def _travel_time_to_solution_stop_after_walk(self, location_status, progress, known_best_time):
+        location = location_status.location
+
         if progress.parent is None:
             return 0
         if self._progress_dict[progress.parent].parent is None:
             return 0
         if self._progress_dict[progress.parent].parent.arrival_route != self._walk_route:
-            return 0
-
-        location = location_status.location
+            return self._get_time_to_nearest_station_with_walk().get(location, 0)
 
         # because this time is only valid when not starting with a walk, this cannot be returned before verifying
         #  that you have just finished a walk
@@ -475,9 +499,11 @@ class Solver:
         if self._should_calculate_time_to_nearest_solution_station(location) and \
                 location not in self._get_time_to_nearest_station():
             travel_time = self._calculate_travel_time_to_solution_stop(location, known_best_time)
+            walk_time = self._calculate_walk_time_to_solution_stop(location)
             if travel_time is None:
                 travel_time = known_best_time + timedelta(seconds=1)
             self._set_time_to_nearest_station(location, travel_time)
+            self._set_time_to_nearest_station_with_walk(location, min(travel_time, walk_time))
 
         return self._get_time_to_nearest_station().get(location, 0)
 
