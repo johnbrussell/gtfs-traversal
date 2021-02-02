@@ -116,11 +116,18 @@ class Solver:
                 or self._progress_dict[location_status].eliminated:
             return known_best_time
 
+        if self._expandee_has_known_solution(location_status.location):
+            self._return_known_solution(location_status.location, known_best_time)
+
         self._progress_dict[location_status] = self._progress_dict[location_status]._replace(expanded=True)
 
         new_nodes = self._get_new_nodes(location_status, known_best_time)
 
         return self._add_new_nodes_to_progress_dict(new_nodes, known_best_time, location_status)
+
+    def _expandee_has_known_solution(self, location):
+        # must be implemented in subclass
+        return False
 
     def _get_initial_unsolved_string(self):
         if self._initial_unsolved_string is None:
@@ -451,6 +458,10 @@ class Solver:
         for stop, coordinates in all_coordinates.items():
             if abs_max_walk_time is None or self._get_time_to_nearest_station().get(stop, 0) <= abs_max_walk_time:
                 self._walking_coordinates[stop] = coordinates
+
+    def _return_known_solution(self, location, known_best_time):
+        # must be implemented in subclass
+        return known_best_time
 
     def _set_time_to_nearest_station(self, station, time):
         if self._time_to_nearest_station is None:

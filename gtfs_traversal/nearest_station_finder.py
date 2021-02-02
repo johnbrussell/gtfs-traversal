@@ -12,10 +12,11 @@ WALK_ROUTE = 'walk route'
 
 class NearestStationFinder(Solver):
     def travel_time_secs_to_nearest_solution_station(self, origin, analysis_start_time, maximum_time,
-                                                     known_travel_times):
+                                                     known_travel_times, known_walk_times):
         if self._is_solution_location(origin):
             return 0
         self._time_to_nearest_station = known_travel_times
+        self._time_to_nearest_station_with_walk = known_walk_times
         return self._find_travel_time_secs(origin, analysis_start_time, maximum_time)
 
     def _announce_solution(self, new_progress):
@@ -23,6 +24,9 @@ class NearestStationFinder(Solver):
 
     def _count_post_walk_expansion(self, location):
         pass
+
+    def _expandee_has_known_solution(self, location):
+        return location in self._get_time_to_nearest_station_with_walk()
 
     def _find_next_departure_time(self, origin, earliest_departure_time):
         next_departure_time = None
@@ -104,6 +108,9 @@ class NearestStationFinder(Solver):
 
     def _is_solution_location(self, location):
         return location in self._data_munger.get_unique_stops_to_solve()
+
+    def _return_known_solution(self, location, known_best_time):
+        return min(self._get_time_to_nearest_station_with_walk().get(location, known_best_time), known_best_time)
 
     def _routes_at_station(self, station):
         return self._data_munger.get_routes_at_stop(station)
