@@ -79,14 +79,10 @@ class TestNearestStationFinder(unittest.TestCase):
                                            stop_join_string='~~', transfer_duration_seconds=None, transfer_route=None,
                                            walk_route=None, walk_speed_mph=None)
 
-            expected = 5
-
-            with patch.object(subject, '_find_next_travel_time_secs', return_value=expected) as travel_time_patch:
-                actual = subject.travel_time_secs_to_nearest_solution_station('Wonderland', DEFAULT_START_TIME, 6,
-                                                                              dict(), dict())
+            with patch.object(subject, '_find_next_travel_time_secs') as travel_time_patch:
+                _ = subject.travel_time_secs_to_nearest_solution_station('Wonderland', DEFAULT_START_TIME, 6,
+                                                                         dict(), dict())
                 self.assertEqual(travel_time_patch.call_count, 5)  # two departures at 7AM
-
-            self.assertEqual(actual, expected)
 
         def test_calculate_correct_result_without_mocking():
             subject = NearestStationFinder(analysis=MockAnalysis(route_types_to_solve=[1]), data=MockData(),

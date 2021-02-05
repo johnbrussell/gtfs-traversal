@@ -17,7 +17,10 @@ class NearestStationFinder(Solver):
             return 0
         self._time_to_nearest_station = known_travel_times
         self._time_to_nearest_station_with_walk = known_walk_times
-        return self._find_travel_time_secs(origin, analysis_start_time, maximum_time)
+        self._best_known_time = maximum_time
+
+        self._find_travel_time_secs(origin, analysis_start_time)
+        return self._best_known_time
 
     def _announce_solution(self, new_progress):
         pass
@@ -45,27 +48,22 @@ class NearestStationFinder(Solver):
 
         return next_departure_time
 
-    def _find_next_travel_time_secs(self, departure_time, origin, known_best_time):
+    def _find_next_travel_time_secs(self, departure_time, origin):
         self._initialize_progress_dict(origin, departure_time)
         self._exp_queue = ExpansionQueue(1, STOP_JOIN_STRING)
         self._exp_queue.add(self._progress_dict.keys())
         while not self._exp_queue.is_empty():
-            known_best_time = self._expand(known_best_time)
-        return known_best_time
+            self._expand()
 
-    def _find_travel_time_secs(self, origin, analysis_start_time, max_time):
-        best_travel_time = max_time
-
+    def _find_travel_time_secs(self, origin, analysis_start_time):
         departure_time = self._find_next_departure_time(origin, analysis_start_time)
         if departure_time is None:
             return None
 
         while departure_time is not None:
             self._initialize_progress_dict(origin, departure_time)
-            best_travel_time = self._find_next_travel_time_secs(departure_time, origin, best_travel_time)
+            self._find_next_travel_time_secs(departure_time, origin)
             departure_time = self._find_next_departure_time(origin, departure_time + timedelta(seconds=1))
-
-        return best_travel_time
 
     def _get_initial_unsolved_string(self):
         if self._initial_unsolved_string is None:
@@ -109,8 +107,11 @@ class NearestStationFinder(Solver):
     def _is_solution_location(self, location):
         return location in self._data_munger.get_unique_stops_to_solve()
 
-    def _return_known_solution(self, location, known_best_time):
-        return min(self._get_time_to_nearest_station_with_walk().get(location, known_best_time), known_best_time)
+    def _set_known_solution(self, location):
+        self._best_known_time = min(
+            self._progress_dict[location].duration +
+            self._get_time_to_nearest_station_with_walk().get(location, self._best_known_time),
+            self._best_known_time)
 
     def _routes_at_station(self, station):
         return self._data_munger.get_routes_at_stop(station)
@@ -118,5 +119,5 @@ class NearestStationFinder(Solver):
     def _should_calculate_time_to_nearest_solution_station(self, location):
         return False
 
-    def _travel_time_to_solution_stop_after_walk(self, location_status, progress, known_best_time):
+    def _travel_time_to_solution_stop_after_walk(self, location_status, progress):
         return 0
