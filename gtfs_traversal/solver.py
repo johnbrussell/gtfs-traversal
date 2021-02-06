@@ -79,7 +79,7 @@ class Solver:
     def _announce_solution(self, new_progress):
         print(datetime.now() - self._initialization_time, 'solution:', timedelta(seconds=new_progress.duration))
 
-    def _calculate_travel_time_to_solution_stop(self, origin):
+    def _calculate_travel_time_to_solution_stop(self, origin, max_time):
         # must be implemented in subclass
         return 0
 
@@ -508,7 +508,8 @@ class Solver:
 
         if self._should_calculate_time_to_nearest_solution_station(location) and \
                 location not in self._get_time_to_nearest_station():
-            travel_time = self._calculate_travel_time_to_solution_stop(location)
+            travel_time = self._calculate_travel_time_to_solution_stop(
+                location, self._best_known_time - self._get_total_minimum_time(self._start_time))
             walk_time = self._calculate_walk_time_to_solution_stop(location)
             if travel_time is None:
                 travel_time = self._best_known_time + 1

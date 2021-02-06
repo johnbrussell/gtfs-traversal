@@ -1004,6 +1004,8 @@ class TestSolver(unittest.TestCase):
                 valid_grandparent_location: valid_grandparent_progress_info,
             }
             subject._post_walk_expansion_counter = {'Alewife': 100}
+            subject._start_time = DEFAULT_START_TIME
+            subject._best_known_time = 1000000
 
             with patch.object(subject, '_calculate_travel_time_to_solution_stop', return_value=1234) as calc_patch:
                 actual = subject._travel_time_to_solution_stop_after_walk(valid_location, valid_progress_info)

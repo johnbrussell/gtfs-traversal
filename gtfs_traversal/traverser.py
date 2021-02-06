@@ -74,13 +74,13 @@ class Traverser(Solver):
             for stop in path:
                 print(stop)
 
-    def _calculate_travel_time_to_solution_stop(self, origin):
+    def _calculate_travel_time_to_solution_stop(self, origin, max_time):
         return NearestStationFinder(
             analysis=self._analysis, data=self._data_munger.data,
             progress_between_pruning_progress_dict=self._expansions_to_prune, prune_thoroughness=self._prune_severity,
             stop_join_string=self._stop_join_string, transfer_duration_seconds=self._transfer_duration_seconds,
             transfer_route=self._transfer_route, walk_route=self._walk_route, walk_speed_mph=self._walk_speed_mph
-        ).travel_time_secs_to_nearest_solution_station(origin, self._start_time, self._best_known_time,
+        ).travel_time_secs_to_nearest_solution_station(origin, self._start_time, max_time,
                                                        self._time_to_nearest_station,
                                                        self._time_to_nearest_station_with_walk)
 
