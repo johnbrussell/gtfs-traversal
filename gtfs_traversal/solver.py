@@ -325,7 +325,7 @@ class Solver:
                                           current_coordinates.long, coordinates.long)
             for stop, coordinates in walking_coordinates.items()
             if max_walk_time is None or self._get_time_to_nearest_station().get(stop, 0) <= max_walk_time
-        }
+        }  # in conditional iterables like this, no walk time is calculated if the if is false
 
         # Filtering walk times to exclude non-solution stops whose next stop is closer doesn't seem to improve speed.
         #  But, this was determined before working to reduce the number of walking expansions - 0ef8ae6 can revert this
