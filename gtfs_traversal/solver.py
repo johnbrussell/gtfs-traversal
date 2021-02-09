@@ -475,7 +475,10 @@ class Solver:
         self._time_to_nearest_station_with_walk[station] = time
 
     def _should_calculate_time_to_nearest_solution_station(self, location):
-        return self._get_walk_expansions_at_stop(location) >= math.sqrt(len(self._get_time_to_nearest_station()))
+        return location not in self._get_time_to_nearest_station() and \
+               self._get_walk_expansions_at_stop(location) >= len(self._get_time_to_nearest_station()) * \
+               (len(self._data_munger.get_all_stop_coordinates()) - len(self._get_time_to_nearest_station())) / \
+               len(self._data_munger.get_all_stop_coordinates())
 
     def _start_time_in_seconds(self):
         if self._start_time_in_seconds is None:
@@ -508,13 +511,17 @@ class Solver:
 
         if self._should_calculate_time_to_nearest_solution_station(location) and \
                 location not in self._get_time_to_nearest_station():
+            eligible_locations_to_calculate = [stop for stop in self._data_munger.get_all_stop_coordinates().keys() if
+                                               self._should_calculate_time_to_nearest_solution_station(stop)]
+            closest_stop = min(eligible_locations_to_calculate,
+                               key=lambda stop: self._calculate_walk_time_to_solution_stop(stop))
             travel_time = self._calculate_travel_time_to_solution_stop(
-                location, self._best_known_time - self._get_total_minimum_time(self._start_time))
-            walk_time = self._calculate_walk_time_to_solution_stop(location)
+                closest_stop, self._best_known_time - self._get_total_minimum_time(self._start_time))
+            walk_time = self._calculate_walk_time_to_solution_stop(closest_stop)
             if travel_time is None:
                 travel_time = self._best_known_time + 1
-            self._set_time_to_nearest_station(location, travel_time)
-            self._set_time_to_nearest_station_with_walk(location, min(travel_time, walk_time))
+            self._set_time_to_nearest_station(closest_stop, travel_time)
+            self._set_time_to_nearest_station_with_walk(closest_stop, min(travel_time, walk_time))
 
         return self._get_time_to_nearest_station().get(location, 0)
 
