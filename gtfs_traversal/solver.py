@@ -169,6 +169,12 @@ class Solver:
         if self._data_munger.is_last_stop_on_route(location_status.location, location_status.arrival_route):
             return None
 
+        if progress.parent is not None and \
+                self._progress_dict[progress.parent].parent is not None and \
+                progress.parent.arrival_route == self._transfer_route and \
+                self._progress_dict[progress.parent].parent.arrival_route == self._walk_route:
+            self._count_post_walk_expansion(location_status.location)
+
         stop_number = progress.trip_stop_no
         next_stop_no = str(int(stop_number) + 1)
         next_stop_id = self._data_munger.get_next_stop_id(location_status.location, location_status.arrival_route)
@@ -478,7 +484,7 @@ class Solver:
         return location not in self._get_time_to_nearest_station() and \
                self._get_walk_expansions_at_stop(location) >= len(self._get_time_to_nearest_station()) * \
                (len(self._data_munger.get_all_stop_coordinates()) - len(self._get_time_to_nearest_station())) / \
-               len(self._data_munger.get_all_stop_coordinates())
+               len(self._data_munger.get_all_stop_coordinates()) * 2
 
     def _start_time_in_seconds(self):
         if self._start_time_in_seconds is None:
@@ -524,6 +530,8 @@ class Solver:
             self._set_time_to_nearest_station_with_walk(closest_stop, min(travel_time, walk_time))
             if self._get_time_to_nearest_station()[closest_stop] >= max_travel_time:
                 self._reset_walking_coordinates()
+            print(closest_stop, self._get_time_to_nearest_station_with_walk()[closest_stop],
+                  len(self._get_time_to_nearest_station_with_walk()))
 
         return self._get_time_to_nearest_station().get(location, 0)
 
