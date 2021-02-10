@@ -840,7 +840,7 @@ class TestSolver(unittest.TestCase):
             subject._progress_dict = {valid_location: valid_progress_info}
 
             expected = 0
-            actual = subject._travel_time_to_solution_stop_after_walk(valid_location, valid_progress_info)
+            actual = subject._travel_time_to_solution_stop(valid_location, valid_progress_info)
 
             self.assertEqual(expected, actual)
 
@@ -866,7 +866,7 @@ class TestSolver(unittest.TestCase):
             }
 
             expected = 0
-            actual = subject._travel_time_to_solution_stop_after_walk(valid_location, valid_progress_info)
+            actual = subject._travel_time_to_solution_stop(valid_location, valid_progress_info)
 
             self.assertEqual(expected, actual)
 
@@ -901,7 +901,7 @@ class TestSolver(unittest.TestCase):
             subject._set_time_to_nearest_station_with_walk('Alewife', 1)
 
             expected = 1
-            actual = subject._travel_time_to_solution_stop_after_walk(valid_location, valid_progress_info)
+            actual = subject._travel_time_to_solution_stop(valid_location, valid_progress_info)
 
             self.assertEqual(expected, actual)
 
@@ -935,7 +935,7 @@ class TestSolver(unittest.TestCase):
             }
 
             expected = 0
-            actual = subject._travel_time_to_solution_stop_after_walk(valid_location, valid_progress_info)
+            actual = subject._travel_time_to_solution_stop(valid_location, valid_progress_info)
 
             self.assertEqual(expected, actual)
 
@@ -971,7 +971,7 @@ class TestSolver(unittest.TestCase):
             subject._time_to_nearest_station = {'Alewife': 9943}
 
             expected = 9943
-            actual = subject._travel_time_to_solution_stop_after_walk(valid_location, valid_progress_info)
+            actual = subject._travel_time_to_solution_stop(valid_location, valid_progress_info)
 
             self.assertEqual(expected, actual)
 
@@ -1008,7 +1008,7 @@ class TestSolver(unittest.TestCase):
             subject._best_known_time = 1000000
 
             with patch.object(subject, '_calculate_travel_time_to_solution_stop', return_value=1234) as calc_patch:
-                actual = subject._travel_time_to_solution_stop_after_walk(valid_location, valid_progress_info)
+                actual = subject._travel_time_to_solution_stop(valid_location, valid_progress_info)
                 calc_patch.assert_called_once()
 
             expected = 1234
@@ -1046,7 +1046,7 @@ class TestSolver(unittest.TestCase):
             }
             subject._post_walk_expansion_counter = {'Alewife': 1, 'Back of the Hill': 1}
 
-            actual = subject._travel_time_to_solution_stop_after_walk(valid_location, valid_progress_info)
+            actual = subject._travel_time_to_solution_stop(valid_location, valid_progress_info)
             expected = 0
 
             self.assertEqual(expected, actual)

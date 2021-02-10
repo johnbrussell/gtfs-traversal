@@ -446,7 +446,7 @@ class Solver:
 
         if self._best_known_time is not None:
             if self._minimum_possible_duration(new_progress) + \
-                    self._travel_time_to_solution_stop_after_walk(new_location, new_progress) > \
+                    self._travel_time_to_solution_stop(new_location, new_progress) > \
                     self._best_known_time:
                 return False
 
@@ -496,7 +496,7 @@ class Solver:
     def _to_radians_from_degrees(degrees):
         return degrees * math.pi / 180
 
-    def _travel_time_to_solution_stop_after_walk(self, location_status, progress):
+    def _travel_time_to_solution_stop(self, location_status, progress):
         location = location_status.location
 
         if progress.parent is None:
@@ -530,8 +530,6 @@ class Solver:
             self._set_time_to_nearest_station_with_walk(closest_stop, min(travel_time, walk_time))
             if self._get_time_to_nearest_station()[closest_stop] >= max_travel_time:
                 self._reset_walking_coordinates()
-            print(closest_stop, self._get_time_to_nearest_station_with_walk()[closest_stop],
-                  len(self._get_time_to_nearest_station_with_walk()))
 
         return self._get_time_to_nearest_station().get(location, 0)
 

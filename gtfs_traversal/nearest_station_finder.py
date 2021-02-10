@@ -119,5 +119,5 @@ class NearestStationFinder(Solver):
     def _should_calculate_time_to_nearest_solution_station(self, location):
         return False
 
-    def _travel_time_to_solution_stop_after_walk(self, location_status, progress):
+    def _travel_time_to_solution_stop(self, location_status, progress):
         return 0
