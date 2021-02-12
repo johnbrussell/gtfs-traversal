@@ -561,7 +561,7 @@ class TestSolver(unittest.TestCase):
                                  eliminated=False)
                 )
                 for station, time in walking_times
-                if station != 'Heath Street'
+                if station not in ['Heath Street', 'Back of the Hill', 'Lynn']
             }
             actual = set(subject._get_walking_data(input_location_status))
             self.assertSetEqual(expected, actual)
@@ -597,6 +597,7 @@ class TestSolver(unittest.TestCase):
                                  eliminated=False)
                 )
                 for station, time in walking_times
+                if station not in ['Back of the Hill', 'Lynn']
             }
             actual = set(subject._get_walking_data(input_location_status))
             self.assertSetEqual(expected, actual)
@@ -804,6 +805,8 @@ class TestSolver(unittest.TestCase):
             subject._reset_walking_coordinates()
 
             coordinates = subject._data_munger.get_all_stop_coordinates()
+            del coordinates['Back of the Hill']
+            del coordinates['Lynn']
             self.assertEqual(len(subject._get_walking_coordinates()), len(coordinates))
 
         def test_insufficient_travel_time():
@@ -821,6 +824,7 @@ class TestSolver(unittest.TestCase):
             subject._reset_walking_coordinates()
 
             coordinates = subject._data_munger.get_all_stop_coordinates()
+            del coordinates['Lynn']
             self.assertEqual(len(subject._get_walking_coordinates()), len(coordinates) - 1)
             self.assertTrue('Back of the Hill' not in subject._get_walking_coordinates())
 
