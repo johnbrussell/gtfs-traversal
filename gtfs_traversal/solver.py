@@ -457,12 +457,10 @@ class Solver:
             self._best_known_time - self._get_total_minimum_time(self._start_time)
         all_coordinates = self._data_munger.get_all_stop_coordinates()
 
-        stops_with_departures = {stop: coordinates for stop, coordinates in all_coordinates.items() if not
-                                 any(self._data_munger.is_last_stop_on_route(stop, route) for route in
-                                     self._data_munger.get_routes_at_stop(stop))}
+        # TODO remove stations with no departures from this (ie., stations at the end of their route)
 
         self._walking_coordinates = dict()
-        for stop, coordinates in stops_with_departures.items():
+        for stop, coordinates in all_coordinates.items():
             if abs_max_walk_time is None or self._get_time_to_nearest_station().get(stop, 0) <= abs_max_walk_time:
                 self._walking_coordinates[stop] = coordinates
 
