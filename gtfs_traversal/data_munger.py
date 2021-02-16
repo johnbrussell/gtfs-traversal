@@ -11,6 +11,7 @@ class DataMunger:
         self._location_routes = None
         self._minimum_stop_times = None
         self._route_list = None
+        self._stop_locations_to_solve = None
         self._stops_by_route_in_solution_set = None
         self._transfer_stops = None
         self._trip_time_cache = {}
@@ -206,8 +207,14 @@ class DataMunger:
         routes_at_stop = self.get_routes_at_stop(stop_id)
         return {route for route in routes_at_stop if route in self.get_unique_routes_to_solve()}
 
+    def get_stop_id_from_stop_number(self, stop_number, route):
+        return self.get_stops_for_route(route)[stop_number].stopId
+
     def get_stop_locations_to_solve(self):
-        return {s: l for s, l in self.get_all_stop_coordinates().items() if s in self.get_unique_stops_to_solve()}
+        if self._stop_locations_to_solve is None:
+            self._stop_locations_to_solve = {s: l for s, l in self.get_all_stop_coordinates().items()
+                                             if s in self.get_unique_stops_to_solve()}
+        return self._stop_locations_to_solve
 
     def get_stop_number_from_stop_id(self, stop_id, route_id):
         stops_on_route = self.get_stops_for_route(route_id)

@@ -39,12 +39,28 @@ class Traverser(Solver):
         self._progress_dict = progress_dict
         self._start_time = best_departure_time
 
+    def initialize_walk_dict(self):
+        self._walk_time_to_solution_station = {
+            stop: self._calculate_walk_time_to_solution_stop(stop) for
+            stop in self._data_munger.get_all_stop_coordinates().keys()
+        }
+
+        solution_stops = self._data_munger.get_stop_locations_to_solve()
+        for stop1, coords1 in solution_stops.items():
+            for stop2, coords2 in solution_stops.items():
+                walk_time = self._walk_time_seconds(coords1.lat, coords2.lat, coords1.long, coords2.long)
+                if self._walk_time_between_most_distant_solution_stations is None or \
+                        self._walk_time_between_most_distant_solution_stations < walk_time:
+                    self._walk_time_between_most_distant_solution_stations = walk_time
+
     def prunable_nodes(self):
         return [k for k, v in self._progress_dict.items() if v.eliminated]
 
     def prune_progress_dict(self):
         def ineffectiveness(node):
-            return len(node.unvisited.split(self._stop_join_string))
+            return self._progress_dict[node].duration / \
+                   (len(self._data_munger.get_unique_stops_to_solve()) -
+                    len(node.unvisited.split(self._stop_join_string)) + 1)
 
         prunable_nodes = self.prunable_nodes()
         num_nodes_to_prune = math.floor(self._prune_severity * float(len(prunable_nodes)))
@@ -52,10 +68,17 @@ class Traverser(Solver):
             return
 
         node_ineffectiveness = zip(prunable_nodes, [ineffectiveness(k) for k in prunable_nodes])
-        node_ineffectiveness_order = sorted(node_ineffectiveness, key=lambda x: x[1])
+        node_ineffectiveness_order = sorted(node_ineffectiveness, key=lambda x: x[1])  # ascending
         num_pruned_nodes = 0
+        if self._best_known_time is not None:
+            for node in prunable_nodes:
+                if self._progress_dict[node].duration > self._best_known_time:
+                    del self._progress_dict[node]
+                    self._exp_queue.remove_key(node)
+                    num_pruned_nodes += 1
+        node_ineffectiveness_order = [node for node in node_ineffectiveness_order if node in self._progress_dict]
         while num_pruned_nodes < num_nodes_to_prune and node_ineffectiveness_order:
-            node_ineffectiveness_to_prune = node_ineffectiveness_order.pop()
+            node_ineffectiveness_to_prune = node_ineffectiveness_order.pop()  # Takes from back of list
             node_to_prune = node_ineffectiveness_to_prune[0]
             del self._progress_dict[node_to_prune]
             self._exp_queue.remove_key(node_to_prune)
@@ -82,7 +105,9 @@ class Traverser(Solver):
             transfer_route=self._transfer_route, walk_route=self._walk_route, walk_speed_mph=self._walk_speed_mph
         ).travel_time_secs_to_nearest_solution_station(origin, self._start_time, max_time,
                                                        self._time_to_nearest_station,
-                                                       self._time_to_nearest_station_with_walk)
+                                                       self._time_to_nearest_station_with_walk,
+                                                       self._partial_time_to_nearest_station,
+                                                       self._walk_time_between_most_distant_solution_stations)
 
     def find_solution_at_time(self, begin_time, known_best_time):
         self._best_known_time = known_best_time
@@ -90,6 +115,9 @@ class Traverser(Solver):
         self._exp_queue = ExpansionQueue(len(self._data_munger.get_unique_stops_to_solve()), self._stop_join_string)
         if len(self._progress_dict) > 0:
             self._exp_queue.add(self._progress_dict.keys())
+        if self._walk_time_to_solution_station is None:
+            self.initialize_walk_dict()
+        print(len(self._progress_dict), self._walk_time_between_most_distant_solution_stations)
 
         num_stations = len(self._data_munger.get_unique_stops_to_solve())
         num_start_points = self._exp_queue.len()

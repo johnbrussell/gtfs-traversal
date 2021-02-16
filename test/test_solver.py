@@ -1049,6 +1049,7 @@ class TestSolver(unittest.TestCase):
                 valid_grandparent_location: valid_grandparent_progress_info,
             }
             subject._post_walk_expansion_counter = {'Alewife': 1, 'Back of the Hill': 1}
+            subject._start_time = DEFAULT_START_TIME
 
             actual = subject._travel_time_to_solution_stop(valid_location, valid_progress_info)
             expected = 0
