@@ -32,15 +32,17 @@ class TestNearestStationFinder(unittest.TestCase):
                                        progress_between_pruning_progress_dict=None, prune_thoroughness=None,
                                        stop_join_string='~~', transfer_duration_seconds=None, transfer_route=None,
                                        walk_route=None, walk_speed_mph=None)
-        subject._initialize_progress_dict('Wonderland', DEFAULT_START_TIME + timedelta(hours=7))
+        subject._initialize_travel_progress_dict('Wonderland', DEFAULT_START_TIME + timedelta(hours=7))
 
         expected = {
             LocationStatusInfo(location='Wonderland', arrival_route=1, unvisited='~~any_solution_stop~~'):
                 ProgressInfo(duration=0, arrival_trip='3-6AM', children=None, eliminated=False, expanded=False,
-                             minimum_remaining_time=0, parent=None, trip_stop_no='2'),
+                             minimum_remaining_network_time=0, parent=None, trip_stop_no='2',
+                             minimum_remaining_secondary_time=0),
             LocationStatusInfo(location='Wonderland', arrival_route=2, unvisited='~~any_solution_stop~~'):
                 ProgressInfo(duration=0, arrival_trip='18-7AM', children=None, eliminated=False, expanded=False,
-                             minimum_remaining_time=0, parent=None, trip_stop_no='1')
+                             minimum_remaining_network_time=0, parent=None, trip_stop_no='1',
+                             minimum_remaining_secondary_time=0)
         }
         actual = subject._progress_dict
         self.assertDictEqual(expected, actual)
@@ -71,7 +73,7 @@ class TestNearestStationFinder(unittest.TestCase):
                                            walk_route=None, walk_speed_mph=None)
             self.assertEqual(
                 subject.travel_time_secs_to_nearest_solution_station('Heath Street', DEFAULT_START_TIME, 1, dict(),
-                                                                     dict(), dict(), 100000), 0)
+                                                                     100000, 0))
 
         def test_calculate_correct_result_with_mocking():
             subject = NearestStationFinder(analysis=MockAnalysis(route_types_to_solve=[1]), data=MockData(),
@@ -80,8 +82,8 @@ class TestNearestStationFinder(unittest.TestCase):
                                            walk_route=None, walk_speed_mph=None)
 
             with patch.object(subject, '_find_next_travel_time_secs') as travel_time_patch:
-                _ = subject.travel_time_secs_to_nearest_solution_station('Wonderland', DEFAULT_START_TIME, 6,
-                                                                         dict(), dict(), dict(), 100000)
+                _ = subject.travel_time_secs_to_nearest_solution_station('Wonderland', DEFAULT_START_TIME, 6, dict(),
+                                                                         100000,)
                 self.assertEqual(travel_time_patch.call_count, 5)  # two departures at 7AM
 
         def test_calculate_correct_result_without_mocking():
@@ -92,7 +94,7 @@ class TestNearestStationFinder(unittest.TestCase):
 
             expected = 1200
             actual = subject.travel_time_secs_to_nearest_solution_station('Lechmere', DEFAULT_START_TIME, 1201, dict(),
-                                                                          dict(), dict(), 100000)
+                                                                          100000)
             self.assertLess(abs(expected - actual), 0.001)
 
         test_return_0_for_solution_station()

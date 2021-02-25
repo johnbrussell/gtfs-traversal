@@ -26,8 +26,8 @@ class TestExpansionQueue(unittest.TestCase):
         subject = ExpansionQueue(num_solution_stops=2, stop_join_string="~~")
         solver_progress_dict = {
             location_a: ProgressInfo(duration=1, arrival_trip=None, trip_stop_no=None, parent=None,
-                                     children=None, minimum_remaining_time=None, expanded=None,
-                                     eliminated=True),
+                                     children=None, minimum_remaining_network_time=None, expanded=None,
+                                     eliminated=True, minimum_remaining_secondary_time=None),
         }
         self.assertTrue(subject.is_empty())
 
@@ -43,11 +43,11 @@ class TestExpansionQueue(unittest.TestCase):
         subject = ExpansionQueue(num_solution_stops=2, stop_join_string="~~")
         solver_progress_dict = {
             location_a: ProgressInfo(duration=1, arrival_trip=None, trip_stop_no=None, parent=None,
-                                     children=None, minimum_remaining_time=None, expanded=None,
-                                     eliminated=True),
+                                     children=None, minimum_remaining_network_time=None, expanded=None,
+                                     eliminated=True, minimum_remaining_secondary_time=None),
             location_b: ProgressInfo(duration=1, arrival_trip=None, trip_stop_no=None, parent=None,
-                                     children=None, minimum_remaining_time=None, expanded=None,
-                                     eliminated=True),
+                                     children=None, minimum_remaining_network_time=None, expanded=None,
+                                     eliminated=True, minimum_remaining_secondary_time=None),
         }
 
         self.assertEqual(subject.len(), 0)
@@ -70,11 +70,11 @@ class TestExpansionQueue(unittest.TestCase):
         subject = ExpansionQueue(num_solution_stops=2, stop_join_string="~~")
         solver_progress_dict = {
             location_a: ProgressInfo(duration=1, arrival_trip=None, trip_stop_no=None, parent=None,
-                                     children=None, minimum_remaining_time=None, expanded=None,
-                                     eliminated=True),
+                                     children=None, minimum_remaining_network_time=None, expanded=None,
+                                     eliminated=True, minimum_remaining_secondary_time=None),
             location_b: ProgressInfo(duration=1, arrival_trip=None, trip_stop_no=None, parent=None,
-                                     children=None, minimum_remaining_time=None, expanded=None,
-                                     eliminated=True),
+                                     children=None, minimum_remaining_network_time=None, expanded=None,
+                                     eliminated=True, minimum_remaining_secondary_time=None),
         }
 
         subject.add([location_a, location_b])
@@ -96,7 +96,8 @@ class TestExpansionQueue(unittest.TestCase):
     def test_sort_latest_nodes(self):
         def progress_info_with_duration(duration):
             return ProgressInfo(arrival_trip=None, duration=duration, trip_stop_no=None, expanded=None, eliminated=None,
-                                children=None, parent=None, minimum_remaining_time=None)
+                                children=None, parent=None, minimum_remaining_network_time=None,
+                                minimum_remaining_secondary_time=None)
 
         location_b = LocationStatusInfo(location='b', arrival_route=None, unvisited="~~a~~b~~")
         location_c = LocationStatusInfo(location='c', arrival_route=None, unvisited="~~a~~b~~")

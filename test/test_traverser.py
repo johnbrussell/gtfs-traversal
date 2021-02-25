@@ -33,17 +33,20 @@ class TestSolver(unittest.TestCase):
                 LocationStatusInfo(location="Heath Street", arrival_route=2, unvisited=sample_unvisited_string):
                     ProgressInfo(
                         duration=0, parent=None, children=None, arrival_trip='18-8AM', trip_stop_no='1',
-                        minimum_remaining_time=5 * 60 * 60 + 30 * 60, expanded=False, eliminated=False
+                        minimum_remaining_network_time=5 * 60 * 60 + 30 * 60, expanded=False, eliminated=False,
+                        minimum_remaining_secondary_time=0
                     ),
                 LocationStatusInfo(location="Alewife", arrival_route=1, unvisited=sample_unvisited_string):
                     ProgressInfo(
                         duration=0, parent=None, children=None, arrival_trip='3-8AM', trip_stop_no='1',
-                        minimum_remaining_time=5 * 60 * 60 + 30 * 60, expanded=False, eliminated=False
+                        minimum_remaining_network_time=5 * 60 * 60 + 30 * 60, expanded=False, eliminated=False,
+                        minimum_remaining_secondary_time=0
                     ),
                 LocationStatusInfo(location="Wonderland", arrival_route=3, unvisited=sample_unvisited_string):
                     ProgressInfo(
                         duration=0, parent=None, children=None, arrival_trip='Blue-8AM', trip_stop_no='1',
-                        minimum_remaining_time=5 * 60 * 60 + 30 * 60, expanded=False, eliminated=False
+                        minimum_remaining_network_time=5 * 60 * 60 + 30 * 60, expanded=False, eliminated=False,
+                        minimum_remaining_secondary_time=0
                     ),
             }
 
@@ -74,19 +77,22 @@ class TestSolver(unittest.TestCase):
                     ProgressInfo(
                         duration=0, parent=None, children=None,
                         arrival_trip='18-6AM', trip_stop_no='2',
-                        minimum_remaining_time=5 * 60 * 60 + 30 * 60, expanded=False, eliminated=False
+                        minimum_remaining_network_time=5 * 60 * 60 + 30 * 60, expanded=False, eliminated=False,
+                        minimum_remaining_secondary_time=0
                     ),
                 LocationStatusInfo(location="Wonderland", arrival_route=1, unvisited=sample_unvisited_string):
                     ProgressInfo(
                         duration=0, parent=None, children=None,
                         arrival_trip='3-6AM', trip_stop_no='2',
-                        minimum_remaining_time=5 * 60 * 60 + 30 * 60, expanded=False, eliminated=False
+                        minimum_remaining_network_time=5 * 60 * 60 + 30 * 60, expanded=False, eliminated=False,
+                        minimum_remaining_secondary_time=0
                     ),
                 LocationStatusInfo(location="Bowdoin", arrival_route=3, unvisited=sample_unvisited_string):
                     ProgressInfo(
                         duration=0, parent=None, children=None,
                         arrival_trip='Blue-6AM', trip_stop_no='2',
-                        minimum_remaining_time=5 * 60 * 60 + 30 * 60, expanded=False, eliminated=False
+                        minimum_remaining_network_time=5 * 60 * 60 + 30 * 60, expanded=False, eliminated=False,
+                        minimum_remaining_secondary_time=0
                     ),
             }
 
@@ -120,8 +126,8 @@ class TestSolver(unittest.TestCase):
         location_3 = LocationStatusInfo(location='3', arrival_route=3, unvisited='~~a~~')
         location_4 = LocationStatusInfo(location='4', arrival_route=4, unvisited='~~a~~b~~c~~d~~e~~')
         eliminated_progress = ProgressInfo(duration=None, arrival_trip=None, trip_stop_no=None, parent=None,
-                                           children=None,
-                                           minimum_remaining_time=None, expanded=None, eliminated=True)
+                                           children=None, minimum_remaining_secondary_time=0,
+                                           minimum_remaining_network_time=None, expanded=None, eliminated=True)
         subject._progress_dict = {
             location_1: eliminated_progress,
             location_2: eliminated_progress,

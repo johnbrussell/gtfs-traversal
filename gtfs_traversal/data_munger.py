@@ -79,22 +79,23 @@ class DataMunger:
                 #  multiple times.
                 # Currently, this function assumes that the first trip of the day along each route is the fastest.
                 best_departure_time, best_trip_id = self.first_trip_after(start_time, route, stop)
-                if best_trip_id is None:
-                    continue
-                stop_number = self.get_stop_number_from_stop_id(stop, route)
-                next_stop_number = str(int(stop_number) + 1)
-                if next_stop_number not in self.get_stops_for_route(route):
-                    continue
-                stops_on_route = self.get_stops_for_route(route)
-                next_stop = stops_on_route[next_stop_number].stopId
-                travel_time_to_next_stop = self.get_travel_time_between_stops_in_seconds(
-                    best_trip_id, stop_number, next_stop_number)
-                if next_stop not in minimum_stop_times:
-                    minimum_stop_times[next_stop] = 24 * 60 * 60
-                if stop not in minimum_stop_times:
-                    minimum_stop_times[stop] = 24 * 60 * 60
-                minimum_stop_times[next_stop] = min(minimum_stop_times[next_stop], travel_time_to_next_stop / 2)
-                minimum_stop_times[stop] = min(minimum_stop_times[stop], travel_time_to_next_stop / 2)
+                while best_trip_id is not None:
+                    stop_number = self.get_stop_number_from_stop_id(stop, route)
+                    next_stop_number = str(int(stop_number) + 1)
+                    if next_stop_number not in self.get_stops_for_route(route):
+                        continue
+                    stops_on_route = self.get_stops_for_route(route)
+                    next_stop = stops_on_route[next_stop_number].stopId
+                    travel_time_to_next_stop = self.get_travel_time_between_stops_in_seconds(
+                        best_trip_id, stop_number, next_stop_number)
+                    if next_stop not in minimum_stop_times:
+                        minimum_stop_times[next_stop] = 24 * 60 * 60
+                    if stop not in minimum_stop_times:
+                        minimum_stop_times[stop] = 24 * 60 * 60
+                    minimum_stop_times[next_stop] = min(minimum_stop_times[next_stop], travel_time_to_next_stop / 2)
+                    minimum_stop_times[stop] = min(minimum_stop_times[stop], travel_time_to_next_stop / 2)
+                    best_departure_time, best_trip_id = self.first_trip_after(
+                        best_departure_time + timedelta(seconds=1), route, stop)
 
         self._minimum_stop_times = minimum_stop_times
         return self._minimum_stop_times
@@ -379,3 +380,13 @@ class DataMunger:
 
     def is_solution_route(self, route_id):
         return route_id in self.get_unique_routes_to_solve()
+
+    @staticmethod
+    def n_max(lst, n):
+        maxes = list()
+        for element in lst:
+            maxes.append(element)
+            if len(maxes) > n:
+                maxes.remove(min(maxes))  # only removes one at a time
+
+        return maxes
