@@ -55,7 +55,7 @@ class NearestStationFinder(Solver):
     def _find_next_departure_time(self, origin, earliest_departure_time):
         next_departure_time = None
 
-        for route in self._routes_at_station(origin):
+        for route in self._data_munger.get_routes_at_stop(origin):
             next_stop = self._data_munger.get_next_stop_id(origin, route)
             if next_stop is None:
                 continue
@@ -132,7 +132,7 @@ class NearestStationFinder(Solver):
         if departure_time is None:
             return
 
-        for route in self._routes_at_station(origin):
+        for route in self._data_munger.get_routes_at_stop(origin):
             next_stop = self._data_munger.get_next_stop_id(origin, route)
             if next_stop is None:
                 continue
@@ -163,9 +163,6 @@ class NearestStationFinder(Solver):
 
     def _reset_walking_coordinates(self):
         pass
-
-    def _routes_at_station(self, station):
-        return self._data_munger.get_routes_at_stop(station)
 
     def _set_known_solution(self, location_status):
         if location_status.arrival_route == self._walk_route:
