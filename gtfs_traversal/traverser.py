@@ -3,6 +3,7 @@ from datetime import datetime
 
 from gtfs_traversal.data_structures import *
 from gtfs_traversal.expansion_queue import ExpansionQueue
+from gtfs_traversal.nearby_stations_finder import NearbyStationsFinder
 from gtfs_traversal.nearest_station_finder import NearestStationFinder
 from gtfs_traversal.solver import Solver
 
@@ -146,6 +147,25 @@ class Traverser(Solver):
             print("solution:")
             for stop in path:
                 print(stop)
+
+    def _calculate_stations_within_time(self, origin):
+        current_coordinates = self._get_walking_coordinates()[origin]
+        max_walk_time = max([
+            self._walk_time_seconds(current_coordinates.lat, coordinates.lat,
+                                    current_coordinates.long, coordinates.long)
+            for stop, coordinates in self._data_munger.get_stop_locations_to_solve().items()
+        ])
+        return NearbyStationsFinder(
+            analysis=self._analysis, data=self._data_munger.data,
+            progress_between_pruning_progress_dict=self._expansions_to_prune, prune_thoroughness=self._prune_severity,
+            stop_join_string=self._stop_join_string, transfer_duration_seconds=self._transfer_duration_seconds,
+            transfer_route=self._transfer_route, walk_route=self._walk_route, walk_speed_mph=self._walk_speed_mph
+        ).stations_within_time(origin, self._start_time, None,
+                               self._time_to_nearest_station,
+                               self._time_to_nearest_station_with_walk,
+                               max_walk_time,
+                               None,
+                               self._solution_stops)
 
     def _calculate_travel_time_to_solution_stop(self, origin, max_time):
         return NearestStationFinder(

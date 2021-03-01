@@ -1,8 +1,8 @@
 import math
-from datetime import datetime
+from datetime import datetime, timedelta
 
 from gtfs_traversal.data_munger import DataMunger
-from gtfs_traversal.nearest_station_finder import *
+from gtfs_traversal.data_structures import *
 from gtfs_traversal.string_shortener import StringShortener
 
 
@@ -34,6 +34,8 @@ class Solver:
         self._solution_stops = None
         self._start_time = None
         self._start_time_in_seconds = None
+        self._stations_within_time_interval = 900
+        self._stations_within_time_dict = None
         self._stop_locations = None
         self._stop_locations_to_solve = None
         self._stops_at_ends_of_solution_routes = None
@@ -88,6 +90,10 @@ class Solver:
                         self._calculate_new_travel_times(node[0], node[1]) if \
                             self._get_walk_time_to_solution_station().get(node[0].location, 0) <= 60 else \
                             self._calculate_new_travel_times_with_walk(node[0], node[1])
+                    if self._should_calculate_time_to_nearest_solution_station(node[0].location):
+                        station_range = self._should_calculate_next_stations_in_range_bound(node[0].location)
+                        if station_range:
+                            self._calculate_next_stations_in_range(node[0].location)
         else:
             self._mark_nodes_as_eliminated({parent})
 
@@ -96,6 +102,24 @@ class Solver:
 
     def _announce_solution(self, new_progress):
         print(datetime.now() - self._initialization_time, 'solution:', timedelta(seconds=new_progress.duration))
+
+    def _calculate_next_stations_in_range(self, location):
+        stations_dict = self._calculate_stations_within_time(location)
+        stations = set()
+        interval = min(self._walk_time_between_most_distant_solution_stations / 2, self._stations_within_time_interval)
+        bound = interval
+        assert(len({s.location for s in stations_dict.keys()}) == len(self._data_munger.get_unique_stops_to_solve()))
+        while len(stations) < len(self._data_munger.get_unique_stops_to_solve()):
+            stations = {station.location for station, progress in stations_dict.items() if progress.duration <= bound}
+            print(location, self._get_walk_expansions_at_stop(location),
+                  self._should_calculate_time_to_nearest_solution_station_bound(location),
+                  bound, len(stations))
+            self._set_stations_within_time_dict(location, bound, stations)
+            bound += interval
+
+    def _calculate_stations_within_time(self, origin):
+        # must be implemented in subclass
+        return dict()
 
     def _calculate_travel_time_to_solution_stop(self, origin, max_time):
         # must be implemented in subclass
@@ -377,6 +401,12 @@ class Solver:
         self._route_trips = self._data_munger.get_route_trips()
         return self._route_trips
 
+    def _get_stations_within_time_dict(self):
+        if self._stations_within_time_dict is None:
+            self._stations_within_time_dict = dict()
+
+        return self._stations_within_time_dict
+
     def _get_stop_locations(self):
         if self._stop_locations is None:
             self._stop_locations = self._data_munger.get_all_stop_coordinates()
@@ -493,6 +523,7 @@ class Solver:
         if progress.parent is not None and progress.parent.arrival_route == self._walk_route:
             return []
         if location_status.location not in walking_coordinates:
+            # print(location_status.location)
             return []
 
         # Cannot subtract transfer time from this without breaking NearestStationFinder walk times
@@ -613,6 +644,17 @@ class Solver:
     def _minimum_possible_duration(progress):
         return progress.duration + progress.minimum_remaining_network_time + progress.minimum_remaining_secondary_time
 
+    def _no_unvisited_station_exists_within_time(self, new_location, new_progress):
+        max_time = self._best_known_time - self._minimum_possible_duration(new_progress)
+        valid_bounds = [b for b, d in self._get_stations_within_time_dict().items() if
+                        b > max_time and new_location.location in d]
+        if valid_bounds:
+            best_bound = min(valid_bounds)
+            unvisited_stations = self._unvisited_string_to_list(new_location.unvisited)
+            return not any(u in self._get_stations_within_time_dict()[best_bound][new_location.location]
+                           for u in unvisited_stations)
+        return False
+
     def _node_is_valid(self, node):
         if node is None:
             return False
@@ -642,6 +684,8 @@ class Solver:
                     min_duration_with_travel + self._transfer_duration_seconds > self._best_known_time and \
                     not self._is_solution(new_location):
                 return False
+            if self._no_unvisited_station_exists_within_time(new_location, new_progress):
+                return False
 
         return True
 
@@ -670,6 +714,17 @@ class Solver:
         # must be implemented in subclass
         pass
 
+    def _set_stations_within_time_dict(self, location, bound, stations):
+        if self._stations_within_time_dict is None:
+            self._stations_within_time_dict = dict()
+
+        if bound not in self._stations_within_time_dict:
+            self._stations_within_time_dict[bound] = dict()
+
+        self._stations_within_time_dict[bound][location] = stations
+        if len(stations) == len(self._data_munger.get_unique_stops_to_solve()):
+            self._stations_within_time_dict[bound][location] = self._data_munger.get_unique_stops_to_solve()
+
     def _set_time_to_nearest_station(self, station, time):
         if self._time_to_nearest_station is None:
             self._initialize_time_to_nearest_station()
@@ -694,24 +749,55 @@ class Solver:
 
         self._walking_coordinate_dict[location] = coordinates
 
+    def _should_calculate_next_stations_in_range_bound(self, location):
+        stations_within_time_dict = self._get_stations_within_time_dict()
+
+        if len(stations_within_time_dict) == 0:
+            return self._stations_within_time_interval
+
+        for bound in sorted(stations_within_time_dict.keys()):
+            if location in stations_within_time_dict[bound] and \
+                    len(stations_within_time_dict[bound][location]) == \
+                    len(self._data_munger.get_unique_stops_to_solve()):
+                return None
+            if location not in stations_within_time_dict[bound]:
+                return bound
+
+        return max(stations_within_time_dict.keys()) + self._stations_within_time_interval
+
     def _should_calculate_time_to_nearest_solution_station(self, location):
         return (location not in self._get_time_to_nearest_station() or
                 location not in self._get_time_to_nearest_station_with_walk()) and \
             self._get_walk_expansions_at_stop(location) >= \
-            self._should_calculate_time_to_nearest_solution_station_bound(location)
+            max(1, self._should_calculate_time_to_nearest_solution_station_bound(location)) and \
+            self._best_known_time is not None
 
     def _should_calculate_time_to_nearest_solution_station_bound(self, location):
-        return (len(self._get_time_to_nearest_station()) + len(self._get_time_to_nearest_station_with_walk())) / 2 * \
+        return (len(self._get_time_to_nearest_station()) + len(self._get_time_to_nearest_station_with_walk()) +
+                sum([len(d) for d in self._get_stations_within_time_dict().values()])) / 2 * \
             max(len(self._get_walking_coordinates()) -
                 (len(self._get_time_to_nearest_station()) + len(self._get_time_to_nearest_station_with_walk())) / 2,
                 1) / len(self._get_walking_coordinates()) * 2 * \
-               (2 if (location in self._get_time_to_nearest_station() or
-                      location in self._get_time_to_nearest_station_with_walk()) else 1) * \
+               (1 + self._should_calculate_time_to_nearest_station_calculations(location)) * \
             min(60, self._get_walk_time_to_solution_station().get(location, 60)) / 60
             # math.sqrt((max(60, self._get_walk_time_to_solution_station().get(location, 60)) if
             #           (location in self._get_time_to_nearest_station() or
             #            location in self._get_time_to_nearest_station_with_walk()) else
             #            self._get_walk_time_to_solution_station().get(location, 60)) / 60)
+
+    def _should_calculate_time_to_nearest_station_calculations(self, location):
+        calculations = 0
+
+        if location in self._get_time_to_nearest_station():
+            calculations += 1
+        if location in self._get_time_to_nearest_station_with_walk():
+            calculations += 1
+
+        for d in self._get_stations_within_time_dict().values():
+            if location in d:
+                calculations += 1
+
+        return calculations
 
     def _start_time_in_seconds(self):
         if self._start_time_in_seconds is None:
