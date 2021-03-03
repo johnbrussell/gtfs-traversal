@@ -9,6 +9,29 @@ from gtfs_traversal.solver import Solver
 
 
 class Traverser(Solver):
+    def _initialize_max_speed(self):
+        coordinates = self._data_munger.get_all_stop_coordinates()
+        max_speed = 0
+        for route in self._data_munger.get_route_list():
+            for stop1_num in self._data_munger.get_stops_for_route(route):
+                for stop2_num in self._data_munger.get_stops_for_route(route):
+                    if int(stop2_num) <= int(stop1_num):
+                        continue
+                    stop1 = self._data_munger.get_stop_id_from_stop_number(stop1_num, route)
+                    stop2 = self._data_munger.get_stop_id_from_stop_number(stop2_num, route)
+                    for trip in self._data_munger.get_trips_for_route(route):
+                        walk_time_secs = self._walk_time_seconds(
+                            coordinates[stop1].lat, coordinates[stop2].lat,
+                            coordinates[stop1].long, coordinates[stop2].long
+                        )
+                        distance = walk_time_secs / 3600 * self._walk_speed_mph
+                        travel_time_secs = self._data_munger.get_travel_time_between_stops_in_seconds(
+                            trip, stop1_num, stop2_num) + self._transfer_duration_seconds
+                        travel_time_hrs = travel_time_secs / 3600
+                        speed = distance / travel_time_hrs
+                        max_speed = max(max_speed, speed)
+        self._max_speed_mph = max_speed
+
     def initialize_progress_dict(self, begin_time):
         progress_dict = dict()
         for stop in self._data_munger.get_unique_stops_to_solve():
@@ -204,6 +227,8 @@ class Traverser(Solver):
             self._exp_queue.add(self._progress_dict.keys())
         if self._walking_coordinate_dict is None or self._max_walk_time_dict is None:
             self._initialize_walk_coordinate_dicts()
+        if self._max_speed_mph is None:
+            self._initialize_max_speed()
 
         num_stations = len(self._data_munger.get_unique_stops_to_solve())
         num_start_points = self._exp_queue.len()

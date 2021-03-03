@@ -114,5 +114,8 @@ class NearbyStationsFinder(Solver):
     def _should_calculate_time_to_nearest_solution_station(self, location):
         return False
 
+    def _too_far_from_unvisited_stop(self, new_location, new_progress):
+        return False
+
     def _travel_time_to_solution_stop(self, location_status, progress):
         return 0
