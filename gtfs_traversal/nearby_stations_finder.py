@@ -12,18 +12,19 @@ WALK_ROUTE = 'walk route'
 
 class NearbyStationsFinder(Solver):
     def stations_within_time(self, origin, analysis_start_time, maximum_time, known_travel_times, known_walk_times,
-                             max_walk_time, walking_coordinates, solution_stops):
+                             max_walk_time, walking_coordinates, solution_stops, analysis_end_time):
         self._time_to_nearest_station = known_travel_times
         self._time_to_nearest_station_with_walk = known_walk_times
         self._best_known_time = maximum_time
         self._walk_time_between_most_distant_solution_stations = max_walk_time
 
-        self._find_travel_or_walk_time_secs(origin, analysis_start_time, walking_coordinates, solution_stops)
+        self._find_travel_or_walk_time_secs(origin, analysis_start_time, walking_coordinates, solution_stops,
+                                            analysis_end_time)
         self._solution_stops = solution_stops.copy() if \
             solution_stops else self._data_munger.get_unique_stops_to_solve().copy()
         return {k: v for k, v in self._progress_dict.items() if k.location in self._solution_stops}
 
-    def _find_next_departure_time(self, origin, earliest_departure_time):
+    def _find_next_departure_time(self, origin, earliest_departure_time, latest_departure_time):
         next_departure_time = None
 
         for route in self._data_munger.get_routes_at_stop(origin):
@@ -32,7 +33,7 @@ class NearbyStationsFinder(Solver):
                 continue
 
             next_route_departure_time, trip = self._data_munger.first_trip_after(earliest_departure_time, route, origin)
-            if trip is None:
+            if trip is None or next_route_departure_time > latest_departure_time:
                 continue
 
             next_departure_time = min(next_route_departure_time, next_departure_time) \
@@ -40,8 +41,9 @@ class NearbyStationsFinder(Solver):
 
         return next_departure_time
 
-    def _find_next_travel_or_walk_time_secs(self, departure_time, origin, walking_coordinates, solution_stops):
-        self._initialize_travel_or_walk_progress_dict(origin, departure_time)
+    def _find_next_travel_or_walk_time_secs(self, departure_time, origin, walking_coordinates, solution_stops,
+                                            analysis_end_time):
+        self._initialize_travel_or_walk_progress_dict(origin, departure_time, analysis_end_time)
         self._walking_coordinates = walking_coordinates.copy() if \
             walking_coordinates else self._data_munger.get_all_stop_coordinates().copy()
         self._solution_stops = solution_stops.copy() if \
@@ -51,18 +53,21 @@ class NearbyStationsFinder(Solver):
         while self._solution_stops and not self._exp_queue.is_empty():
             self._expand()
 
-    def _find_travel_or_walk_time_secs(self, origin, analysis_start_time, walking_coordinates, solution_stops):
-        departure_time = self._find_next_departure_time(origin, analysis_start_time)
+    def _find_travel_or_walk_time_secs(self, origin, analysis_start_time, walking_coordinates, solution_stops,
+                                       analysis_end_time):
+        departure_time = self._find_next_departure_time(origin, analysis_start_time, analysis_end_time)
         if departure_time is None:
             return
 
         while departure_time is not None:
-            self._find_next_travel_or_walk_time_secs(departure_time, origin, walking_coordinates, solution_stops)
-            departure_time = self._find_next_departure_time(origin, departure_time + timedelta(seconds=1))
+            self._find_next_travel_or_walk_time_secs(departure_time, origin, walking_coordinates, solution_stops,
+                                                     analysis_end_time)
+            departure_time = self._find_next_departure_time(origin, departure_time + timedelta(seconds=1),
+                                                            analysis_end_time)
 
-    def _initialize_travel_or_walk_progress_dict(self, origin, earliest_departure_time):
+    def _initialize_travel_or_walk_progress_dict(self, origin, earliest_departure_time, analysis_end_time):
         self._progress_dict = dict()
-        departure_time = self._find_next_departure_time(origin, earliest_departure_time)
+        departure_time = self._find_next_departure_time(origin, earliest_departure_time, analysis_end_time)
         if departure_time is None:
             return
 

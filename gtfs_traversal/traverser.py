@@ -80,7 +80,8 @@ class Traverser(Solver):
         self._network_travel_time_dict = {
             stop: nsf.travel_or_walk_time_secs_to_nearest_solution_station(
                 stop, self._start_time, None, dict(), dict(), self._walk_time_between_most_distant_solution_stations,
-                dict(), [s for s in self._data_munger.get_unique_stops_to_solve() if s != stop]) / 2
+                dict(), [s for s in self._data_munger.get_unique_stops_to_solve() if s != stop],
+                self._data_munger.get_buffered_analysis_end_time()) / 2
             for stop in self._data_munger.get_unique_stops_to_solve()
         }
         self._secondary_travel_time_dict = {
@@ -89,8 +90,9 @@ class Traverser(Solver):
                     stop, self._start_time, half_max_time * 2, dict(), dict(),
                     self._walk_time_between_most_distant_solution_stations,
                     self._data_munger.get_all_stop_coordinates(),
-                    [s for s in self._data_munger.get_unique_stops_to_solve()
-                     if s != stop]) + self._transfer_duration_seconds) / 2,
+                    [s for s in self._data_munger.get_unique_stops_to_solve() if s != stop],
+                    self._data_munger.get_buffered_analysis_end_time()
+                ) + self._transfer_duration_seconds) / 2,
                 half_max_time
             )
             for stop, half_max_time in self._network_travel_time_dict.items()
@@ -188,7 +190,8 @@ class Traverser(Solver):
                                self._time_to_nearest_station_with_walk,
                                max_walk_time,
                                None,
-                               self._solution_stops)
+                               self._solution_stops,
+                               self._data_munger.get_buffered_analysis_end_time())
 
     def _calculate_travel_time_to_solution_stop(self, origin, max_time):
         return NearestStationFinder(
@@ -200,7 +203,8 @@ class Traverser(Solver):
                                                        self._time_to_nearest_station,
                                                        self._time_to_nearest_station_with_walk,
                                                        self._walk_time_between_most_distant_solution_stations,
-                                                       self._walking_coordinates, self._solution_stops)
+                                                       self._walking_coordinates, self._solution_stops,
+                                                       self._data_munger.get_buffered_analysis_end_time())
 
     def _calculate_travel_time_to_solution_stop_with_walk(self, origin, max_time):
         return NearestStationFinder(
@@ -210,7 +214,9 @@ class Traverser(Solver):
             transfer_route=self._transfer_route, walk_route=self._walk_route, walk_speed_mph=self._walk_speed_mph
         ).travel_or_walk_time_secs_to_nearest_solution_station(
             origin, self._start_time, max_time, self._time_to_nearest_station, self._time_to_nearest_station_with_walk,
-            self._walk_time_between_most_distant_solution_stations, self._walking_coordinates, self._solution_stops)
+            self._walk_time_between_most_distant_solution_stations, self._walking_coordinates, self._solution_stops,
+            self._data_munger.get_buffered_analysis_end_time()
+        )
 
     def find_solution_at_time(self, begin_time, known_best_time):
         self._best_known_time = known_best_time
