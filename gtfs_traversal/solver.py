@@ -84,15 +84,17 @@ class Solver:
                 self._add_new_node_to_progress_dict(node, verbose=verbose)
                 if not any(n[0].location == node[0].location for n in valid_nodes_list):
                     if self._should_calculate_time_to_nearest_solution_station(node[0].location):
-                        self._calculate_new_travel_times_with_walk(node[0], node[1]) if \
-                            self._get_walk_time_to_solution_station().get(node[0].location, 0) <= 60 else \
-                            self._calculate_new_travel_times(node[0], node[1])
+                        # self._calculate_new_travel_times(node[0], node[1]) if \
+                        #     self._get_walk_time_to_solution_station().get(node[0].location, 0) <= \
+                        #     self._priority_time_to_solution_station_cutoff() else \
+                        self._calculate_new_travel_times_with_walk(node[0], node[1])
                     if self._should_calculate_time_to_nearest_solution_station(node[0].location):
-                        self._calculate_new_travel_times(node[0], node[1]) if \
-                            self._get_walk_time_to_solution_station().get(node[0].location, 0) <= 60 else \
-                            self._calculate_new_travel_times_with_walk(node[0], node[1])
-                    if self._should_calculate_time_to_nearest_solution_station(node[0].location):
-                        self._calculate_next_stations_in_range(node[0].location)
+                        # self._calculate_new_travel_times_with_walk(node[0], node[1]) if \
+                        #     self._get_walk_time_to_solution_station().get(node[0].location, 0) <= \
+                        #     self._priority_time_to_solution_station_cutoff() else \
+                        self._calculate_new_travel_times(node[0], node[1])
+                    # if self._should_calculate_time_to_nearest_solution_station(node[0].location):
+                    #     self._calculate_next_stations_in_range(node[0].location)
         else:
             self._mark_nodes_as_eliminated({parent})
 
@@ -156,10 +158,12 @@ class Solver:
             return
 
         bound = self._should_calculate_time_to_nearest_solution_station_bound(location)
+        min_travel_time = self._get_walk_time_to_solution_station().get(location, 0) * \
+            self._walk_speed_mph / self._max_speed_mph
 
         max_travel_time = min(
             self._best_known_time - self._get_total_minimum_network_time(),
-            self._walk_time_between_most_distant_solution_stations
+            self._walk_time_between_most_distant_solution_stations - min_travel_time
         ) + 1
         travel_time = self._calculate_travel_time_to_solution_stop(location, max_travel_time)
         if travel_time is None:
@@ -174,6 +178,8 @@ class Solver:
         else:
             print(f"eliminating {location} from walking coordinates")
             self._reset_walking_coordinates()
+            if location in self._get_walking_coordinates():
+                print(f"hmmm, {location} doesn't seem to have been eliminated successfully")
 
     def _calculate_new_travel_times_with_walk(self, location_status, progress):
         location = location_status.location
@@ -198,10 +204,12 @@ class Solver:
             self._set_walk_time_to_solution_station(location, walk_time)
 
         bound = self._should_calculate_time_to_nearest_solution_station_bound(location)
+        min_travel_time = self._get_walk_time_to_solution_station().get(location, 0) * \
+            self._walk_speed_mph / self._max_speed_mph
 
         max_travel_time = min(
             self._best_known_time - self._get_total_minimum_network_time(),
-            self._walk_time_between_most_distant_solution_stations,
+            self._walk_time_between_most_distant_solution_stations - min_travel_time,
             self._get_time_to_nearest_station().get(location, self._best_known_time),
             walk_time
         ) + 1
@@ -209,7 +217,9 @@ class Solver:
         if travel_time is None:
             travel_time = max_travel_time + 1
         else:
-            assert(walk_time + 1 > travel_time)
+            if travel_time >= max_travel_time:
+                print(travel_time, max_travel_time, location)
+            assert(max_travel_time > travel_time)
         self._set_time_to_nearest_station_with_walk(location, travel_time)
         print(location, self._get_walk_expansions_at_stop(location), bound,
               max_travel_time, self._get_time_to_nearest_station().get(location, None),
@@ -323,6 +333,7 @@ class Solver:
         if self._data_munger.is_last_stop_on_route(location_status.location, location_status.arrival_route):
             return None
 
+        # Note that this function is not called if expanding a walk or transfer
         if location_status.arrival_route not in self._data_munger.get_unique_routes_to_solve():
             self._count_post_walk_expansion(location_status.location)
 
@@ -692,7 +703,7 @@ class Solver:
                 return False
             if new_location.arrival_route == self._walk_route and \
                     min_duration_with_travel + self._transfer_duration_seconds > self._best_known_time and \
-                    not self._is_solution(new_location):
+                    not self._is_solution(new_location):  # need solution check for NearestStationFinder
                 return False
             if self._no_unvisited_station_exists_within_time(new_location, new_progress):
                 return False
@@ -700,6 +711,9 @@ class Solver:
                 return False
 
         return True
+
+    def _priority_time_to_solution_station_cutoff(self):
+        return self._transfer_duration_seconds * 12.5
 
     def _reset_walking_coordinates(self):
         abs_max_walk_time = None if self._best_known_time is None else \
@@ -715,7 +729,11 @@ class Solver:
 
         self._walking_coordinates = dict()
         for stop, coordinates in stops_with_departures.items():
-            if abs_max_walk_time is None or self._get_time_to_nearest_station().get(stop, 0) <= abs_max_walk_time:
+            min_travel_time = self._get_walk_time_to_solution_station().get(stop, 0) * \
+                              self._walk_speed_mph / self._max_speed_mph if self._max_speed_mph is not None else 0
+            if abs_max_walk_time is None or \
+                    self._get_time_to_nearest_station().get(stop, min_travel_time) + \
+                    min_travel_time <= abs_max_walk_time:
                 self._walking_coordinates[stop] = coordinates
 
         for stop, coordinate_dict in self._get_walking_coordinate_dict().items():
@@ -763,7 +781,8 @@ class Solver:
 
     def _should_calculate_time_to_nearest_solution_station(self, location):
         return (location not in self._get_time_to_nearest_station() or
-                location not in self._get_time_to_nearest_station_with_walk()) and \
+                location not in self._get_time_to_nearest_station_with_walk() or
+                not any(location in d for d in self._get_stations_within_time_dict())) and \
             self._get_walk_expansions_at_stop(location) >= \
             max(1.0, self._should_calculate_time_to_nearest_solution_station_bound(location)) and \
             self._best_known_time is not None
@@ -775,20 +794,19 @@ class Solver:
                 (len(self._get_time_to_nearest_station()) + len(self._get_time_to_nearest_station_with_walk())) / 2,
                 1) / len(self._get_walking_coordinates()) * 2 * \
                (1 + self._should_calculate_time_to_nearest_station_calculations(location)) * \
-            min(self._transfer_duration_seconds, self._get_walk_time_to_solution_station().get(
-                location, self._transfer_duration_seconds) + 1) / self._transfer_duration_seconds
-            # math.sqrt((max(60, self._get_walk_time_to_solution_station().get(location, 60)) if
-            #           (location in self._get_time_to_nearest_station() or
-            #            location in self._get_time_to_nearest_station_with_walk()) else
-            #            self._get_walk_time_to_solution_station().get(location, 60)) / 60)
+            min(self._priority_time_to_solution_station_cutoff(), self._get_walk_time_to_solution_station().get(
+                location, self._priority_time_to_solution_station_cutoff()) + 1) / \
+            self._priority_time_to_solution_station_cutoff()
 
     def _should_calculate_time_to_nearest_station_calculations(self, location):
         calculations = 0
 
         if location in self._get_time_to_nearest_station():
-            calculations += 1
+            calculations += 0.1
+            if location in self._get_time_to_nearest_station_with_walk():
+                calculations += 10
         if location in self._get_time_to_nearest_station_with_walk():
-            calculations += 1
+            calculations += 0.1
 
         for d in self._get_stations_within_time_dict().values():
             if location in d:
