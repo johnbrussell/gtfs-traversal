@@ -78,7 +78,7 @@ class Traverser(Solver):
                 transfer_route=self._transfer_route, walk_route=self._walk_route, walk_speed_mph=self._walk_speed_mph
             )
         self._network_travel_time_dict = {
-            stop: nsf.travel_or_walk_time_secs_to_nearest_solution_station(
+            stop: nsf.travel_time_secs_to_nearest_solution_station(
                 stop, self._start_time, None, dict(), dict(), self._walk_time_between_most_distant_solution_stations,
                 dict(), [s for s in self._data_munger.get_unique_stops_to_solve() if s != stop],
                 self._data_munger.get_buffered_analysis_end_time(), self._max_speed_mph) / 2
@@ -207,6 +207,18 @@ class Traverser(Solver):
                                                        self._walking_coordinates, self._solution_stops,
                                                        self._data_munger.get_buffered_analysis_end_time(),
                                                        self._max_speed_mph)
+
+    def _calculate_travel_time_to_solution_stop_walk_only(self, origin, max_time):
+        return NearestStationFinder(
+            analysis=self._analysis, data=self._data_munger.data,
+            progress_between_pruning_progress_dict=self._expansions_to_prune, prune_thoroughness=self._prune_severity,
+            stop_join_string=self._stop_join_string, transfer_duration_seconds=self._transfer_duration_seconds,
+            transfer_route=self._transfer_route, walk_route=self._walk_route, walk_speed_mph=self._walk_speed_mph
+        ).travel_or_walk_time_secs_to_nearest_solution_station(
+            origin, self._start_time, max_time, self._time_to_nearest_station, self._time_to_nearest_station_with_walk,
+            self._walk_time_between_most_distant_solution_stations, self._walking_coordinates, self._solution_stops,
+            self._data_munger.get_buffered_analysis_end_time(), self._max_speed_mph
+        )
 
     def _calculate_travel_time_to_solution_stop_with_walk(self, origin, max_time):
         return NearestStationFinder(

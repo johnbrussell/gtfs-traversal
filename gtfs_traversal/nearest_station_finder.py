@@ -47,6 +47,24 @@ class NearestStationFinder(Solver):
         self._find_travel_or_walk_time_secs(origin, analysis_start_time, analysis_end_time)
         return self._best_known_time
 
+    def walk_time_secs_to_nearest_solution_station(self, origin, analysis_start_time, maximum_time,
+                                                   known_travel_times, known_walk_times, max_walk_time,
+                                                   walking_coordinates, solution_stops, analysis_end_time,
+                                                   max_speed_mph):
+        self._solution_stops = solution_stops if solution_stops else self._data_munger.get_unique_stops_to_solve()
+
+        if self._is_solution_location(origin):
+            return 0
+        self._time_to_nearest_station = known_travel_times
+        self._time_to_nearest_station_with_walk = known_walk_times
+        self._best_known_time = maximum_time
+        self._max_speed_mph = max_speed_mph
+        self._walk_time_between_most_distant_solution_stations = max_walk_time
+        self._set_relevant_walking_coordinates_without_travel(walking_coordinates, maximum_time, [origin])
+
+        self._find_walk_time_secs(origin, analysis_start_time, analysis_end_time)
+        return self._best_known_time
+
     def _announce_solution(self, new_progress):
         pass
 
@@ -80,17 +98,17 @@ class NearestStationFinder(Solver):
 
         return next_departure_time
 
-    def _find_next_travel_or_walk_time_secs(self, departure_time, origin, analysis_end_time):
-        self._initialize_travel_or_walk_progress_dict(origin, departure_time, analysis_end_time)
+    def _find_next_travel_time_secs(self, departure_time, origin, analysis_end_time):
+        self._initialize_travel_progress_dict(origin, departure_time, analysis_end_time)
         self._exp_queue = ExpansionQueue(1, STOP_JOIN_STRING)
         self._exp_queue.add(self._progress_dict.keys())
         while not self._exp_queue.is_empty():
             self._expand()
 
-    def _find_next_travel_time_secs(self, departure_time, origin, analysis_end_time):
-        self._initialize_travel_progress_dict(origin, departure_time, analysis_end_time)
+    def _find_next_walk_time_secs(self, departure_time, origin, analysis_end_time):
+        self._initialize_walk_progress_dict(origin, departure_time, analysis_end_time)
         self._exp_queue = ExpansionQueue(1, STOP_JOIN_STRING)
-        self._exp_queue.add(self._progress_dict.keys())
+        self._exp_queue.add([k for k in self._progress_dict.keys() if k.arrival_route == self._transfer_route])
         while not self._exp_queue.is_empty():
             self._expand()
 
@@ -100,7 +118,8 @@ class NearestStationFinder(Solver):
             return
 
         while departure_time is not None:
-            self._find_next_travel_or_walk_time_secs(departure_time, origin, analysis_end_time)
+            self._find_next_walk_time_secs(departure_time, origin, analysis_end_time)
+            self._find_next_travel_time_secs(departure_time, origin, analysis_end_time)
             departure_time = self._find_next_departure_time(origin, departure_time + timedelta(seconds=1),
                                                             analysis_end_time)
 
@@ -111,6 +130,16 @@ class NearestStationFinder(Solver):
 
         while departure_time is not None:
             self._find_next_travel_time_secs(departure_time, origin, analysis_end_time)
+            departure_time = self._find_next_departure_time(origin, departure_time + timedelta(seconds=1),
+                                                            analysis_end_time)
+
+    def _find_walk_time_secs(self, origin, analysis_start_time, analysis_end_time):
+        departure_time = self._find_next_departure_time(origin, analysis_start_time, analysis_end_time)
+        if departure_time is None:
+            return
+
+        while departure_time is not None:
+            self._find_next_walk_time_secs(departure_time, origin, analysis_end_time)
             departure_time = self._find_next_departure_time(origin, departure_time + timedelta(seconds=1),
                                                             analysis_end_time)
 
@@ -125,19 +154,44 @@ class NearestStationFinder(Solver):
     def _get_unvisited_solution_walk_times(self, location_status):
         return [self._best_known_time]
 
-    def _initialize_travel_or_walk_progress_dict(self, origin, earliest_departure_time, latest_departure_time):
+    def _initialize_walk_progress_dict(self, origin, earliest_departure_time, latest_departure_time):
         self._progress_dict = dict()
         departure_time = self._find_next_departure_time(origin, earliest_departure_time, latest_departure_time)
         if departure_time is None or departure_time > latest_departure_time:
             return
 
-        location = LocationStatusInfo(location=origin, arrival_route=self._transfer_route,
-                                      unvisited=self._get_initial_unsolved_string())
-        progress = ProgressInfo(duration=0, arrival_trip=self._transfer_route, trip_stop_no=0,
-                                children=None, eliminated=False, expanded=False,
-                                minimum_remaining_network_time=0, minimum_remaining_secondary_time=0, parent=None)
-        self._progress_dict[location] = progress
-        self._start_time = departure_time
+        location_transfer = LocationStatusInfo(location=origin, arrival_route=self._transfer_route,
+                                               unvisited=self._get_initial_unsolved_string())
+        progress_transfer = ProgressInfo(duration=0, arrival_trip=self._transfer_route, trip_stop_no=0,
+                                         children=None, eliminated=False, expanded=False,
+                                         minimum_remaining_network_time=0, minimum_remaining_secondary_time=0,
+                                         parent=None)
+        self._progress_dict[location_transfer] = progress_transfer
+
+        for route in self._data_munger.get_routes_at_stop(origin):
+            next_stop = self._data_munger.get_next_stop_id(origin, route)
+            if next_stop is None:
+                continue
+
+            route_departure_time, trip = self._data_munger.first_trip_after(earliest_departure_time, route, origin)
+            if route_departure_time != departure_time or trip is None or route_departure_time > latest_departure_time:
+                continue
+
+            origin_stop_number = self._data_munger.get_stop_number_from_stop_id(origin, route)
+            next_stop_number = self._data_munger.get_stop_number_from_stop_id(next_stop, route)
+            if int(next_stop_number) > int(origin_stop_number):
+                location = LocationStatusInfo(location=origin, arrival_route=route,
+                                              unvisited=self._get_initial_unsolved_string())
+                progress = ProgressInfo(duration=-1 * self._transfer_duration_seconds, arrival_trip=trip,
+                                        trip_stop_no=origin_stop_number,
+                                        children=None, eliminated=False, expanded=False,
+                                        minimum_remaining_network_time=0, minimum_remaining_secondary_time=0,
+                                        parent=None)
+                self._progress_dict[location] = progress
+            else:
+                print(f"trip {trip} potentially visits stop {next_stop} multiple times")
+
+        self._start_time = departure_time + timedelta(seconds=60)
 
     def _initialize_travel_progress_dict(self, origin, earliest_departure_time, latest_departure_time):
         self._progress_dict = dict()

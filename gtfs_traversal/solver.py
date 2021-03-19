@@ -137,6 +137,10 @@ class Solver:
         # must be implemented in subclass
         return 0
 
+    def _calculate_travel_time_to_solution_stop_walk_only(self, origin, max_time):
+        # must be implemented in subclass
+        return 0
+
     def _calculate_travel_time_to_solution_stop_with_walk(self, origin, max_time):
         # must be implemented in subclass
         return 0
@@ -213,13 +217,18 @@ class Solver:
             self._get_time_to_nearest_station().get(location, self._best_known_time),
             walk_time
         ) + 1
-        travel_time = self._calculate_travel_time_to_solution_stop_with_walk(location, max_travel_time)
+        travel_time = self._calculate_travel_time_to_solution_stop_with_walk(location, max_travel_time) if \
+            location not in self._get_time_to_nearest_station() \
+            else self._calculate_travel_time_to_solution_stop_walk_only(location, max_travel_time)
         if travel_time is None:
             travel_time = max_travel_time + 1
         else:
             if travel_time >= max_travel_time:
-                print(travel_time, max_travel_time, location)
-            assert(max_travel_time > travel_time)
+                if location in self._get_time_to_nearest_station():
+                    travel_time = self._get_time_to_nearest_station()[location]
+                else:
+                    print(travel_time, max_travel_time, location)
+            # assert(max_travel_time > travel_time)
         self._set_time_to_nearest_station_with_walk(location, travel_time)
         print(location, self._get_walk_expansions_at_stop(location), bound,
               max_travel_time, self._get_time_to_nearest_station().get(location, None),
