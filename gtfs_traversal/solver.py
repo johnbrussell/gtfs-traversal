@@ -87,14 +87,14 @@ class Solver:
                         # self._calculate_new_travel_times(node[0], node[1]) if \
                         #     self._get_walk_time_to_solution_station().get(node[0].location, 0) <= \
                         #     self._priority_time_to_solution_station_cutoff() else \
-                        self._calculate_new_travel_times_with_walk(node[0], node[1])
+                        self._calculate_new_travel_times(node[0], node[1])
                     if self._should_calculate_time_to_nearest_solution_station(node[0].location):
                         # self._calculate_new_travel_times_with_walk(node[0], node[1]) if \
                         #     self._get_walk_time_to_solution_station().get(node[0].location, 0) <= \
                         #     self._priority_time_to_solution_station_cutoff() else \
-                        self._calculate_new_travel_times(node[0], node[1])
-                    # if self._should_calculate_time_to_nearest_solution_station(node[0].location):
-                    #     self._calculate_next_stations_in_range(node[0].location)
+                        self._calculate_new_travel_times_with_walk(node[0], node[1])
+                    if self._should_calculate_stations_in_range(node[0].location):
+                        self._calculate_next_stations_in_range(node[0].location)
         else:
             self._mark_nodes_as_eliminated({parent})
 
@@ -338,16 +338,17 @@ class Solver:
 
     def _get_next_stop_data_for_trip(self, location_status):
         progress = self._progress_dict[location_status]
+        stop_number = progress.trip_stop_no
+        next_stop_no = str(int(stop_number) + 1)
 
-        if self._data_munger.is_last_stop_on_route(location_status.location, location_status.arrival_route):
+        if self._data_munger.is_last_stop_on_route(location_status.location, location_status.arrival_route) or \
+                next_stop_no not in self._data_munger.get_stops_for_route(location_status.arrival_route):
             return None
 
         # Note that this function is not called if expanding a walk or transfer
         if location_status.arrival_route not in self._data_munger.get_unique_routes_to_solve():
             self._count_post_walk_expansion(location_status.location)
 
-        stop_number = progress.trip_stop_no
-        next_stop_no = str(int(stop_number) + 1)
         next_stop_id = self._data_munger.get_next_stop_id(location_status.location, location_status.arrival_route)
         new_unvisited_string = self._eliminate_stops_from_string(
             [location_status.location, next_stop_id], location_status.unvisited) \
@@ -788,10 +789,14 @@ class Solver:
 
         self._walking_coordinate_dict[location] = coordinates
 
+    def _should_calculate_stations_in_range(self, location):
+        return self._walking_coordinates is not None and \
+               self._get_walk_expansions_at_stop(location) > len(self._walking_coordinates)
+
     def _should_calculate_time_to_nearest_solution_station(self, location):
         return (location not in self._get_time_to_nearest_station() or
                 location not in self._get_time_to_nearest_station_with_walk() or
-                not any(location in d for d in self._get_stations_within_time_dict())) and \
+                not any(location in d for d in self._get_stations_within_time_dict().values())) and \
             self._get_walk_expansions_at_stop(location) >= \
             max(1.0, self._should_calculate_time_to_nearest_solution_station_bound(location)) and \
             self._best_known_time is not None

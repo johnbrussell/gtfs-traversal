@@ -50,8 +50,11 @@ class NearbyStationsFinder(Solver):
             solution_stops else self._data_munger.get_unique_stops_to_solve().copy()
         self._exp_queue = ExpansionQueue(1, STOP_JOIN_STRING)
         self._exp_queue.add(self._progress_dict.keys())
+        expansions = 0
         while self._solution_stops and not self._exp_queue.is_empty():
             self._expand()
+            expansions += 1
+        print(expansions)
 
     def _find_travel_or_walk_time_secs(self, origin, analysis_start_time, walking_coordinates, solution_stops,
                                        analysis_end_time):
