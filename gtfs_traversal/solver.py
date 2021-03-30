@@ -717,7 +717,9 @@ class Solver:
                 return False
             if self._no_unvisited_station_exists_within_time(new_location, new_progress):
                 return False
-            if self._too_far_from_unvisited_stop(new_location, new_progress):
+            if self._too_far_from_closest_unvisited_stop(new_location, new_progress):
+                return False
+            if self._too_far_from_farthest_unvisited_stop(new_location, new_progress):
                 return False
 
         return True
@@ -838,7 +840,7 @@ class Solver:
     def _to_radians_from_degrees(degrees):
         return degrees * math.pi / 180
 
-    def _too_far_from_unvisited_stop(self, new_location, new_progress):
+    def _too_far_from_closest_unvisited_stop(self, new_location, new_progress):
         coordinates = self._data_munger.get_all_stop_coordinates()
         origin = new_location.location
 
@@ -855,6 +857,23 @@ class Solver:
             for u in unvisited
         )
         return self._minimum_possible_duration(new_progress) + min_travel_time > self._best_known_time
+
+    def _too_far_from_farthest_unvisited_stop(self, new_location, new_progress):
+        coordinates = self._data_munger.get_all_stop_coordinates()
+        origin = new_location.location
+
+        if new_location.arrival_route == self._transfer_route:
+            return False
+
+        unvisited = self._unvisited_string_to_list(new_location.unvisited)
+        max_travel_time = max(
+            self._walk_time_seconds(coordinates[origin].lat, coordinates[u].lat,
+                                    coordinates[origin].long, coordinates[u].long) *
+            self._walk_speed_mph / self._max_speed_mph
+            for u in unvisited
+        ) - self._transfer_duration_seconds
+        max_travel_time = max(max_travel_time, 0)
+        return new_progress.duration + max_travel_time > self._best_known_time
 
     def _travel_time_to_solution_stop(self, location_status, progress):
         location = location_status.location
