@@ -864,15 +864,32 @@ class Solver:
 
         if new_location.arrival_route == self._transfer_route:
             return False
+        if self._walk_time_between_most_distant_solution_stations / self._max_speed_mph * self._walk_speed_mph * 2 < \
+                new_progress.minimum_remaining_network_time:
+            return False
 
-        unvisited = self._unvisited_string_to_list(new_location.unvisited)
-        max_travel_time = max(
-            self._walk_time_seconds(coordinates[origin].lat, coordinates[u].lat,
-                                    coordinates[origin].long, coordinates[u].long) *
+        unvisited = sorted(self._unvisited_string_to_list(new_location.unvisited))
+        max_travel_time = 0
+        closest_stop_1 = None
+        closest_stop_2 = None
+        for stop1 in unvisited:
+            for stop2 in unvisited:
+                if stop2 <= stop1:
+                    continue
+                travel_time = self._walk_time_seconds(coordinates[stop1].lat, coordinates[stop2].lat,
+                                                      coordinates[stop1].long, coordinates[stop2].long) * \
+                    self._walk_speed_mph / self._max_speed_mph
+                if travel_time > max_travel_time:
+                    max_travel_time = travel_time
+                    closest_stop_1 = stop1
+                    closest_stop_2 = stop2
+        stop1_travel_time = self._walk_time_seconds(coordinates[closest_stop_1].lat, coordinates[origin].lat,
+                                                    coordinates[closest_stop_1].long, coordinates[origin].long) * \
             self._walk_speed_mph / self._max_speed_mph
-            for u in unvisited
-        ) - self._transfer_duration_seconds
-        max_travel_time = max(max_travel_time, 0)
+        stop2_travel_time = self._walk_time_seconds(coordinates[origin].lat, coordinates[closest_stop_2].lat,
+                                                    coordinates[origin].long, coordinates[closest_stop_2].long) * \
+            self._walk_speed_mph / self._max_speed_mph
+        max_travel_time += min(stop1_travel_time, stop2_travel_time)
         return new_progress.duration + max_travel_time > self._best_known_time
 
     def _travel_time_to_solution_stop(self, location_status, progress):

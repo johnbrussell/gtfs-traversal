@@ -31,7 +31,7 @@ if __name__ == "__main__":
         for day, trips in raw_data.dateTrips.items():
             all_trips = all_trips.union(trips)
         for trip in all_trips:
-            all_stops = all_stops.union(set(s.stopId for s in data.tripSchedules[trip].tripStops.values()))
+            all_stops = all_stops.union(set(s.stopId for s in raw_data.tripSchedules[trip].tripStops.values()))
 
         new_data = gtfsSchedules(
             tripSchedules={trip_id: trip_info for trip_id, trip_info in raw_data.tripSchedules.items() if
@@ -41,7 +41,7 @@ if __name__ == "__main__":
                                                         routeInfo=route_info.routeInfo)
                               for route_id, route_info in raw_data.uniqueRouteTrips.items()
                               if any(t in all_trips for t in route_info.tripIds)},
-            stopLocations={stop_id: location for stop_id, location in data.stopLocations.items()
+            stopLocations={stop_id: location for stop_id, location in raw_data.stopLocations.items()
                            if stop_id in all_stops},
         )
         return new_data
