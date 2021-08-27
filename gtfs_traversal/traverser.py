@@ -9,12 +9,14 @@ from gtfs_traversal.solver import Solver
 
 class Traverser(Solver):
     def _get_nearest_station_finder(self):
-        return NearestStationFinder(analysis=self._analysis, data=self._data_munger.data,
+        return NearestStationFinder(data=self._data_munger.data,
                                     progress_between_pruning_progress_dict=self._expansions_to_prune,
                                     prune_thoroughness=self._prune_severity, stop_join_string=self._stop_join_string,
                                     transfer_duration_seconds=self._transfer_duration_seconds,
                                     transfer_route=self._transfer_route, walk_route=self._walk_route,
-                                    walk_speed_mph=self._walk_speed_mph)
+                                    walk_speed_mph=self._walk_speed_mph, end_date=self._end_date,
+                                    route_types_to_solve=self._route_types_to_solve,
+                                    stops_to_solve=self._stops_to_solve)
 
     def initialize_progress_dict(self, begin_time):
         progress_dict = dict()

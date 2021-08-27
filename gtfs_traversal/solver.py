@@ -10,8 +10,11 @@ class Solver:
     def __init__(self, end_date, route_types_to_solve, stops_to_solve, data,
                  progress_between_pruning_progress_dict, prune_thoroughness, stop_join_string,
                  transfer_duration_seconds, transfer_route, walk_route, walk_speed_mph):
+        self._end_date = end_date
+        self._route_types_to_solve = route_types_to_solve
         self._walk_speed_mph = walk_speed_mph
         self._stop_join_string = stop_join_string
+        self._stops_to_solve = stops_to_solve
         self._transfer_route = transfer_route
         self._walk_route = walk_route
         self._transfer_duration_seconds = transfer_duration_seconds
