@@ -12,7 +12,7 @@ DEFAULT_START_TIME = datetime.strptime(DEFAULT_START_DATE, '%Y-%m-%d')
 
 class TestNearestStationFinder(unittest.TestCase):
     def test__find_next_departure_time(self):
-        subject = NearestStationFinder(analysis=MockAnalysis(route_types_to_solve=[1]), data=MockData(),
+        subject = NearestStationFinder(**create_mock_analysis(route_types_to_solve=[1]), data=MockData(),
                                        progress_between_pruning_progress_dict=None, prune_thoroughness=None,
                                        stop_join_string='~~', transfer_duration_seconds=None, transfer_route=None,
                                        walk_route=None, walk_speed_mph=None)
@@ -28,7 +28,7 @@ class TestNearestStationFinder(unittest.TestCase):
                          None)
 
     def test__initialize_progress_dict(self):
-        subject = NearestStationFinder(analysis=MockAnalysis(route_types_to_solve=[1]), data=MockData(),
+        subject = NearestStationFinder(**create_mock_analysis(route_types_to_solve=[1]), data=MockData(),
                                        progress_between_pruning_progress_dict=None, prune_thoroughness=None,
                                        stop_join_string='~~', transfer_duration_seconds=None, transfer_route=None,
                                        walk_route=None, walk_speed_mph=None)
@@ -47,7 +47,7 @@ class TestNearestStationFinder(unittest.TestCase):
 
     def test__is_solution(self):
         def test_returns_true_if_on_solution_stop():
-            subject = NearestStationFinder(analysis=MockAnalysis(route_types_to_solve=[1]), data=MockData(),
+            subject = NearestStationFinder(**create_mock_analysis(route_types_to_solve=[1]), data=MockData(),
                                            progress_between_pruning_progress_dict=None, prune_thoroughness=None,
                                            stop_join_string='~~', transfer_duration_seconds=None, transfer_route=None,
                                            walk_route=None, walk_speed_mph=None)
@@ -55,7 +55,7 @@ class TestNearestStationFinder(unittest.TestCase):
             self.assertTrue(subject._is_solution(location))
 
         def test_returns_false_if_not_on_solution_stop():
-            subject = NearestStationFinder(analysis=MockAnalysis(route_types_to_solve=[1]), data=MockData(),
+            subject = NearestStationFinder(**create_mock_analysis(route_types_to_solve=[1]), data=MockData(),
                                            progress_between_pruning_progress_dict=None, prune_thoroughness=None,
                                            stop_join_string='~~', transfer_duration_seconds=None, transfer_route=None,
                                            walk_route=None, walk_speed_mph=None)
@@ -67,7 +67,7 @@ class TestNearestStationFinder(unittest.TestCase):
 
     def test_travel_time_secs_to_nearest_solution_station(self):
         def test_return_0_for_solution_station():
-            subject = NearestStationFinder(analysis=MockAnalysis(route_types_to_solve=[1]), data=MockData(),
+            subject = NearestStationFinder(**create_mock_analysis(route_types_to_solve=[1]), data=MockData(),
                                            progress_between_pruning_progress_dict=None, prune_thoroughness=None,
                                            stop_join_string='~~', transfer_duration_seconds=None, transfer_route=None,
                                            walk_route=None, walk_speed_mph=None)
@@ -75,7 +75,7 @@ class TestNearestStationFinder(unittest.TestCase):
                 'Heath Street', ['Heath Street', 'Bowdoin'], DEFAULT_START_TIME), 0)
 
         def test_calculate_correct_result_with_mocking():
-            subject = NearestStationFinder(analysis=MockAnalysis(route_types_to_solve=[1]), data=MockData(),
+            subject = NearestStationFinder(**create_mock_analysis(route_types_to_solve=[1]), data=MockData(),
                                            progress_between_pruning_progress_dict=None, prune_thoroughness=None,
                                            stop_join_string='~~', transfer_duration_seconds=None, transfer_route=None,
                                            walk_route=None, walk_speed_mph=None)
@@ -90,7 +90,7 @@ class TestNearestStationFinder(unittest.TestCase):
             self.assertEqual(actual, expected)
 
         def test_calculate_correct_result_without_mocking():
-            subject = NearestStationFinder(analysis=MockAnalysis(route_types_to_solve=[1]), data=MockData(),
+            subject = NearestStationFinder(**create_mock_analysis(route_types_to_solve=[1]), data=MockData(),
                                            progress_between_pruning_progress_dict=None, prune_thoroughness=None,
                                            stop_join_string='~~', transfer_duration_seconds=60,
                                            transfer_route='transfer_route', walk_route='walk_route', walk_speed_mph=1)
@@ -176,7 +176,9 @@ class MockStopLocation:
         self.long = long
 
 
-class MockAnalysis:
-    def __init__(self, route_types_to_solve=None):
-        self.route_types = [1, 2] if route_types_to_solve is None else route_types_to_solve
-        self.end_date = DEFAULT_START_DATE
+def create_mock_analysis(route_types_to_solve=None):
+    return {
+        "route_types_to_solve": [1, 2] if route_types_to_solve is None else route_types_to_solve,
+        "end_date": DEFAULT_START_DATE,
+        "stops_to_solve": None,
+    }
