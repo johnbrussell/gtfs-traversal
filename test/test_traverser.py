@@ -13,7 +13,7 @@ DEFAULT_START_TIME = datetime.strptime(DEFAULT_START_DATE, '%Y-%m-%d')
 class TestSolver(unittest.TestCase):
     def test_initialize_progress_dict(self):
         def test_start_of_route():
-            subject = Traverser(analysis=MockAnalysis(), data=MockData(), progress_between_pruning_progress_dict=None,
+            subject = Traverser(**create_mock_analysis(), data=MockData(), progress_between_pruning_progress_dict=None,
                                 prune_thoroughness=None, stop_join_string='~~', transfer_duration_seconds=None,
                                 transfer_route=None, walk_route=None, walk_speed_mph=None)
             subject.initialize_progress_dict(DEFAULT_START_TIME + timedelta(hours=7.01))
@@ -51,7 +51,7 @@ class TestSolver(unittest.TestCase):
             self.assertEqual(expected_start_time, actual_start_time)
 
         def test_middle_of_route():
-            subject = Traverser(analysis=MockAnalysis(), data=MockData(), progress_between_pruning_progress_dict=None,
+            subject = Traverser(**create_mock_analysis(), data=MockData(), progress_between_pruning_progress_dict=None,
                                 prune_thoroughness=None, stop_join_string='~~', transfer_duration_seconds=None,
                                 transfer_route=None, walk_route=None, walk_speed_mph=None)
             with patch.object(subject._data_munger, 'get_total_minimum_time', return_value=19800) as tmt_patch:
@@ -94,7 +94,7 @@ class TestSolver(unittest.TestCase):
             self.assertEqual(expected_start_time, actual_start_time)
 
         def test_no_valid_departures():
-            subject = Traverser(analysis=MockAnalysis(), data=MockData(), progress_between_pruning_progress_dict=None,
+            subject = Traverser(**create_mock_analysis(), data=MockData(), progress_between_pruning_progress_dict=None,
                                 prune_thoroughness=None, stop_join_string='~~', transfer_duration_seconds=None,
                                 transfer_route=None, walk_route=None, walk_speed_mph=None)
             subject.initialize_progress_dict(DEFAULT_START_TIME + timedelta(hours=11.01))
@@ -112,9 +112,10 @@ class TestSolver(unittest.TestCase):
         test_no_valid_departures()
 
     def test_prune_progress_dict(self):
-        subject = Traverser(analysis=None, data=None, progress_between_pruning_progress_dict=None,
+        subject = Traverser(data=None, progress_between_pruning_progress_dict=None,
                             prune_thoroughness=.5, stop_join_string='~~', transfer_duration_seconds=None,
-                            transfer_route=None, walk_route=None, walk_speed_mph=None)
+                            transfer_route=None, walk_route=None, walk_speed_mph=None, end_date=None,
+                            route_types_to_solve=None, stops_to_solve=None)
         location_1 = LocationStatusInfo(location='1', arrival_route=1, unvisited='~~a~~b~~c~~')
         location_2 = LocationStatusInfo(location='2', arrival_route=2, unvisited='~~a~~c~~d~~b~~')
         location_3 = LocationStatusInfo(location='3', arrival_route=3, unvisited='~~a~~')
@@ -211,10 +212,12 @@ class MockStopLocation:
         self.long = long
 
 
-class MockAnalysis:
-    def __init__(self, route_types_to_solve=None):
-        self.route_types = [1, 2] if route_types_to_solve is None else route_types_to_solve
-        self.end_date = DEFAULT_START_DATE
+def create_mock_analysis(route_types_to_solve=None):
+    return {
+        "route_types_to_solve": [1, 2] if route_types_to_solve is None else route_types_to_solve,
+        "end_date": DEFAULT_START_DATE,
+        "stops_to_solve": None,
+    }
 
 
 class MockNearestStationFinder:

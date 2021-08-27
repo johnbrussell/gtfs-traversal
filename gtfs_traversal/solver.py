@@ -7,14 +7,14 @@ from gtfs_traversal.string_shortener import StringShortener
 
 
 class Solver:
-    def __init__(self, analysis, data, progress_between_pruning_progress_dict, prune_thoroughness, stop_join_string,
+    def __init__(self, end_date, route_types_to_solve, stops_to_solve, data,
+                 progress_between_pruning_progress_dict, prune_thoroughness, stop_join_string,
                  transfer_duration_seconds, transfer_route, walk_route, walk_speed_mph):
         self._walk_speed_mph = walk_speed_mph
         self._stop_join_string = stop_join_string
         self._transfer_route = transfer_route
         self._walk_route = walk_route
         self._transfer_duration_seconds = transfer_duration_seconds
-        self._analysis = analysis
         self._expansions_to_prune = progress_between_pruning_progress_dict
         self._prune_severity = prune_thoroughness
         self._string_shortener = StringShortener()
@@ -36,7 +36,8 @@ class Solver:
         self._trip_schedules = None
         self._walking_coordinates = None
 
-        self._data_munger = DataMunger(analysis=analysis, data=data, stop_join_string=stop_join_string)
+        self._data_munger = DataMunger(end_date=end_date, data=data, stop_join_string=stop_join_string,
+                                       route_types_to_solve=route_types_to_solve, stops_to_solve=stops_to_solve)
 
     def _add_child_to_parent(self, parent, child):
         if self._progress_dict[parent].children is None:

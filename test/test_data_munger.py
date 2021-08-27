@@ -11,15 +11,17 @@ DEFAULT_START_TIME = datetime.strptime(DEFAULT_START_DATE, '%Y-%m-%d')
 class TestDataMunger(unittest.TestCase):
     @staticmethod
     def get_blank_subject():
-        return DataMunger(analysis=None, data=None, stop_join_string=None)
+        return DataMunger(data=None, stop_join_string=None, end_date=None, route_types_to_solve=None,
+                          stops_to_solve=None)
 
     @staticmethod
-    def get_subject_with_mock_data(*, analysis=None):
-        return DataMunger(analysis=analysis, data=MockData(), stop_join_string=None)
+    def get_subject_with_mock_data(*, end_date=None, route_types_to_solve=None, stops_to_solve=None):
+        return DataMunger(data=MockData(), stop_join_string=None, end_date=end_date,
+                          route_types_to_solve=route_types_to_solve, stops_to_solve=stops_to_solve)
 
     def test_first_trip_after(self):
         def test_returns_correct_trip():
-            subject = self.get_subject_with_mock_data(analysis=MockAnalysis())
+            subject = self.get_subject_with_mock_data(**create_mock_analysis())
 
             expected_3 = datetime.strptime(DEFAULT_START_DATE + ' 06:00:00', '%Y-%m-%d %H:%M:%S'), '3-6AM'
             expected_18 = datetime.strptime(DEFAULT_START_DATE + ' 08:00:00', '%Y-%m-%d %H:%M:%S'), '18-8AM'
@@ -32,7 +34,7 @@ class TestDataMunger(unittest.TestCase):
             self.assertEqual(subject.first_trip_after(DEFAULT_START_TIME, 3, 'Wonderland'), expected_blue)
 
         def test_returns_none_after_last_trip_of_day():
-            subject = self.get_subject_with_mock_data(analysis=MockAnalysis())
+            subject = self.get_subject_with_mock_data(**create_mock_analysis())
 
             expected_none_result = None, None
 
@@ -44,7 +46,7 @@ class TestDataMunger(unittest.TestCase):
                              expected_none_result)
 
         def test_returns_none_for_last_stop_on_route():
-            subject = self.get_subject_with_mock_data(analysis=MockAnalysis())
+            subject = self.get_subject_with_mock_data(**create_mock_analysis())
 
             expected_none_result = None, None
 
@@ -53,7 +55,7 @@ class TestDataMunger(unittest.TestCase):
             self.assertEqual(subject.first_trip_after(DEFAULT_START_TIME, 3, 'Lynn'), expected_none_result)
 
         def test_caches():
-            subject = self.get_subject_with_mock_data(analysis=MockAnalysis())
+            subject = self.get_subject_with_mock_data(**create_mock_analysis())
 
             expected_3 = datetime.strptime(DEFAULT_START_DATE + ' 06:00:00', '%Y-%m-%d %H:%M:%S'), '3-6AM'
             expected_18 = datetime.strptime(DEFAULT_START_DATE + ' 08:00:00', '%Y-%m-%d %H:%M:%S'), '18-8AM'
@@ -111,14 +113,14 @@ class TestDataMunger(unittest.TestCase):
         test_handles_after_midnight()
 
     def test_get_minimum_remaining_time(self):
-        subject = self.get_subject_with_mock_data(analysis=MockAnalysis(route_types_to_solve=[1, 2]))
+        subject = self.get_subject_with_mock_data(**create_mock_analysis(route_types_to_solve=[1, 2]))
         unvisited_stops = ['Wonderland', 'Back of the Hill', 'Lynn', 'Heath Street']
         expected = 5 * 60 * 60
         actual = subject.get_minimum_remaining_time(unvisited_stops, DEFAULT_START_TIME)
         self.assertEqual(expected, actual)
 
     def test_get_minimum_remaining_transfers(self):
-        subject = self.get_subject_with_mock_data(analysis=MockAnalysis(route_types_to_solve=[1, 2]))
+        subject = self.get_subject_with_mock_data(**create_mock_analysis(route_types_to_solve=[1, 2]))
         unvisited_stops = ['Alewife', 'Wonderland', 'Lechmere', 'Back of the Hill', 'Heath Street']
         current_route = 2
         expected = 1
@@ -127,7 +129,7 @@ class TestDataMunger(unittest.TestCase):
 
     def test_get_minimum_stop_times(self):
         def test_calculates_correct_result():
-            subject = self.get_subject_with_mock_data(analysis=MockAnalysis(route_types_to_solve=[1, 2]))
+            subject = self.get_subject_with_mock_data(**create_mock_analysis(route_types_to_solve=[1, 2]))
 
             expected = {
                 'Alewife': 90 * 60,
@@ -156,19 +158,19 @@ class TestDataMunger(unittest.TestCase):
 
     def test_get_next_stop_id(self):
         def test_first_stop_on_route():
-            subject = self.get_subject_with_mock_data(analysis=MockAnalysis(route_types_to_solve=[1, 2]))
+            subject = self.get_subject_with_mock_data(**create_mock_analysis(route_types_to_solve=[1, 2]))
             expected = "Wonderland"
             actual = subject.get_next_stop_id("Alewife", 1)
             self.assertEqual(expected, actual)
 
         def test_stop_in_middle_of_route():
-            subject = self.get_subject_with_mock_data(analysis=MockAnalysis(route_types_to_solve=[1, 2]))
+            subject = self.get_subject_with_mock_data(**create_mock_analysis(route_types_to_solve=[1, 2]))
             expected = "Back of the Hill"
             actual = subject.get_next_stop_id("Lechmere", 2)
             self.assertEqual(expected, actual)
 
         def test_stop_at_end_of_route():
-            subject = self.get_subject_with_mock_data(analysis=MockAnalysis(route_types_to_solve=[1, 2]))
+            subject = self.get_subject_with_mock_data(**create_mock_analysis(route_types_to_solve=[1, 2]))
             expected = None
             actual = subject.get_next_stop_id("Lynn", 3)
             self.assertEqual(expected, actual)
@@ -179,13 +181,13 @@ class TestDataMunger(unittest.TestCase):
 
     def test_get_route_list(self):
         def test_munges_correctly():
-            subject = self.get_subject_with_mock_data(analysis=MockAnalysis())
+            subject = self.get_subject_with_mock_data(**create_mock_analysis())
             expected = [1, 2, 3]
             actual = subject.get_route_list()
             self.assertListEqual(expected, actual)
 
         def test_memoizes():
-            subject = self.get_subject_with_mock_data(analysis=MockAnalysis())
+            subject = self.get_subject_with_mock_data(**create_mock_analysis())
             expected = ['route list']
             subject._route_list = expected
             actual = subject.get_route_list()
@@ -222,14 +224,14 @@ class TestDataMunger(unittest.TestCase):
         test_munges_correctly()
 
     def test_get_solution_routes_by_stop(self):
-        subject = self.get_subject_with_mock_data(analysis=MockAnalysis())
+        subject = self.get_subject_with_mock_data(**create_mock_analysis())
         self.assertSetEqual({1}, subject.get_solution_routes_at_stop('Wonderland'))
         self.assertSetEqual({2}, subject.get_solution_routes_at_stop('Heath Street'))
         self.assertSetEqual(set(), subject.get_solution_routes_at_stop('Bowdoin'))
 
     def test_get_stops_by_route_in_solution_set(self):
         def test_returns_correct_result():
-            subject = self.get_subject_with_mock_data(analysis=MockAnalysis(route_types_to_solve=[1, 2]))
+            subject = self.get_subject_with_mock_data(**create_mock_analysis(route_types_to_solve=[1, 2]))
             expected = {
                 1: {'Alewife', 'Wonderland', 'Back of the Hill'},
                 2: {'Heath Street', 'Lechmere', 'Back of the Hill'},
@@ -247,7 +249,7 @@ class TestDataMunger(unittest.TestCase):
 
     def test_get_transfer_stops(self):
         def test_finds_midpoint_and_endpoint_transfers():
-            subject = self.get_subject_with_mock_data(analysis=MockAnalysis(route_types_to_solve=[1, 2]))
+            subject = self.get_subject_with_mock_data(**create_mock_analysis(route_types_to_solve=[1, 2]))
 
             expected = {'Wonderland', 'Back of the Hill'}
             actual = set(subject.get_transfer_stops(DEFAULT_START_TIME))
@@ -262,7 +264,7 @@ class TestDataMunger(unittest.TestCase):
         test_memoizes()
 
     def test_get_travel_time_between_stops(self):
-        subject = self.get_subject_with_mock_data(analysis=MockAnalysis(route_types_to_solve=[1, 2]))
+        subject = self.get_subject_with_mock_data(**create_mock_analysis(route_types_to_solve=[1, 2]))
 
         self.assertEqual(subject.get_travel_time_between_stops_in_seconds('3-6AM', '1', '3'), 4 * 60 * 60)
         self.assertEqual(subject.get_travel_time_between_stops_in_seconds('3-7AM', '1', '2'), 3 * 60 * 60)
@@ -270,8 +272,7 @@ class TestDataMunger(unittest.TestCase):
 
     def test_get_unique_routes_to_solve(self):
         def test_returns_correct_result():
-            analysis = MockAnalysis()
-            subject = self.get_subject_with_mock_data(analysis=analysis)
+            subject = self.get_subject_with_mock_data(**create_mock_analysis())
             expected = {1, 2}
             self.assertEqual(subject.get_unique_routes_to_solve(), expected)
 
@@ -286,8 +287,7 @@ class TestDataMunger(unittest.TestCase):
 
     def test_get_unique_stops_to_solve(self):
         def test_returns_correct_result():
-            analysis = MockAnalysis(route_types_to_solve=[1, 2])
-            subject = self.get_subject_with_mock_data(analysis=analysis)
+            subject = self.get_subject_with_mock_data(**create_mock_analysis(route_types_to_solve=[1, 2]))
             self.assertEqual(subject._location_routes, None)
             expected = {'Alewife', 'Wonderland', 'Heath Street', 'Lechmere', 'Bowdoin', 'Back of the Hill', 'Lynn'}
             self.assertSetEqual(expected, subject.get_unique_stops_to_solve())
@@ -303,13 +303,13 @@ class TestDataMunger(unittest.TestCase):
 
     def test_is_last_stop_on_route(self):
         def test_last_stop():
-            subject = self.get_subject_with_mock_data(analysis=MockAnalysis())
+            subject = self.get_subject_with_mock_data(**create_mock_analysis())
             self.assertTrue(subject.is_last_stop_on_route('Back of the Hill', 1))
             self.assertTrue(subject.is_last_stop_on_route('Back of the Hill', 2))
             self.assertTrue(subject.is_last_stop_on_route('Lynn', 3))
 
         def test_not_last_stop():
-            subject = self.get_subject_with_mock_data(analysis=MockAnalysis())
+            subject = self.get_subject_with_mock_data(**create_mock_analysis())
             self.assertFalse(subject.is_last_stop_on_route('Alewife', 1))
             self.assertFalse(subject.is_last_stop_on_route('Wonderland', 1))
             self.assertFalse(subject.is_last_stop_on_route('Heath Street', 2))
@@ -370,7 +370,8 @@ class MockStopDeparture:
         self.departureTime = f'{departure_hour}:00:00'
 
 
-class MockAnalysis:
-    def __init__(self, route_types_to_solve=None):
-        self.route_types = [2] if route_types_to_solve is None else route_types_to_solve
-        self.end_date = DEFAULT_START_DATE
+def create_mock_analysis(route_types_to_solve=None):
+    return {
+        "route_types_to_solve": [2] if route_types_to_solve is None else route_types_to_solve,
+        "end_date": DEFAULT_START_DATE
+    }

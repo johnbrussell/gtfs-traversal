@@ -14,7 +14,7 @@ DEFAULT_TRANSFER_ROUTE = 'transfer route'
 class TestSolver(unittest.TestCase):
     def test_add_child_to_parent(self):
         def test_first_child():
-            subject = Solver(analysis=MockAnalysis(), data=MockData(), progress_between_pruning_progress_dict=None,
+            subject = Solver(**create_mock_analysis(), data=MockData(), progress_between_pruning_progress_dict=None,
                              prune_thoroughness=None, stop_join_string='~~', transfer_duration_seconds=None,
                              transfer_route=None, walk_route=None, walk_speed_mph=None)
             parent = LocationStatusInfo(location='1', arrival_route=1, unvisited=None)
@@ -31,7 +31,7 @@ class TestSolver(unittest.TestCase):
             self.assertDictEqual(expected, actual)
 
         def test_sibling():
-            subject = Solver(analysis=MockAnalysis(), data=MockData(), progress_between_pruning_progress_dict=None,
+            subject = Solver(**create_mock_analysis(), data=MockData(), progress_between_pruning_progress_dict=None,
                              prune_thoroughness=None, stop_join_string='~~', transfer_duration_seconds=None,
                              transfer_route=None, walk_route=None, walk_speed_mph=None)
             child_1 = LocationStatusInfo(location='2', arrival_route=2, unvisited=None)
@@ -54,7 +54,7 @@ class TestSolver(unittest.TestCase):
 
     def test_add_new_nodes_to_progress_dict(self):
         def test_improvement():
-            subject = Solver(analysis=MockAnalysis(), data=MockData(), progress_between_pruning_progress_dict=None,
+            subject = Solver(**create_mock_analysis(), data=MockData(), progress_between_pruning_progress_dict=None,
                              prune_thoroughness=None, stop_join_string='~~', transfer_duration_seconds=None,
                              transfer_route=None, walk_route=None, walk_speed_mph=None)
             new_location = LocationStatusInfo(location='Wonderland', arrival_route=1, unvisited='~~Lynn~~')
@@ -102,7 +102,7 @@ class TestSolver(unittest.TestCase):
             self.assertDictEqual(expected_dictionary, actual_dictionary)
 
         def test_solution():
-            subject = Solver(analysis=MockAnalysis(), data=MockData(), progress_between_pruning_progress_dict=None,
+            subject = Solver(**create_mock_analysis(), data=MockData(), progress_between_pruning_progress_dict=None,
                              prune_thoroughness=None, stop_join_string='~~', transfer_duration_seconds=None,
                              transfer_route=None, walk_route=None, walk_speed_mph=None)
             new_location = LocationStatusInfo(location='Wonderland', arrival_route=1, unvisited='~~')
@@ -165,7 +165,7 @@ class TestSolver(unittest.TestCase):
 
     def test_expand(self):
         def test_solved():
-            subject = Solver(analysis=MockAnalysis(), data=MockData(), progress_between_pruning_progress_dict=None,
+            subject = Solver(**create_mock_analysis(), data=MockData(), progress_between_pruning_progress_dict=None,
                              prune_thoroughness=None, stop_join_string='~~', transfer_duration_seconds=None,
                              transfer_route=None, walk_route=None, walk_speed_mph=None)
             location_status = LocationStatusInfo(location=1, arrival_route=2, unvisited='~~')
@@ -180,7 +180,7 @@ class TestSolver(unittest.TestCase):
             self.assertEqual(subject._progress_dict[location_status], progress)
 
         def test_expanded():
-            subject = Solver(analysis=MockAnalysis(), data=MockData(), progress_between_pruning_progress_dict=None,
+            subject = Solver(**create_mock_analysis(), data=MockData(), progress_between_pruning_progress_dict=None,
                              prune_thoroughness=None, stop_join_string='~~', transfer_duration_seconds=None,
                              transfer_route=None, walk_route=None, walk_speed_mph=None)
             location_status = LocationStatusInfo(location=1, arrival_route=2, unvisited='~~stop~~')
@@ -195,7 +195,7 @@ class TestSolver(unittest.TestCase):
             self.assertEqual(subject._progress_dict[location_status], progress)
 
         def test_eliminated():
-            subject = Solver(analysis=MockAnalysis(), data=MockData(), progress_between_pruning_progress_dict=None,
+            subject = Solver(**create_mock_analysis(), data=MockData(), progress_between_pruning_progress_dict=None,
                              prune_thoroughness=None, stop_join_string='~~', transfer_duration_seconds=None,
                              transfer_route=None, walk_route=None, walk_speed_mph=None)
             location_status = LocationStatusInfo(location=1, arrival_route=2, unvisited='~~stop~~')
@@ -210,7 +210,7 @@ class TestSolver(unittest.TestCase):
             self.assertEqual(subject._progress_dict[location_status], progress)
 
         def test_calculate_expansion():
-            subject = Solver(analysis=MockAnalysis(), data=MockData(), progress_between_pruning_progress_dict=None,
+            subject = Solver(**create_mock_analysis(), data=MockData(), progress_between_pruning_progress_dict=None,
                              prune_thoroughness=None, stop_join_string='~~', transfer_duration_seconds=None,
                              transfer_route=None, walk_route=None, walk_speed_mph=None)
             location_status = LocationStatusInfo(location=1, arrival_route=2, unvisited='~~stop~~')
@@ -239,7 +239,7 @@ class TestSolver(unittest.TestCase):
 
     def test_get_new_minimum_remaining_time(self):
         def test_route_not_on_solution_set():
-            subject = Solver(analysis=MockAnalysis(), data=MockData(), progress_between_pruning_progress_dict=None,
+            subject = Solver(**create_mock_analysis(), data=MockData(), progress_between_pruning_progress_dict=None,
                              prune_thoroughness=None, stop_join_string=None, transfer_duration_seconds=None,
                              transfer_route=None, walk_route=None, walk_speed_mph=None)
             input_time = 400
@@ -249,7 +249,7 @@ class TestSolver(unittest.TestCase):
             self.assertEqual(expected, actual)
 
         def test_route_on_solution_set():
-            subject = Solver(analysis=MockAnalysis(), data=MockData(), progress_between_pruning_progress_dict=None,
+            subject = Solver(**create_mock_analysis(), data=MockData(), progress_between_pruning_progress_dict=None,
                              prune_thoroughness=None, stop_join_string='##', transfer_duration_seconds=5,
                              transfer_route=None, walk_route=None, walk_speed_mph=None)
             subject._string_shortener = MockStringShortener()
@@ -265,7 +265,7 @@ class TestSolver(unittest.TestCase):
 
     def test_get_new_nodes(self):
         def test_after_transfer():
-            subject = Solver(analysis=MockAnalysis(), data=MockData(), progress_between_pruning_progress_dict=None,
+            subject = Solver(**create_mock_analysis(), data=MockData(), progress_between_pruning_progress_dict=None,
                              prune_thoroughness=None, stop_join_string='~~', transfer_duration_seconds=None,
                              transfer_route='transfer route', walk_route=None, walk_speed_mph=None)
             known_best_time = 'arg2'
@@ -280,7 +280,7 @@ class TestSolver(unittest.TestCase):
             self.assertEqual(actual, expected)
 
         def test_after_walk():
-            subject = Solver(analysis=MockAnalysis(), data=MockData(), progress_between_pruning_progress_dict=None,
+            subject = Solver(**create_mock_analysis(), data=MockData(), progress_between_pruning_progress_dict=None,
                              prune_thoroughness=None, stop_join_string='~~', transfer_duration_seconds=53,
                              transfer_route='transfer route', walk_route='walk route', walk_speed_mph=None)
             location_status_info = LocationStatusInfo(location=None, arrival_route='walk route', unvisited=None)
@@ -298,7 +298,7 @@ class TestSolver(unittest.TestCase):
             self.assertEqual(actual, expected)
 
         def test_after_service():
-            subject = Solver(analysis=MockAnalysis(), data=MockData(), progress_between_pruning_progress_dict=None,
+            subject = Solver(**create_mock_analysis(), data=MockData(), progress_between_pruning_progress_dict=None,
                              prune_thoroughness=None, stop_join_string='~~', transfer_duration_seconds=None,
                              transfer_route=None, walk_route=None, walk_speed_mph=None)
             location_status_info = LocationStatusInfo(location='Wonderland', arrival_route=1, unvisited=None)
@@ -322,7 +322,7 @@ class TestSolver(unittest.TestCase):
 
     def test_get_next_stop_data_for_trip(self):
         def test_last_stop():
-            subject = Solver(analysis=MockAnalysis(), data=MockData(), progress_between_pruning_progress_dict=None,
+            subject = Solver(**create_mock_analysis(), data=MockData(), progress_between_pruning_progress_dict=None,
                              prune_thoroughness=None, stop_join_string='~~', transfer_duration_seconds=None,
                              transfer_route=DEFAULT_TRANSFER_ROUTE, walk_route=None, walk_speed_mph=None)
 
@@ -339,7 +339,7 @@ class TestSolver(unittest.TestCase):
             self.assertEqual(expected, actual)
 
         def test_not_last_stop():
-            subject = Solver(analysis=MockAnalysis(), data=MockData(), progress_between_pruning_progress_dict=None,
+            subject = Solver(**create_mock_analysis(), data=MockData(), progress_between_pruning_progress_dict=None,
                              prune_thoroughness=None, stop_join_string='~~', transfer_duration_seconds=4,
                              transfer_route=DEFAULT_TRANSFER_ROUTE, walk_route=None, walk_speed_mph=None)
             subject._string_shortener = MockStringShortener()
@@ -370,7 +370,7 @@ class TestSolver(unittest.TestCase):
 
     def test_get_node_after_boarding_route(self):
         def test_not_last_stop():
-            subject = Solver(analysis=MockAnalysis(), data=MockData(), progress_between_pruning_progress_dict=None,
+            subject = Solver(**create_mock_analysis(), data=MockData(), progress_between_pruning_progress_dict=None,
                              prune_thoroughness=None, stop_join_string='~~', transfer_duration_seconds=None,
                              transfer_route=DEFAULT_TRANSFER_ROUTE, walk_route=None, walk_speed_mph=None)
 
@@ -394,7 +394,7 @@ class TestSolver(unittest.TestCase):
             self.assertEqual(expected, actual)
 
         def test_last_stop():
-            subject = Solver(analysis=MockAnalysis(), data=MockData(), progress_between_pruning_progress_dict=None,
+            subject = Solver(**create_mock_analysis(), data=MockData(), progress_between_pruning_progress_dict=None,
                              prune_thoroughness=None, stop_join_string='~~', transfer_duration_seconds=None,
                              transfer_route=DEFAULT_TRANSFER_ROUTE, walk_route=None, walk_speed_mph=None)
 
@@ -416,8 +416,7 @@ class TestSolver(unittest.TestCase):
         test_last_stop()
 
     def test_get_nodes_after_transfer(self):
-        analysis = MockAnalysis()
-        subject = Solver(analysis=analysis, data=MockData(), progress_between_pruning_progress_dict=None,
+        subject = Solver(**create_mock_analysis(), data=MockData(), progress_between_pruning_progress_dict=None,
                          prune_thoroughness=None, stop_join_string='~~', transfer_duration_seconds=None,
                          transfer_route=DEFAULT_TRANSFER_ROUTE, walk_route=None, walk_speed_mph=None)
 
@@ -446,8 +445,7 @@ class TestSolver(unittest.TestCase):
 
     def test_get_walking_data(self):
         def test_after_walking_route():
-            analysis = MockAnalysis()
-            subject = Solver(analysis=analysis, data=MockData(), progress_between_pruning_progress_dict=None,
+            subject = Solver(**create_mock_analysis(), data=MockData(), progress_between_pruning_progress_dict=None,
                              prune_thoroughness=None, stop_join_string='~~', transfer_duration_seconds=None,
                              transfer_route=DEFAULT_TRANSFER_ROUTE, walk_route='walk route', walk_speed_mph=3)
 
@@ -469,8 +467,7 @@ class TestSolver(unittest.TestCase):
             self.assertListEqual(expected, actual)
 
         def test_at_start():
-            analysis = MockAnalysis()
-            subject = Solver(analysis=analysis, data=MockData(), progress_between_pruning_progress_dict=None,
+            subject = Solver(**create_mock_analysis(), data=MockData(), progress_between_pruning_progress_dict=None,
                              prune_thoroughness=None, stop_join_string='~~', transfer_duration_seconds=None,
                              transfer_route=DEFAULT_TRANSFER_ROUTE, walk_route='walk route', walk_speed_mph=3)
 
@@ -490,8 +487,7 @@ class TestSolver(unittest.TestCase):
             self.assertListEqual(expected, actual)
 
         def test_with_insufficient_time_to_walk():
-            analysis = MockAnalysis()
-            subject = Solver(analysis=analysis, data=MockData(), progress_between_pruning_progress_dict=None,
+            subject = Solver(**create_mock_analysis(), data=MockData(), progress_between_pruning_progress_dict=None,
                              prune_thoroughness=None, stop_join_string='~~', transfer_duration_seconds=None,
                              transfer_route=DEFAULT_TRANSFER_ROUTE, walk_route='walk route', walk_speed_mph=3)
 
@@ -511,8 +507,7 @@ class TestSolver(unittest.TestCase):
             self.assertSetEqual(expected, actual)
 
         def test_with_insufficient_time_to_travel():
-            analysis = MockAnalysis()
-            subject = Solver(analysis=analysis, data=MockData(), progress_between_pruning_progress_dict=None,
+            subject = Solver(**create_mock_analysis(), data=MockData(), progress_between_pruning_progress_dict=None,
                              prune_thoroughness=None, stop_join_string='~~', transfer_duration_seconds=None,
                              transfer_route=DEFAULT_TRANSFER_ROUTE, walk_route='walk route', walk_speed_mph=3)
 
@@ -549,8 +544,7 @@ class TestSolver(unittest.TestCase):
             self.assertSetEqual(expected, actual)
 
         def test_calculates_correct_result():
-            analysis = MockAnalysis()
-            subject = Solver(analysis=analysis, data=MockData(), progress_between_pruning_progress_dict=None,
+            subject = Solver(**create_mock_analysis(), data=MockData(), progress_between_pruning_progress_dict=None,
                              prune_thoroughness=None, stop_join_string='~~', transfer_duration_seconds=None,
                              transfer_route=DEFAULT_TRANSFER_ROUTE, walk_route='walk route', walk_speed_mph=3)
 
@@ -591,7 +585,7 @@ class TestSolver(unittest.TestCase):
 
     def test_last_improving_ancestor(self):
         def test_close_to_start():
-            subject = Solver(analysis=MockAnalysis(), data=MockData(), progress_between_pruning_progress_dict=None,
+            subject = Solver(**create_mock_analysis(), data=MockData(), progress_between_pruning_progress_dict=None,
                              prune_thoroughness=None, stop_join_string='~~', transfer_duration_seconds=None,
                              transfer_route='transfer', walk_route=None, walk_speed_mph=None)
             subject._progress_dict = {
@@ -606,7 +600,7 @@ class TestSolver(unittest.TestCase):
             self.assertEqual(expected, actual)
 
         def test_deep():
-            subject = Solver(analysis=MockAnalysis(), data=MockData(), progress_between_pruning_progress_dict=None,
+            subject = Solver(**create_mock_analysis(), data=MockData(), progress_between_pruning_progress_dict=None,
                              prune_thoroughness=None, stop_join_string='~~', transfer_duration_seconds=None,
                              transfer_route='transfer', walk_route='walk', walk_speed_mph=None)
             location_1 = LocationStatusInfo(location='1', arrival_route='1', unvisited='~~1~~2~~3~~')
@@ -646,7 +640,7 @@ class TestSolver(unittest.TestCase):
 
     def test_location_has_been_reached_faster(self):
         def test_parent_does_not_count():
-            subject = Solver(analysis=MockAnalysis(), data=MockData(), progress_between_pruning_progress_dict=None,
+            subject = Solver(**create_mock_analysis(), data=MockData(), progress_between_pruning_progress_dict=None,
                              prune_thoroughness=None, stop_join_string='~~', transfer_duration_seconds=None,
                              transfer_route='transfer', walk_route=None, walk_speed_mph=None)
             location_1 = LocationStatusInfo(location='1', arrival_route='1', unvisited='~~1~~2~~3~~')
@@ -660,7 +654,7 @@ class TestSolver(unittest.TestCase):
                 subject._location_has_been_reached_faster(new_location, new_duration=1, parent=location_1))
 
         def test_faster_path_causes_elimination():
-            subject = Solver(analysis=MockAnalysis(), data=MockData(), progress_between_pruning_progress_dict=None,
+            subject = Solver(**create_mock_analysis(), data=MockData(), progress_between_pruning_progress_dict=None,
                              prune_thoroughness=None, stop_join_string='~~', transfer_duration_seconds=None,
                              transfer_route='transfer', walk_route='walk', walk_speed_mph=None)
             location_1 = LocationStatusInfo(location='1', arrival_route='1', unvisited='~~1~~2~~3~~4~~')
@@ -691,7 +685,7 @@ class TestSolver(unittest.TestCase):
             self.assertTrue(subject._location_has_been_reached_faster(location_6, 220, location_4))
 
         def test_slower_path_does_not_cause_elimination():
-            subject = Solver(analysis=MockAnalysis(), data=MockData(), progress_between_pruning_progress_dict=None,
+            subject = Solver(**create_mock_analysis(), data=MockData(), progress_between_pruning_progress_dict=None,
                              prune_thoroughness=None, stop_join_string='~~', transfer_duration_seconds=None,
                              transfer_route='transfer', walk_route='walk', walk_speed_mph=None)
             location_1 = LocationStatusInfo(location='1', arrival_route='1', unvisited='~~1~~2~~3~~4~~')
@@ -765,9 +759,9 @@ class TestSolver(unittest.TestCase):
             6: child_progress_info._replace(children=set(), eliminated=True, parent=None),
             7: grandchild_progress_info._replace(eliminated=True, parent=None)
         }
-        subject = Solver(analysis=None, data=None, progress_between_pruning_progress_dict=None, prune_thoroughness=None,
+        subject = Solver(data=None, progress_between_pruning_progress_dict=None, prune_thoroughness=None,
                          stop_join_string=None, transfer_duration_seconds=None, transfer_route=None, walk_route=None,
-                         walk_speed_mph=None)
+                         walk_speed_mph=None, end_date=None, stops_to_solve=None, route_types_to_solve=None)
         subject._progress_dict = input_progress_dict
         to_preserve = set()
         to_preserve.add(3)
@@ -776,7 +770,7 @@ class TestSolver(unittest.TestCase):
         self.assertDictEqual(expected, actual)
 
     def test_reset_time_to_nearest_station(self):
-        subject = Solver(analysis=MockAnalysis(route_types_to_solve=[1]), data=MockData(),
+        subject = Solver(**create_mock_analysis(route_types_to_solve=[1]), data=MockData(),
                          progress_between_pruning_progress_dict=5, prune_thoroughness=.1, stop_join_string='~~',
                          transfer_duration_seconds=1, transfer_route='transfer', walk_route='walk',
                          walk_speed_mph=1)
@@ -788,7 +782,7 @@ class TestSolver(unittest.TestCase):
 
     def test_reset_walking_coordinates(self):
         def test_no_known_best_time():
-            subject = Solver(analysis=MockAnalysis(route_types_to_solve=[1]), data=MockData(),
+            subject = Solver(**create_mock_analysis(route_types_to_solve=[1]), data=MockData(),
                              progress_between_pruning_progress_dict=5, prune_thoroughness=.1, stop_join_string='~~',
                              transfer_duration_seconds=1, transfer_route='transfer', walk_route='walk',
                              walk_speed_mph=1)
@@ -809,7 +803,7 @@ class TestSolver(unittest.TestCase):
             self.assertTrue('Heath Street' not in subject._get_walking_coordinates())
 
         def test_known_best_time():
-            subject = Solver(analysis=MockAnalysis(route_types_to_solve=[1]), data=MockData(),
+            subject = Solver(**create_mock_analysis(route_types_to_solve=[1]), data=MockData(),
                              progress_between_pruning_progress_dict=5, prune_thoroughness=.1, stop_join_string='~~',
                              transfer_duration_seconds=1, transfer_route='transfer', walk_route='walk',
                              walk_speed_mph=1)
@@ -841,7 +835,7 @@ class TestSolver(unittest.TestCase):
             self.assertTrue('Lechmere' not in subject._get_walking_coordinates())
 
         def test_insufficient_travel_time():
-            subject = Solver(analysis=MockAnalysis(route_types_to_solve=[1]), data=MockData(),
+            subject = Solver(**create_mock_analysis(route_types_to_solve=[1]), data=MockData(),
                              progress_between_pruning_progress_dict=5, prune_thoroughness=.1, stop_join_string='~~',
                              transfer_duration_seconds=1, transfer_route='transfer', walk_route='walk',
                              walk_speed_mph=1)
@@ -869,9 +863,10 @@ class TestSolver(unittest.TestCase):
 
     def test_walk_time_seconds(self):
         def get_solver_with_speed(*, mph):
-            return Solver(walk_speed_mph=mph, analysis=None, data=None, progress_between_pruning_progress_dict=None,
+            return Solver(walk_speed_mph=mph, data=None, progress_between_pruning_progress_dict=None,
                           prune_thoroughness=None, stop_join_string=None, transfer_duration_seconds=None,
-                          transfer_route=None, walk_route=None)
+                          transfer_route=None, walk_route=None, end_date=None, route_types_to_solve=None, 
+                          stops_to_solve=None)
 
         def test_zero_time_at_any_speed_for_no_distance():
             self.assertEqual(get_solver_with_speed(mph=0.5)._walk_time_seconds(2, 2, -40, -40), 0)
@@ -957,10 +952,12 @@ class MockStopLocation:
         self.long = long
 
 
-class MockAnalysis:
-    def __init__(self, route_types_to_solve=None):
-        self.route_types = [1, 2] if route_types_to_solve is None else route_types_to_solve
-        self.end_date = DEFAULT_START_DATE
+def create_mock_analysis(route_types_to_solve=None):
+    return {
+        "route_types_to_solve": [1, 2] if route_types_to_solve is None else route_types_to_solve,
+        "stops_to_solve": None,
+        "end_date": DEFAULT_START_DATE,
+    }
 
 
 class MockStringShortener:

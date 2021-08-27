@@ -2,20 +2,21 @@ from datetime import datetime, timedelta
 
 
 class DataMunger:
-    def __init__(self, analysis, data, stop_join_string):
-        self.analysis = analysis
+    def __init__(self, end_date, route_types_to_solve, stops_to_solve, data, stop_join_string):
         self.data = data
         self.stop_join_string = stop_join_string
 
         self._buffered_analysis_end_time = None
+        self._end_date = end_date
         self._location_routes = None
         self._minimum_stop_times = None
         self._route_list = None
+        self._route_types_to_solve = route_types_to_solve
         self._stops_by_route_in_solution_set = None
         self._transfer_stops = None
         self._trip_time_cache = {}
         self._unique_routes_to_solve = None
-        self._unique_stops_to_solve = None
+        self._unique_stops_to_solve = stops_to_solve
 
     def first_trip_after(self, earliest_departure_time, route_number, origin_stop_id):
         # hmmm, what is earliest_departure_time, and what if it's after midnight toward the end of the service day?
@@ -54,7 +55,7 @@ class DataMunger:
 
     def get_buffered_analysis_end_time(self):
         if self._buffered_analysis_end_time is None:
-            self._buffered_analysis_end_time = datetime.strptime(self.analysis.end_date, '%Y-%m-%d') + timedelta(days=1)
+            self._buffered_analysis_end_time = datetime.strptime(self._end_date, '%Y-%m-%d') + timedelta(days=1)
 
         return self._buffered_analysis_end_time
 
@@ -175,7 +176,7 @@ class DataMunger:
         return self.data.uniqueRouteTrips
 
     def get_route_types_to_solve(self):
-        return [str(r) for r in self.analysis.route_types]
+        return [str(r) for r in self._route_types_to_solve]
 
     def get_route_list(self):
         if self._route_list is None:
