@@ -72,7 +72,7 @@ class Traverser(Solver):
             num_pruned_nodes += 1
 
     def print_path(self, progress_dict):
-        solution_locations = [k for k in progress_dict if self._is_solution(k.unvisited)]
+        solution_locations = [k for k in progress_dict.keys() if self._is_solution(k)]
         for location in solution_locations:
             path = list()
             _location = location
