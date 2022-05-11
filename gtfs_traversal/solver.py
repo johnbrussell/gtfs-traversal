@@ -113,9 +113,9 @@ class Solver:
                 self._stop_join_string
         return self._initial_unsolved_string
 
-    def _get_new_minimum_remaining_time(self, prior_minimum_remaining_time, prior_unvisited_stops_string, location):
+    def _get_new_minimum_remaining_time(self, prior_minimum_remaining_time, prior_location, location):
         # Both the travel and transfer parts of this function seem to speed things up.
-        if prior_unvisited_stops_string == location.unvisited:
+        if prior_location.unvisited == location.unvisited and prior_location.arrival_route == location.arrival_route:
             return prior_minimum_remaining_time
 
         new_unvisited_stop_ids = location.unvisited.strip(self._stop_join_string).split(self._stop_join_string) \
@@ -157,7 +157,7 @@ class Solver:
         new_location = LocationStatusInfo(location=next_stop_id, arrival_route=location_status.arrival_route,
                                           unvisited=new_unvisited_string)
         new_minimum_remaining_time = self._get_new_minimum_remaining_time(progress.minimum_remaining_time,
-                                                                          location_status.unvisited, new_location)
+                                                                          location_status, new_location)
         return (
             new_location,
             ProgressInfo(duration=new_duration, arrival_trip=progress.arrival_trip,
