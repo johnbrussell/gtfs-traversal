@@ -8,7 +8,7 @@ from gtfs_traversal.solver import Solver
 
 
 class Traverser(Solver):
-    def find_solution(self, begin_time, known_best_time):
+    def find_solution(self, begin_time, known_best_time, print_analytics=False):
         self.initialize_progress_dict(begin_time)
         self._exp_queue = ExpansionQueue(len(self._data_munger.get_unique_stops_to_solve()), self._stop_join_string)
         if len(self._progress_dict) > 0:
@@ -30,12 +30,15 @@ class Traverser(Solver):
             expandee = self._exp_queue.pop(self._progress_dict)
             known_best_time = self._expand(expandee, known_best_time)
             if known_best_time is not None:
-                if int((num_stations * num_completed_stations +
-                        self._exp_queue._num_remaining_stops_to_pop) / stations_denominator * 100.0) > best_progress:
-                    best_progress = int((num_stations * num_completed_stations +
-                                         self._exp_queue._num_remaining_stops_to_pop) / stations_denominator * 100.0)
-                    print(best_progress, datetime.now() - self._initialization_time, self._exp_queue.len(),
-                          len(self._progress_dict), len(self.prunable_nodes()))
+                if print_analytics:
+                    if int((num_stations * num_completed_stations +
+                            self._exp_queue._num_remaining_stops_to_pop) / stations_denominator * 100.0) > \
+                            best_progress:
+                        best_progress = int((num_stations * num_completed_stations +
+                                             self._exp_queue._num_remaining_stops_to_pop) / stations_denominator *
+                                            100.0)
+                        print(best_progress, datetime.now() - self._initialization_time, self._exp_queue.len(),
+                              len(self._progress_dict), len(self.prunable_nodes()))
                 if num_expansions % self._expansions_to_prune == 0:
                     num_expansions = 0
                     self.prune_progress_dict()
