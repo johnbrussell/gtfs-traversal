@@ -3,6 +3,7 @@ from datetime import datetime, timedelta
 
 from gtfs_traversal.data_munger import DataMunger
 from gtfs_traversal.data_structures import *
+from gtfs_traversal.station_facts import StationFacts
 from gtfs_traversal.string_shortener import StringShortener
 
 
@@ -31,6 +32,7 @@ class Solver:
         self._route_trips = None
         self._start_time = None
         self._start_time_in_seconds = None
+        self._station_facts = None
         self._stop_locations = None
         self._stop_locations_to_solve = None
         self._stops_at_ends_of_solution_routes = None
@@ -41,6 +43,7 @@ class Solver:
 
         self._data_munger = DataMunger(end_date=end_date, data=data, stop_join_string=stop_join_string,
                                        route_types_to_solve=route_types_to_solve, stops_to_solve=stops_to_solve)
+        self._nearest_station_finder = None
 
     def _add_child_to_parent(self, parent, child):
         if self._progress_dict[parent].children is None:
@@ -119,6 +122,9 @@ class Solver:
                     self._string_shortener.shorten(stop) for stop in self._data_munger.get_unique_stops_to_solve()) + \
                 self._stop_join_string
         return self._initial_unsolved_string
+
+    def _get_nearest_station_finder(self):
+        raise KeyError("must be defined in subclass")
 
     def _get_new_minimum_remaining_time(self, prior_minimum_remaining_time, prior_location, location):
         # Both the travel and transfer parts of this function seem to speed things up.
@@ -217,6 +223,17 @@ class Solver:
 
         self._route_trips = self._data_munger.get_route_trips()
         return self._route_trips
+
+    def _get_station_facts(self):
+        if self._station_facts is not None:
+            return self._station_facts
+
+        nearest_station_finder = self._get_nearest_station_finder()
+        if nearest_station_finder is None:
+            return self._station_facts
+
+        self._station_facts = StationFacts(self._data_munger, nearest_station_finder)
+        return self._station_facts
 
     def _get_stop_locations(self):
         if self._stop_locations is None:
@@ -327,6 +344,13 @@ class Solver:
             return False
         return progress_info.duration + progress_info.minimum_remaining_time >= best_duration
 
+    def _known_travel_time_to_nearest_station(self, origin):
+        station_facts = self._get_station_facts()
+        if station_facts is None:
+            return 0
+
+        return station_facts.known_time_to_nearest_solution_station(origin)
+
     def _last_improving_ancestor(self, location):
         parent = self._progress_dict[location].parent
         while parent is not None and location.unvisited == parent.unvisited:
@@ -380,6 +404,27 @@ class Solver:
     def _minimum_possible_duration(progress):
         return progress.duration + progress.minimum_remaining_time
 
+    def _minimum_possible_duration_with_travel_time_to_network(self, location, progress):
+        if location.arrival_route != self._transfer_route and \
+                location.arrival_route != self._walk_route and \
+                location.location in self._data_munger.get_unique_stops_to_solve():
+            stops_visited_off_route = set()
+            loc_to_consider = progress.parent
+            while loc_to_consider is not None and \
+                    (loc_to_consider.location == location.location or
+                     loc_to_consider.location not in self._data_munger.get_unique_stops_to_solve()):
+                if loc_to_consider.location != location.location:
+                    stops_visited_off_route.add(loc_to_consider.location)
+                loc_to_consider = self._progress_dict[loc_to_consider].parent
+            for stop in stops_visited_off_route:
+                self._travel_time_to_nearest_station(stop)
+
+        if location.arrival_route != self._transfer_route and \
+                location.arrival_route != self._walk_route:
+            return progress.duration + progress.minimum_remaining_time + \
+                self._known_travel_time_to_nearest_station(location.location)
+        return progress.duration + progress.minimum_remaining_time
+
     def _node_is_valid(self, node, best_solution_duration):
         if node is None:
             return False
@@ -395,6 +440,9 @@ class Solver:
 
         if best_solution_duration is not None:
             if self._minimum_possible_duration(new_progress) >= best_solution_duration:
+                return False
+            if self._minimum_possible_duration_with_travel_time_to_network(
+                    new_location, new_progress) >= best_solution_duration:
                 return False
 
         return True
@@ -446,6 +494,13 @@ class Solver:
     @staticmethod
     def _to_radians_from_degrees(degrees):
         return degrees * math.pi / 180
+
+    def _travel_time_to_nearest_station(self, origin):
+        station_facts = self._get_station_facts()
+        if station_facts is None:
+            return 0
+
+        return station_facts.time_to_nearest_solution_station(origin, self._start_time)
 
     def _walk_time_seconds(self, lat1, lat2, long1, long2):
         origin_lat = self._to_radians_from_degrees(lat1)

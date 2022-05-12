@@ -94,9 +94,10 @@ class TestSolver(unittest.TestCase):
                 new_location: new_progress_improvement
             }
             with patch.object(subject, '_add_child_to_parent') as child_patch:
-                actual_duration = subject._add_new_nodes_to_progress_dict(new_nodes, input_best_duration,
-                                                                          known_best_time)
-                child_patch.assert_called_once()
+                with patch.object(subject, '_known_travel_time_to_nearest_station', return_value=0):
+                    actual_duration = subject._add_new_nodes_to_progress_dict(new_nodes, input_best_duration,
+                                                                              known_best_time)
+                    child_patch.assert_called_once()
             actual_dictionary = subject._progress_dict
             self.assertEqual(expected_duration, actual_duration)
             self.assertDictEqual(expected_dictionary, actual_dictionary)
@@ -151,11 +152,12 @@ class TestSolver(unittest.TestCase):
             with patch.object(subject, '_add_child_to_parent') as child_patch:
                 with patch.object(subject, '_eliminate_nodes_slower_than_time') as elimination_patch:
                     with patch.object(subject, '_reset_walking_coordinates') as coordinates_patch:
-                        actual_duration = subject._add_new_nodes_to_progress_dict(new_nodes, input_best_duration,
-                                                                                  known_best_time, verbose=False)
-                        child_patch.assert_called_once()
-                        elimination_patch.assert_called_once()
-                        coordinates_patch.assert_called_once_with(expected_duration)
+                        with patch.object(subject, '_known_travel_time_to_nearest_station', return_value=0):
+                            actual_duration = subject._add_new_nodes_to_progress_dict(new_nodes, input_best_duration,
+                                                                                      known_best_time, verbose=False)
+                            child_patch.assert_called_once()
+                            elimination_patch.assert_called_once()
+                            coordinates_patch.assert_called_once_with(expected_duration)
             actual_dictionary = subject._progress_dict
             self.assertEqual(expected_duration, actual_duration)
             self.assertDictEqual(expected_dictionary, actual_dictionary)

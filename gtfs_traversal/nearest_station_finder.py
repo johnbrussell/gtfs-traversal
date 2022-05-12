@@ -59,6 +59,9 @@ class NearestStationFinder(Solver):
             self._initial_unsolved_string = self._stop_join_string + "any_solution_stop" + self._stop_join_string
         return self._initial_unsolved_string
 
+    def _get_nearest_station_finder(self):
+        return None
+
     def _get_total_minimum_time(self, start_time):
         return 0
 
