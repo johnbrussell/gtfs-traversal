@@ -59,7 +59,7 @@ class Solver:
             if verbose:
                 self._announce_solution(new_progress)
             best_solution_duration = new_progress.duration
-            self._mark_slow_nodes_as_eliminated(best_solution_duration, preserve={new_location})
+            self._eliminate_nodes_slower_than_time(best_solution_duration, preserve={new_location})
             self._reset_walking_coordinates(best_solution_duration)
         else:
             self._exp_queue.add_node(new_location)
@@ -83,6 +83,11 @@ class Solver:
 
     def _announce_solution(self, new_progress):
         print(datetime.now() - self._initialization_time, 'solution:', timedelta(seconds=new_progress.duration))
+
+    def _eliminate_nodes_slower_than_time(self, best_solution_duration, *, preserve):
+        nodes_to_eliminate = {k for k, v in self._progress_dict.items() if
+                              self._is_too_slow(k, v, best_solution_duration, preserve)}
+        self._mark_nodes_as_eliminated(nodes_to_eliminate)
 
     def _eliminate_stops_from_string(self, stops, uneliminated):
         for stop in stops:
@@ -368,11 +373,6 @@ class Solver:
                 self._progress_dict[parent].children.remove(node_to_eliminate)
                 if len(self._progress_dict[parent].children) == 0:
                     nodes_to_eliminate.add(parent)
-
-    def _mark_slow_nodes_as_eliminated(self, best_solution_duration, *, preserve):
-        nodes_to_eliminate = {k for k, v in self._progress_dict.items() if
-                              self._is_too_slow(k, v, best_solution_duration, preserve)}
-        self._mark_nodes_as_eliminated(nodes_to_eliminate)
 
     @staticmethod
     def _minimum_possible_duration(progress):

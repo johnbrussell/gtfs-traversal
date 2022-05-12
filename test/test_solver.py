@@ -149,7 +149,7 @@ class TestSolver(unittest.TestCase):
                 other_location: other_location_progress,
             }
             with patch.object(subject, '_add_child_to_parent') as child_patch:
-                with patch.object(subject, '_mark_slow_nodes_as_eliminated') as elimination_patch:
+                with patch.object(subject, '_eliminate_nodes_slower_than_time') as elimination_patch:
                     with patch.object(subject, '_reset_walking_coordinates') as coordinates_patch:
                         actual_duration = subject._add_new_nodes_to_progress_dict(new_nodes, input_best_duration,
                                                                                   known_best_time, verbose=False)
@@ -722,7 +722,7 @@ class TestSolver(unittest.TestCase):
         test_faster_path_causes_elimination()
         test_slower_path_does_not_cause_elimination()
 
-    def test_mark_slow_nodes_as_eliminated(self):
+    def test__eliminate_nodes_slower_than_time(self):
         new_duration = timedelta(minutes=10)
         valid_progress_info = ProgressInfo(duration=timedelta(minutes=8), arrival_trip=None, trip_stop_no=None,
                                            children=None, parent=None, minimum_remaining_time=timedelta(minutes=1),
@@ -768,7 +768,7 @@ class TestSolver(unittest.TestCase):
         subject._progress_dict = input_progress_dict
         to_preserve = set()
         to_preserve.add(3)
-        subject._mark_slow_nodes_as_eliminated(new_duration, preserve=to_preserve)
+        subject._eliminate_nodes_slower_than_time(new_duration, preserve=to_preserve)
         actual = subject._progress_dict
         self.assertDictEqual(expected, actual)
 
