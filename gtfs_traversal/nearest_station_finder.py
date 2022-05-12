@@ -10,9 +10,8 @@ WALK_ROUTE = 'walk route'
 
 
 class NearestStationFinder(Solver):
-    # Excludes routes that begin with walking
-    def travel_time_secs_to_nearest_solution_station(self, origin, solutions, analysis_start_time):
-        if origin in solutions:
+    def travel_time_secs_to_nearest_solution_station(self, origin, analysis_start_time):
+        if origin in self._data_munger.get_unique_stops_to_solve():
             return 0
         return self._find_travel_time_secs(origin, analysis_start_time)
 

@@ -67,13 +67,15 @@ class Solver:
         return best_solution_duration
 
     def _add_new_nodes_to_progress_dict(self, new_nodes_list, best_solution_duration, parent, *, verbose=True):
-        valid_nodes_list = [node for node in new_nodes_list if self._node_is_valid(node, best_solution_duration)]
+        have_seen_valid_node = False
 
-        if valid_nodes_list:
-            for node in valid_nodes_list:
-                best_solution_duration = self._add_new_node_to_progress_dict(node, best_solution_duration,
-                                                                             verbose=verbose)
-        else:
+        for node in new_nodes_list:
+            if self._node_is_valid(node, best_solution_duration):
+                have_seen_valid_node = True
+                best_solution_duration = self._add_new_node_to_progress_dict(
+                    node, best_solution_duration, verbose=verbose)
+
+        if not have_seen_valid_node:
             self._mark_nodes_as_eliminated({parent})
 
         return best_solution_duration
