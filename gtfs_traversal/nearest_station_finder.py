@@ -6,7 +6,6 @@ from gtfs_traversal.solver import Solver
 
 
 STOP_JOIN_STRING = '~~'
-TRANSFER_ROUTE = 'transfer route'
 WALK_ROUTE = 'walk route'
 
 
@@ -88,7 +87,7 @@ class NearestStationFinder(Solver):
                                         children=None, eliminated=False, expanded=False,
                                         minimum_remaining_time=0, parent=None)
                 transfer_location = LocationStatusInfo(
-                    location=origin, arrival_route=TRANSFER_ROUTE, unvisited=self._get_initial_unsolved_string())
+                    location=origin, arrival_route=self._transfer_route, unvisited=self._get_initial_unsolved_string())
                 transfer_progress = ProgressInfo(
                     duration=0, arrival_trip=trip, trip_stop_no=origin_stop_number, children=None, eliminated=False,
                     expanded=False, minimum_remaining_time=0, parent=None)

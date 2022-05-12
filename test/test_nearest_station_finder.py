@@ -30,7 +30,7 @@ class TestNearestStationFinder(unittest.TestCase):
     def test__initialize_progress_dict(self):
         subject = NearestStationFinder(**create_mock_analysis(route_types_to_solve=[1]), data=MockData(),
                                        progress_between_pruning_progress_dict=None, prune_thoroughness=None,
-                                       stop_join_string='~~', transfer_duration_seconds=None, transfer_route=None,
+                                       stop_join_string='~~', transfer_duration_seconds=None, transfer_route='transfer',
                                        walk_route=None, walk_speed_mph=None)
         subject._initialize_progress_dict('Wonderland', DEFAULT_START_TIME + timedelta(hours=7))
 
@@ -41,11 +41,11 @@ class TestNearestStationFinder(unittest.TestCase):
             LocationStatusInfo(location='Wonderland', arrival_route=2, unvisited='~~any_solution_stop~~'):
                 ProgressInfo(duration=0, arrival_trip='18-7AM', children=None, eliminated=False, expanded=False,
                              minimum_remaining_time=0, parent=None, trip_stop_no='1'),
-            LocationStatusInfo(location='Wonderland', arrival_route='transfer route',
+            LocationStatusInfo(location='Wonderland', arrival_route='transfer',
                                unvisited='~~any_solution_stop~~'):
                 ProgressInfo(duration=0, arrival_trip='3-6AM', children=None, eliminated=False, expanded=False,
                              minimum_remaining_time=0, parent=None, trip_stop_no='2'),
-            LocationStatusInfo(location='Wonderland', arrival_route='transfer route',
+            LocationStatusInfo(location='Wonderland', arrival_route='transfer',
                                unvisited='~~any_solution_stop~~'):
                 ProgressInfo(duration=0, arrival_trip='18-7AM', children=None, eliminated=False, expanded=False,
                              minimum_remaining_time=0, parent=None, trip_stop_no='1'),
