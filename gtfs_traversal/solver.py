@@ -279,9 +279,9 @@ class Solver:
         progress = self._progress_dict[location_status]
         walking_coordinates = self._get_walking_coordinates()
 
-        if progress.parent is None:
+        if progress.parent is None and progress.duration > 0:
             return []
-        if progress.parent.arrival_route == self._walk_route:
+        if progress.parent is not None and progress.parent.arrival_route == self._walk_route:
             return []
         if location_status.location not in walking_coordinates:
             return []

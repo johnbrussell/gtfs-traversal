@@ -11,6 +11,7 @@ WALK_ROUTE = 'walk route'
 
 
 class NearestStationFinder(Solver):
+    # Excludes routes that begin with walking
     def travel_time_secs_to_nearest_solution_station(self, origin, solutions, analysis_start_time):
         if origin in solutions:
             return 0
@@ -50,7 +51,6 @@ class NearestStationFinder(Solver):
 
         departure_time = self._find_next_departure_time(origin, analysis_start_time)
         while departure_time is not None:
-            self._initialize_progress_dict(origin, departure_time)
             best_travel_time = self._find_next_travel_time_secs(departure_time, origin, best_travel_time)
             departure_time = self._find_next_departure_time(origin, departure_time + timedelta(seconds=1))
 
@@ -87,7 +87,13 @@ class NearestStationFinder(Solver):
                 progress = ProgressInfo(duration=0, arrival_trip=trip, trip_stop_no=origin_stop_number,
                                         children=None, eliminated=False, expanded=False,
                                         minimum_remaining_time=0, parent=None)
+                transfer_location = LocationStatusInfo(
+                    location=origin, arrival_route=TRANSFER_ROUTE, unvisited=self._get_initial_unsolved_string())
+                transfer_progress = ProgressInfo(
+                    duration=0, arrival_trip=trip, trip_stop_no=origin_stop_number, children=None, eliminated=False,
+                    expanded=False, minimum_remaining_time=0, parent=None)
                 self._progress_dict[location] = progress
+                self._progress_dict[transfer_location] = transfer_progress
             else:
                 print(f"trip {trip} potentially visits stop {next_stop} multiple times")
         self._start_time = departure_time

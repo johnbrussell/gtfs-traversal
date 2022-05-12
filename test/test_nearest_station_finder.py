@@ -40,7 +40,15 @@ class TestNearestStationFinder(unittest.TestCase):
                              minimum_remaining_time=0, parent=None, trip_stop_no='2'),
             LocationStatusInfo(location='Wonderland', arrival_route=2, unvisited='~~any_solution_stop~~'):
                 ProgressInfo(duration=0, arrival_trip='18-7AM', children=None, eliminated=False, expanded=False,
-                             minimum_remaining_time=0, parent=None, trip_stop_no='1')
+                             minimum_remaining_time=0, parent=None, trip_stop_no='1'),
+            LocationStatusInfo(location='Wonderland', arrival_route='transfer route',
+                               unvisited='~~any_solution_stop~~'):
+                ProgressInfo(duration=0, arrival_trip='3-6AM', children=None, eliminated=False, expanded=False,
+                             minimum_remaining_time=0, parent=None, trip_stop_no='2'),
+            LocationStatusInfo(location='Wonderland', arrival_route='transfer route',
+                               unvisited='~~any_solution_stop~~'):
+                ProgressInfo(duration=0, arrival_trip='18-7AM', children=None, eliminated=False, expanded=False,
+                             minimum_remaining_time=0, parent=None, trip_stop_no='1'),
         }
         actual = subject._progress_dict
         self.assertDictEqual(expected, actual)
@@ -93,7 +101,7 @@ class TestNearestStationFinder(unittest.TestCase):
             subject = NearestStationFinder(**create_mock_analysis(route_types_to_solve=[1]), data=MockData(),
                                            progress_between_pruning_progress_dict=None, prune_thoroughness=None,
                                            stop_join_string='~~', transfer_duration_seconds=60,
-                                           transfer_route='transfer_route', walk_route='walk_route', walk_speed_mph=1)
+                                           transfer_route='transfer route', walk_route='walk_route', walk_speed_mph=1)
 
             expected = 1200
             actual = subject.travel_time_secs_to_nearest_solution_station('Lechmere', ['Back of the Hill'],
