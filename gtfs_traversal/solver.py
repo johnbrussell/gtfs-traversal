@@ -43,6 +43,7 @@ class Solver:
 
         self._data_munger = DataMunger(end_date=end_date, data=data, stop_join_string=stop_join_string,
                                        route_types_to_solve=route_types_to_solve, stops_to_solve=stops_to_solve)
+        self._nearest_endpoint_finder = None
         self._nearest_station_finder = None
 
     def _add_child_to_parent(self, parent, child):
@@ -122,6 +123,9 @@ class Solver:
                     self._string_shortener.shorten(stop) for stop in self._data_munger.get_unique_stops_to_solve()) + \
                 self._stop_join_string
         return self._initial_unsolved_string
+
+    def _get_nearest_endpoint_finder(self):
+        raise KeyError("must be defined in subclass")
 
     def _get_nearest_station_finder(self):
         raise KeyError("must be defined in subclass")
@@ -228,11 +232,15 @@ class Solver:
         if self._station_facts is not None:
             return self._station_facts
 
+        nearest_endpoint_finder = self._get_nearest_endpoint_finder()
+        if nearest_endpoint_finder is None:
+            return self._station_facts
+
         nearest_station_finder = self._get_nearest_station_finder()
         if nearest_station_finder is None:
             return self._station_facts
 
-        self._station_facts = StationFacts(self._data_munger, nearest_station_finder)
+        self._station_facts = StationFacts(self._data_munger, nearest_station_finder, nearest_endpoint_finder)
         return self._station_facts
 
     def _get_stop_locations(self):
@@ -404,6 +412,17 @@ class Solver:
     def _minimum_possible_duration(progress):
         return progress.duration + progress.minimum_remaining_time
 
+    def _minimum_possible_duration_with_travel_time_to_endpoint(self, location, progress):
+        if location.location in self._data_munger.get_unique_stops_to_solve():
+            if any(self._add_separators_to_stop_name(
+                    self._string_shortener.shorten(endpoint)) in location.unvisited for
+                    endpoint in self._data_munger.get_endpoint_solution_stops(self._start_time)):
+                return max([
+                    progress.duration + progress.minimum_remaining_time,
+                    progress.duration + self._travel_time_to_nearest_endpoint(location.location)
+                ])
+        return progress.duration + progress.minimum_remaining_time
+
     def _minimum_possible_duration_with_travel_time_to_network(self, location, progress):
         if location.arrival_route != self._transfer_route and \
                 location.arrival_route != self._walk_route and \
@@ -442,6 +461,9 @@ class Solver:
             if self._minimum_possible_duration(new_progress) >= best_solution_duration:
                 return False
             if self._minimum_possible_duration_with_travel_time_to_network(
+                    new_location, new_progress) >= best_solution_duration:
+                return False
+            if self._minimum_possible_duration_with_travel_time_to_endpoint(
                     new_location, new_progress) >= best_solution_duration:
                 return False
 
@@ -494,6 +516,13 @@ class Solver:
     @staticmethod
     def _to_radians_from_degrees(degrees):
         return degrees * math.pi / 180
+
+    def _travel_time_to_nearest_endpoint(self, origin):
+        station_facts = self._get_station_facts()
+        if station_facts is None:
+            return 0
+
+        return station_facts.time_to_nearest_endpoint(origin, self._start_time)
 
     def _travel_time_to_nearest_station(self, origin):
         station_facts = self._get_station_facts()

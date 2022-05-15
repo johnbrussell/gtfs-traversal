@@ -3,6 +3,7 @@ from datetime import datetime
 
 from gtfs_traversal.data_structures import *
 from gtfs_traversal.expansion_queue import ExpansionQueue
+from gtfs_traversal.nearest_endpoint_finder import NearestEndpointFinder
 from gtfs_traversal.nearest_station_finder import NearestStationFinder
 from gtfs_traversal.solver import Solver
 
@@ -48,6 +49,17 @@ class Traverser(Solver):
                     self.prune_progress_dict()
 
         return known_best_time, self._progress_dict, self._start_time
+
+    def _get_nearest_endpoint_finder(self):
+        if self._nearest_endpoint_finder is None:
+            self._nearest_endpoint_finder = NearestEndpointFinder(
+                data=self._data_munger.data, progress_between_pruning_progress_dict=self._expansions_to_prune,
+                prune_thoroughness=self._prune_severity, stop_join_string=self._stop_join_string,
+                transfer_duration_seconds=self._transfer_duration_seconds,
+                transfer_route=self._transfer_route, walk_route=self._walk_route,
+                walk_speed_mph=self._walk_speed_mph, end_date=self._end_date,
+                route_types_to_solve=self._route_types_to_solve, stops_to_solve=self._stops_to_solve)
+        return self._nearest_endpoint_finder
 
     def _get_nearest_station_finder(self):
         if self._nearest_station_finder is None:

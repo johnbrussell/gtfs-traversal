@@ -8,6 +8,7 @@ class DataMunger:
 
         self._buffered_analysis_end_time = None
         self._end_date = end_date
+        self._endpoint_solution_stops = None
         self._location_routes = None
         self._minimum_stop_times = None
         self._route_list = None
@@ -61,6 +62,28 @@ class DataMunger:
 
     def get_datetime_from_raw_string_time(self, date_at_midnight, time_string):
         return date_at_midnight + timedelta(seconds=self.convert_to_seconds_since_midnight(time_string))
+
+    def get_endpoint_solution_stops(self, start_time):
+        if self._endpoint_solution_stops is not None:
+            return self._endpoint_solution_stops
+
+        endpoint_stops = set()
+
+        for stop in self.get_unique_stops_to_solve():
+            routes_at_stop = self.get_solution_routes_at_stop(stop)
+
+            for route in routes_at_stop:
+                stop_number = self.get_stop_number_from_stop_id(stop, route)
+                if stop_number == '1':
+                    endpoint_stops.add(stop)
+
+                _, best_trip_id = self.first_trip_after(start_time, route, stop)
+
+                if best_trip_id is None:
+                    endpoint_stops.add(stop)
+
+        self._endpoint_solution_stops = endpoint_stops
+        return self._endpoint_solution_stops
 
     def get_minimum_stop_times(self, start_time):
         if self._minimum_stop_times is not None:

@@ -39,6 +39,7 @@ class NearestStationFinder(Solver):
         self._initialize_progress_dict(origin, departure_time)
         self._exp_queue = ExpansionQueue(1, STOP_JOIN_STRING)
         self._exp_queue.add(self._progress_dict.keys())
+        orig_best_time = known_best_time
         while not self._exp_queue.is_empty():
             expandee = self._exp_queue.pop(self._progress_dict)
             known_best_time = self._expand(expandee, known_best_time)
@@ -49,8 +50,15 @@ class NearestStationFinder(Solver):
 
         departure_time = self._find_next_departure_time(origin, analysis_start_time)
         while departure_time is not None:
+            orig_best_time = best_travel_time
             best_travel_time = self._find_next_travel_time_secs(departure_time, origin, best_travel_time)
             departure_time = self._find_next_departure_time(origin, departure_time + timedelta(seconds=1))
+
+            if orig_best_time is None or best_travel_time < orig_best_time:
+                # self.print_path(self._progress_dict)
+                pass
+
+        self._progress_dict = {}
 
         return best_travel_time
 
@@ -58,6 +66,9 @@ class NearestStationFinder(Solver):
         if self._initial_unsolved_string is None:
             self._initial_unsolved_string = self._stop_join_string + "any_solution_stop" + self._stop_join_string
         return self._initial_unsolved_string
+
+    def _get_nearest_endpoint_finder(self):
+        return None
 
     def _get_nearest_station_finder(self):
         return None
@@ -104,3 +115,17 @@ class NearestStationFinder(Solver):
 
     def _routes_at_station(self, station):
         return self._data_munger.get_routes_at_stop(station)
+
+    def print_path(self, progress_dict):
+        solution_locations = [k for k in progress_dict.keys() if
+                              self._is_solution(k) and not progress_dict[k].eliminated]
+        for location in solution_locations:
+            path = list()
+            _location = location
+            while _location is not None:
+                path.append((_location.arrival_route, _location.location, progress_dict[_location].duration))
+                _location = progress_dict[_location].parent
+            path = reversed(path)
+            print("solution:")
+            for stop in path:
+                print(stop)
