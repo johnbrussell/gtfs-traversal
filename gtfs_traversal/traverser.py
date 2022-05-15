@@ -6,6 +6,7 @@ from gtfs_traversal.expansion_queue import ExpansionQueue
 from gtfs_traversal.nearest_endpoint_finder import NearestEndpointFinder
 from gtfs_traversal.nearest_station_finder import NearestStationFinder
 from gtfs_traversal.solver import Solver
+from gtfs_traversal.station_distance_calculator import StationDistanceCalculator
 
 
 class Traverser(Solver):
@@ -71,6 +72,17 @@ class Traverser(Solver):
                 walk_speed_mph=self._walk_speed_mph, end_date=self._end_date,
                 route_types_to_solve=self._route_types_to_solve, stops_to_solve=self._stops_to_solve)
         return self._nearest_station_finder
+
+    def _get_station_distance_calculator(self):
+        if self._station_distance_calculator is None:
+            self._station_distance_calculator = StationDistanceCalculator(
+                data=self._data_munger.data, progress_between_pruning_progress_dict=self._expansions_to_prune,
+                prune_thoroughness=self._prune_severity, stop_join_string=self._stop_join_string,
+                transfer_duration_seconds=self._transfer_duration_seconds,
+                transfer_route=self._transfer_route, walk_route=self._walk_route,
+                walk_speed_mph=self._walk_speed_mph, end_date=self._end_date,
+                route_types_to_solve=self._route_types_to_solve, stops_to_solve=None)
+        return self._station_distance_calculator
 
     def initialize_progress_dict(self, begin_time):
         progress_dict = dict()

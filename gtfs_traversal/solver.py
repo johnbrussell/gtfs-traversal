@@ -45,6 +45,9 @@ class Solver:
                                        route_types_to_solve=route_types_to_solve, stops_to_solve=stops_to_solve)
         self._nearest_endpoint_finder = None
         self._nearest_station_finder = None
+        self._station_distance_calculator = None
+
+        self._storage = {}
 
     def _add_child_to_parent(self, parent, child):
         if self._progress_dict[parent].children is None:
@@ -135,9 +138,7 @@ class Solver:
         if prior_location.unvisited == location.unvisited and prior_location.arrival_route == location.arrival_route:
             return prior_minimum_remaining_time
 
-        new_unvisited_stop_ids = location.unvisited.strip(self._stop_join_string).split(self._stop_join_string) \
-            if not self._is_solution(location) else []
-        new_unvisited_stops = [self._string_shortener.lengthen(stop_id) for stop_id in new_unvisited_stop_ids]
+        new_unvisited_stops = self._get_unvisited_station_names(location.unvisited)
         new_minimum_remaining_travel_time = self._data_munger.get_minimum_remaining_time(new_unvisited_stops,
                                                                                          self._start_time)
 
@@ -228,6 +229,9 @@ class Solver:
         self._route_trips = self._data_munger.get_route_trips()
         return self._route_trips
 
+    def _get_station_distance_calculator(self):
+        raise KeyError("must be defined in subclass")
+
     def _get_station_facts(self):
         if self._station_facts is not None:
             return self._station_facts
@@ -240,7 +244,12 @@ class Solver:
         if nearest_station_finder is None:
             return self._station_facts
 
-        self._station_facts = StationFacts(self._data_munger, nearest_station_finder, nearest_endpoint_finder)
+        station_distance_calculator = self._get_station_distance_calculator()
+        if station_distance_calculator is None:
+            return self._station_facts
+
+        self._station_facts = StationFacts(
+            self._data_munger, nearest_station_finder, nearest_endpoint_finder, station_distance_calculator)
         return self._station_facts
 
     def _get_stop_locations(self):
@@ -295,6 +304,12 @@ class Solver:
 
         self._trip_schedules = self._data_munger.get_trip_schedules()
         return self._trip_schedules
+
+    def _get_unvisited_station_names(self, unvisited_stations_string):
+        if not unvisited_stations_string.strip(self._stop_join_string):
+            return []
+        new_unvisited_stop_ids = unvisited_stations_string.strip(self._stop_join_string).split(self._stop_join_string)
+        return [self._string_shortener.lengthen(stop_id) for stop_id in new_unvisited_stop_ids]
 
     def _get_walking_coordinates(self):
         if self._walking_coordinates is None:
@@ -424,6 +439,7 @@ class Solver:
         return progress.duration + progress.minimum_remaining_time
 
     def _minimum_possible_duration_with_travel_time_to_network(self, location, progress):
+        # Calculate travel time to network for all stations visited off network since returning to the network
         if location.arrival_route != self._transfer_route and \
                 location.arrival_route != self._walk_route and \
                 location.location in self._data_munger.get_unique_stops_to_solve():
@@ -438,10 +454,30 @@ class Solver:
             for stop in stops_visited_off_route:
                 self._travel_time_to_nearest_station(stop)
 
-        if location.arrival_route != self._transfer_route and \
-                location.arrival_route != self._walk_route:
+        # Determine travel time to nearest station
+        if location.arrival_route != self._transfer_route:
             return progress.duration + progress.minimum_remaining_time + \
                 self._known_travel_time_to_nearest_station(location.location)
+        return progress.duration + progress.minimum_remaining_time
+
+    def _minimum_possible_duration_with_travel_time_to_unvisited(self, location, progress):
+        station_facts = self._get_station_facts()
+        if station_facts is None:
+            return progress.duration + progress.minimum_remaining_time
+
+        if location.arrival_route != self._transfer_route and \
+                location.location in self._data_munger.get_unique_stops_to_solve():
+            unvisited_stations = self._get_unvisited_station_names(location.unvisited)
+            unknown_stations = [s for s in unvisited_stations if
+                                not station_facts.know_time_between(location.location, s)]
+            station_to_calculate = unknown_stations[0]
+            station_facts.time_to_station(location.location, station_to_calculate, self._start_time)
+
+            known_stations = [s for s in unvisited_stations if
+                              station_facts.know_time_between(location.location, s)]
+            return progress.duration + max([station_facts.time_to_station(location.location, s, self._start_time) for
+                                            s in known_stations])
+
         return progress.duration + progress.minimum_remaining_time
 
     def _node_is_valid(self, node, best_solution_duration):
@@ -464,6 +500,9 @@ class Solver:
                     new_location, new_progress) >= best_solution_duration:
                 return False
             if self._minimum_possible_duration_with_travel_time_to_endpoint(
+                    new_location, new_progress) >= best_solution_duration:
+                return False
+            if self._minimum_possible_duration_with_travel_time_to_unvisited(
                     new_location, new_progress) >= best_solution_duration:
                 return False
 

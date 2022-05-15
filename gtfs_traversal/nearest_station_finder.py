@@ -67,6 +67,9 @@ class NearestStationFinder(Solver):
             self._initial_unsolved_string = self._stop_join_string + "any_solution_stop" + self._stop_join_string
         return self._initial_unsolved_string
 
+    def _get_known_travel_time_dict(self):
+        return None
+
     def _get_nearest_endpoint_finder(self):
         return None
 
