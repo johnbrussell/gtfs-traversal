@@ -24,6 +24,9 @@ class NearestStationFinder(Solver):
     def _announce_solution(self, new_progress):
         pass
 
+    def _extract_relevant_data_from_progress_dict(self, known_best_time):
+        pass
+
     def _find_next_departure_time(self, origin, earliest_departure_time):
         next_departure_time = None
 
@@ -48,6 +51,7 @@ class NearestStationFinder(Solver):
         while not self._exp_queue.is_empty():
             expandee = self._exp_queue.pop(self._progress_dict, ordered=False)
             known_best_time = self._expand(expandee, known_best_time)
+        self._extract_relevant_data_from_progress_dict(known_best_time)
         return known_best_time
 
     def _find_travel_time_secs(self, origin, analysis_start_time):
@@ -58,6 +62,7 @@ class NearestStationFinder(Solver):
             best_travel_time = self._find_next_travel_time_secs(departure_time, origin, best_travel_time)
             departure_time = self._find_next_departure_time(origin, departure_time + timedelta(seconds=1))
 
+        del self._progress_dict
         self._progress_dict = {}
 
         return best_travel_time

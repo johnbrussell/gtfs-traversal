@@ -214,12 +214,6 @@ class Solver:
 
         return walking_data + new_route_data
 
-    def _get_off_course_stop_locations(self):
-        if self._off_course_stop_locations is None:
-            self._off_course_stop_locations = self._data_munger.get_off_course_stop_locations()
-
-        return self._off_course_stop_locations
-
     def _get_station_distance_calculator(self):
         raise KeyError("must be defined in subclass")
 
@@ -240,7 +234,7 @@ class Solver:
             return self._station_facts
 
         self._station_facts = StationFacts(
-            self._data_munger, nearest_station_finder, nearest_endpoint_finder, station_distance_calculator)
+            self._data_munger, None, None, station_distance_calculator)
         return self._station_facts
 
     def _get_stop_locations(self):
@@ -254,12 +248,6 @@ class Solver:
             self._stop_locations_to_solve = self._data_munger.get_stop_locations_to_solve()
 
         return self._stop_locations_to_solve
-
-    def _get_stops_at_ends_of_solution_routes(self):
-        if self._stops_at_ends_of_solution_routes is None:
-            self._stops_at_ends_of_solution_routes = self._data_munger.get_stops_at_ends_of_solution_routes()
-
-        return self._stops_at_ends_of_solution_routes
 
     def _get_time_to_nearest_station(self):
         if self._time_to_nearest_station is None:
@@ -351,6 +339,13 @@ class Solver:
             return False
         return progress_info.duration + progress_info.minimum_remaining_time >= best_duration
 
+    def _known_travel_time_to_nearest_endpoint(self, origin):
+        station_facts = self._get_station_facts()
+        if station_facts is None:
+            return 0
+
+        return station_facts.known_time_to_nearest_endpoint(origin)
+
     def _known_travel_time_to_nearest_station(self, origin):
         station_facts = self._get_station_facts()
         if station_facts is None:
@@ -412,19 +407,25 @@ class Solver:
         return progress.duration + progress.minimum_remaining_time
 
     def _minimum_possible_duration_with_travel_time_to_endpoint(self, location, progress):
-        if location.location in self._data_munger.get_unique_stops_to_solve():
-            if any(self._add_separators_to_stop_name(
-                    self._string_shortener.shorten(endpoint)) in location.unvisited for
-                    endpoint in self._data_munger.get_endpoint_solution_stops(self._start_time)):
-                return max([
-                    progress.duration + progress.minimum_remaining_time,
-                    progress.duration + self._travel_time_to_nearest_endpoint(location.location)
-                ])
+        is_on = False
+        if is_on:
+            if location.location in self._data_munger.get_unique_stops_to_solve():
+                if any(self._add_separators_to_stop_name(
+                        self._string_shortener.shorten(endpoint)) in location.unvisited for
+                        endpoint in self._data_munger.get_endpoint_solution_stops(self._start_time)):
+                    self._travel_time_to_nearest_endpoint(location.location)
+        if any(self._add_separators_to_stop_name(
+                self._string_shortener.shorten(endpoint)) in location.unvisited for
+               endpoint in self._data_munger.get_endpoint_solution_stops(self._start_time)):
+            return max([
+                progress.duration + progress.minimum_remaining_time,
+                progress.duration + self._known_travel_time_to_nearest_endpoint(location.location)
+            ])
         return progress.duration + progress.minimum_remaining_time
 
     def _minimum_possible_duration_with_travel_time_to_network(self, location, progress):
         # Calculate travel time to network for all stations visited off network since returning to the network
-        is_on = True
+        is_on = False
         if is_on:
             if location.arrival_route != self._transfer_route and \
                     location.arrival_route != self._walk_route and \
@@ -446,6 +447,20 @@ class Solver:
                 self._known_travel_time_to_nearest_station(location.location)
         return progress.duration + progress.minimum_remaining_time
 
+    def _minimum_known_possible_duration_with_travel_time_to_unvisited(self, location, progress):
+        station_facts = self._get_station_facts()
+        if station_facts is None:
+            return progress.duration + progress.minimum_remaining_time
+
+        unvisited_stations = self._get_unvisited_station_names(location.unvisited)
+        known_stations = [s for s in unvisited_stations if station_facts.know_time_between(location.location, s)]
+
+        if known_stations:
+            return progress.duration + \
+                max([station_facts.time_to_station(location.location, s, self._start_time) for s in known_stations])
+
+        return progress.duration + progress.minimum_remaining_time
+
     def _minimum_possible_duration_with_travel_time_to_unvisited(self, location, progress):
         station_facts = self._get_station_facts()
         if station_facts is None:
@@ -453,21 +468,30 @@ class Solver:
 
         is_on = True
         if is_on:
-            if location.arrival_route != self._transfer_route and \
-                    location.location in self._data_munger.get_unique_stops_to_solve():
+            if location.arrival_route != self._transfer_route and True:#\
+                    # location.location in self._data_munger.get_unique_stops_to_solve():
                 unvisited_stations = self._get_unvisited_station_names(location.unvisited)
                 unknown_stations = [s for s in unvisited_stations if
                                     not station_facts.know_time_between(location.location, s)]
-                station_to_calculate = unknown_stations[0]
-                station_facts.time_to_station(location.location, station_to_calculate, self._start_time)
+                if unknown_stations:
+                    all_coordinates = self._data_munger.get_all_stop_coordinates()
+                    if location.location in self._data_munger.get_unique_stops_to_solve():
+                        station_to_calculate = max(
+                            unknown_stations, key=lambda x: self._walk_time_seconds(
+                                all_coordinates[location.location].lat, all_coordinates[x].lat,
+                                all_coordinates[location.location].long, all_coordinates[x].long))
+                    else:
+                        is_repeat = location.location in station_facts._time_between_stations_dict
+                        if is_repeat:
+                            return progress.duration + progress.minimum_remaining_time
+                        else:
+                            station_to_calculate = min(
+                                unknown_stations, key=lambda x: self._walk_time_seconds(
+                                    all_coordinates[location.location].lat, all_coordinates[x].lat,
+                                    all_coordinates[location.location].long, all_coordinates[x].long))
+                    station_facts.time_to_station(location.location, station_to_calculate, self._start_time)
 
-                known_stations = [s for s in unvisited_stations if
-                                  station_facts.know_time_between(location.location, s)]
-                return progress.duration + \
-                    max([station_facts.time_to_station(location.location, s, self._start_time) for
-                         s in known_stations])
-
-        return progress.duration + progress.minimum_remaining_time
+        return self._minimum_known_possible_duration_with_travel_time_to_unvisited(location, progress)
 
     def _node_is_valid(self, node, best_solution_duration):
         if node is None:
@@ -489,6 +513,9 @@ class Solver:
                     new_location, new_progress) >= best_solution_duration:
                 return False
             if self._minimum_possible_duration_with_travel_time_to_endpoint(
+                    new_location, new_progress) >= best_solution_duration:
+                return False
+            if self._minimum_known_possible_duration_with_travel_time_to_unvisited(
                     new_location, new_progress) >= best_solution_duration:
                 return False
             if self._minimum_possible_duration_with_travel_time_to_unvisited(
