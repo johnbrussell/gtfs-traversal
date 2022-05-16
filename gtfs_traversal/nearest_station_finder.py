@@ -5,14 +5,20 @@ from gtfs_traversal.expansion_queue import ExpansionQueue
 from gtfs_traversal.solver import Solver
 
 
+CACHE_ROUTE = "cached"
+CACHE_TRIP = "cached"
 STOP_JOIN_STRING = '~~'
 WALK_ROUTE = 'walk route'
 
 
 class NearestStationFinder(Solver):
-    def travel_time_secs_to_nearest_solution_station(self, origin, analysis_start_time):
+    def travel_time_secs_to_nearest_solution_station(self, origin, known, analysis_start_time):
         if origin in self._data_munger.get_unique_stops_to_solve():
             return 0
+
+        self._storage["known"] = known
+        self._storage["destination"] = list(self._data_munger.get_unique_stops_to_solve().copy())[0]
+
         return self._find_travel_time_secs(origin, analysis_start_time)
 
     def _announce_solution(self, new_progress):
@@ -39,9 +45,8 @@ class NearestStationFinder(Solver):
         self._initialize_progress_dict(origin, departure_time)
         self._exp_queue = ExpansionQueue(1, STOP_JOIN_STRING)
         self._exp_queue.add(self._progress_dict.keys())
-        orig_best_time = known_best_time
         while not self._exp_queue.is_empty():
-            expandee = self._exp_queue.pop(self._progress_dict)
+            expandee = self._exp_queue.pop(self._progress_dict, ordered=False)
             known_best_time = self._expand(expandee, known_best_time)
         return known_best_time
 
@@ -50,13 +55,8 @@ class NearestStationFinder(Solver):
 
         departure_time = self._find_next_departure_time(origin, analysis_start_time)
         while departure_time is not None:
-            orig_best_time = best_travel_time
             best_travel_time = self._find_next_travel_time_secs(departure_time, origin, best_travel_time)
             departure_time = self._find_next_departure_time(origin, departure_time + timedelta(seconds=1))
-
-            if orig_best_time is None or best_travel_time < orig_best_time:
-                # self.print_path(self._progress_dict)
-                pass
 
         self._progress_dict = {}
 
@@ -67,17 +67,35 @@ class NearestStationFinder(Solver):
             self._initial_unsolved_string = self._stop_join_string + "any_solution_stop" + self._stop_join_string
         return self._initial_unsolved_string
 
-    def _get_known_travel_time_dict(self):
-        return None
-
     def _get_nearest_endpoint_finder(self):
         return None
 
     def _get_nearest_station_finder(self):
         return None
 
+    def _get_new_nodes(self, location_status, known_best_time):
+        if self._have_cached_data(location_status):
+            old_progress = self._progress_dict[location_status]
+            new_location_status = location_status._replace(
+                location=self._storage["destination"], arrival_route=CACHE_ROUTE)
+            known_time = self._retrieve_known_data(location_status)
+            return [
+                (
+                    new_location_status,
+                    ProgressInfo(duration=old_progress.duration + known_time, arrival_trip=CACHE_TRIP,
+                                 trip_stop_no=CACHE_ROUTE, parent=location_status,
+                                 minimum_remaining_time=0, children=None, expanded=False, eliminated=False)
+                )
+            ]
+
+        return super()._get_new_nodes(location_status, known_best_time)
+
     def _get_total_minimum_time(self, start_time):
         return 0
+
+    def _have_cached_data(self, location):
+        known_times = self._storage["known"]
+        return location.location in known_times
 
     def _initialize_progress_dict(self, origin, earliest_departure_time):
         self._progress_dict = dict()
@@ -115,6 +133,10 @@ class NearestStationFinder(Solver):
 
     def _is_solution(self, location):
         return location.location in self._data_munger.get_unique_stops_to_solve()
+
+    def _retrieve_known_data(self, location_status):
+        known_times = self._storage["known"]
+        return known_times[location_status.location]
 
     def _routes_at_station(self, station):
         return self._data_munger.get_routes_at_stop(station)

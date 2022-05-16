@@ -52,37 +52,31 @@ class Traverser(Solver):
         return known_best_time, self._progress_dict, self._start_time
 
     def _get_nearest_endpoint_finder(self):
-        if self._nearest_endpoint_finder is None:
-            self._nearest_endpoint_finder = NearestEndpointFinder(
-                data=self._data_munger.data, progress_between_pruning_progress_dict=self._expansions_to_prune,
-                prune_thoroughness=self._prune_severity, stop_join_string=self._stop_join_string,
-                transfer_duration_seconds=self._transfer_duration_seconds,
-                transfer_route=self._transfer_route, walk_route=self._walk_route,
-                walk_speed_mph=self._walk_speed_mph, end_date=self._end_date,
-                route_types_to_solve=self._route_types_to_solve, stops_to_solve=self._stops_to_solve)
-        return self._nearest_endpoint_finder
+        return NearestEndpointFinder(
+            data_munger=self._data_munger, progress_between_pruning_progress_dict=self._expansions_to_prune,
+            prune_thoroughness=self._prune_severity, stop_join_string=self._stop_join_string,
+            transfer_duration_seconds=self._transfer_duration_seconds,
+            transfer_route=self._transfer_route, walk_route=self._walk_route,
+            walk_speed_mph=self._walk_speed_mph, end_date=self._end_date,
+            route_types_to_solve=self._route_types_to_solve, stops_to_solve=self._stops_to_solve)
 
     def _get_nearest_station_finder(self):
-        if self._nearest_station_finder is None:
-            self._nearest_station_finder = NearestStationFinder(
-                data=self._data_munger.data, progress_between_pruning_progress_dict=self._expansions_to_prune,
-                prune_thoroughness=self._prune_severity, stop_join_string=self._stop_join_string,
-                transfer_duration_seconds=self._transfer_duration_seconds,
-                transfer_route=self._transfer_route, walk_route=self._walk_route,
-                walk_speed_mph=self._walk_speed_mph, end_date=self._end_date,
-                route_types_to_solve=self._route_types_to_solve, stops_to_solve=self._stops_to_solve)
-        return self._nearest_station_finder
+        return NearestStationFinder(
+            data_munger=self._data_munger, progress_between_pruning_progress_dict=self._expansions_to_prune,
+            prune_thoroughness=self._prune_severity, stop_join_string=self._stop_join_string,
+            transfer_duration_seconds=self._transfer_duration_seconds,
+            transfer_route=self._transfer_route, walk_route=self._walk_route,
+            walk_speed_mph=self._walk_speed_mph, end_date=self._end_date,
+            route_types_to_solve=self._route_types_to_solve, stops_to_solve=self._stops_to_solve)
 
     def _get_station_distance_calculator(self):
-        if self._station_distance_calculator is None:
-            self._station_distance_calculator = StationDistanceCalculator(
-                data=self._data_munger.data, progress_between_pruning_progress_dict=self._expansions_to_prune,
-                prune_thoroughness=self._prune_severity, stop_join_string=self._stop_join_string,
-                transfer_duration_seconds=self._transfer_duration_seconds,
-                transfer_route=self._transfer_route, walk_route=self._walk_route,
-                walk_speed_mph=self._walk_speed_mph, end_date=self._end_date,
-                route_types_to_solve=self._route_types_to_solve, stops_to_solve=None)
-        return self._station_distance_calculator
+        return StationDistanceCalculator(
+            data_munger=self._data_munger, progress_between_pruning_progress_dict=self._expansions_to_prune,
+            prune_thoroughness=self._prune_severity, stop_join_string=self._stop_join_string,
+            transfer_duration_seconds=self._transfer_duration_seconds,
+            transfer_route=self._transfer_route, walk_route=self._walk_route,
+            walk_speed_mph=self._walk_speed_mph, end_date=self._end_date,
+            route_types_to_solve=self._route_types_to_solve, stops_to_solve=None)
 
     def initialize_progress_dict(self, begin_time):
         progress_dict = dict()
@@ -120,7 +114,9 @@ class Traverser(Solver):
 
     def prune_progress_dict(self):
         def ineffectiveness(node):
-            return len(node.unvisited.split(self._stop_join_string))
+            # smaller is more ineffective
+            transfer_bonus = 10 if node.arrival_route == self._transfer_route else 1
+            return len(node.unvisited.strip(self._stop_join_string).split(self._stop_join_string)) * transfer_bonus
 
         prunable_nodes = self.prunable_nodes()
         num_nodes_to_prune = math.floor(self._prune_severity * float(len(prunable_nodes)))

@@ -3,6 +3,7 @@ if __name__ == "__main__":
 
     import gtfs_parsing.analyses.analyses as gtfs_analyses
     from gtfs_parsing.data_structures.data_structures import gtfsSchedules, uniqueRouteInfo
+    from gtfs_traversal.data_munger import DataMunger
     from gtfs_traversal.read_data import *
     from gtfs_traversal.traverser import Traverser
 
@@ -48,8 +49,13 @@ if __name__ == "__main__":
 
     data = remove_trips_that_do_not_operate_within_analysis_timeframe(data)
 
+    data = data._replace(dateTrips=None)
+
+    data_munger = DataMunger(end_date=analysis.end_date, data=data, stop_join_string=STOP_JOIN_STRING,
+                             route_types_to_solve=analysis.route_types, stops_to_solve=None)
+
     traverser = Traverser(end_date=analysis.end_date, route_types_to_solve=analysis.route_types, stops_to_solve=None,
-                          data=data, progress_between_pruning_progress_dict=1000, prune_thoroughness=.001,
+                          data_munger=data_munger, progress_between_pruning_progress_dict=500, prune_thoroughness=.005,
                           stop_join_string=STOP_JOIN_STRING, transfer_duration_seconds=TRANSFER_DURATION_SECONDS,
                           transfer_route=TRANSFER_ROUTE, walk_route=WALK_ROUTE, walk_speed_mph=WALK_SPEED_MPH)
 

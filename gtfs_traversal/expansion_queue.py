@@ -40,9 +40,12 @@ class ExpansionQueue:
     def _num_remaining_stops(self, stops_string):
         return len(stops_string.split(self._stop_join_string)) - 2
 
-    def pop(self, solver_progress_dict):
-        best = min(self._queue[self._num_remaining_stops_to_pop], key=lambda x: solver_progress_dict[x].duration)
-        self._queue[self._num_remaining_stops_to_pop].remove(best)
+    def pop(self, solver_progress_dict, ordered=True):
+        if ordered:
+            best = min(self._queue[self._num_remaining_stops_to_pop], key=lambda x: solver_progress_dict[x].duration)
+            self._queue[self._num_remaining_stops_to_pop].remove(best)
+        else:
+            best = self._queue[self._num_remaining_stops_to_pop].pop()
         self._handle_empty_queue_at_key(self._num_remaining_stops_to_pop)
         return best
 

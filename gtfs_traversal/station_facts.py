@@ -17,7 +17,8 @@ class StationFacts:
 
     def time_to_nearest_endpoint(self, origin, after_time):
         if origin not in self._time_to_nearest_endpoint_dict:
-            travel_time = self._nearest_endpoint_finder.travel_time_secs_to_nearest_endpoint(origin, after_time)
+            travel_time = self._nearest_endpoint_finder.travel_time_secs_to_nearest_endpoint(
+                origin, self._time_to_nearest_endpoint_dict, after_time)
             travel_time = travel_time if travel_time else 0
             if travel_time is not None:
                 self._time_to_nearest_endpoint_dict[origin] = travel_time
@@ -31,7 +32,7 @@ class StationFacts:
     def time_to_nearest_solution_station(self, origin, after_time):
         if origin not in self._time_to_nearest_solution_station_dict:
             travel_time = self._nearest_station_finder.travel_time_secs_to_nearest_solution_station(
-                origin, after_time)
+                origin, self._time_to_nearest_solution_station_dict, after_time)
             if travel_time is not None:
                 self._time_to_nearest_solution_station_dict[origin] = travel_time
                 print("solution station", len(self._time_to_nearest_solution_station_dict), origin, travel_time)
@@ -49,7 +50,8 @@ class StationFacts:
                 origin, destination, self._time_between_stations_dict, after_time)
             if travel_time is not None:
                 self._time_between_stations_dict[origin][destination] = travel_time
-                print("time between stations", origin, destination, travel_time)
+                print("time between stations", len(self._time_between_stations_dict[origin]),
+                      origin, destination, travel_time)
             else:
                 self._time_between_stations_dict[origin][destination] = 0
                 print("aborting time to station", origin, destination, after_time)

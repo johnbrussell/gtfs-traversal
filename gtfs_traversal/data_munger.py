@@ -203,7 +203,7 @@ class DataMunger:
 
     def get_route_list(self):
         if self._route_list is None:
-            self._route_list = [route_id for route_id, route in self.data.uniqueRouteTrips.items()]
+            self._route_list = [route_id for route_id, route in self.get_route_trips().items()]
 
         return self._route_list
 
@@ -371,7 +371,7 @@ class DataMunger:
         if self._unique_routes_to_solve is not None:
             return self._unique_routes_to_solve
 
-        self._unique_routes_to_solve = {route_id for route_id, route in self.data.uniqueRouteTrips.items() if
+        self._unique_routes_to_solve = {route_id for route_id, route in self.get_route_trips().items() if
                                         str(route.routeInfo.routeType) in self.get_route_types_to_solve()}
 
         return self._unique_routes_to_solve
