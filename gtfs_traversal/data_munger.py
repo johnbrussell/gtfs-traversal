@@ -42,7 +42,7 @@ class DataMunger:
                 date_at_midnight = datetime(year=earliest_departure_time.year, month=earliest_departure_time.month,
                                             day=earliest_departure_time.day)
                 time = self.get_datetime_from_raw_string_time(date_at_midnight, raw_departure_time)
-                self._trip_time_cache[(earliest_departure_time, raw_departure_time)] = time
+                # self._trip_time_cache[(earliest_departure_time, raw_departure_time)] = time
             if earliest_departure_time <= time < latest_departure_time:
                 latest_departure_time = time
                 solution_trip_id = trip_id
