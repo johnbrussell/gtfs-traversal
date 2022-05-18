@@ -95,6 +95,9 @@ class NearestStationFinder(Solver):
 
         return super()._get_new_nodes(location_status, known_best_time)
 
+    def _get_station_facts(self):
+        return None
+
     def _get_total_minimum_time(self, start_time):
         return 0
 

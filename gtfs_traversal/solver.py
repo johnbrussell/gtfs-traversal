@@ -2,7 +2,6 @@ import math
 from datetime import datetime, timedelta
 
 from gtfs_traversal.data_structures import *
-from gtfs_traversal.station_facts import StationFacts
 from gtfs_traversal.string_shortener import StringShortener
 
 
@@ -40,7 +39,7 @@ class Solver:
         self._walking_coordinates = None
 
         self._data_munger = data_munger
-        print(self.__class__.__name__, hex(id(self._data_munger)))
+        # print(self.__class__.__name__, hex(id(self._data_munger)))
         self._nearest_endpoint_finder = None
         self._nearest_station_finder = None
         self._station_distance_calculator = None
@@ -89,7 +88,8 @@ class Solver:
         return f'{self._stop_join_string}{stop_name}{self._stop_join_string}'
 
     def _announce_solution(self, new_progress):
-        print(datetime.now() - self._initialization_time, 'solution:', timedelta(seconds=new_progress.duration))
+        print(datetime.now() - self._initialization_time, 'solution:', timedelta(seconds=new_progress.duration),
+              f"{new_progress.duration}")
 
     def _eliminate_nodes_slower_than_time(self, best_solution_duration, *, preserve):
         nodes_to_eliminate = {k for k, v in self._progress_dict.items() if
@@ -218,24 +218,7 @@ class Solver:
         raise KeyError("must be defined in subclass")
 
     def _get_station_facts(self):
-        if self._station_facts is not None:
-            return self._station_facts
-
-        nearest_endpoint_finder = self._get_nearest_endpoint_finder()
-        if nearest_endpoint_finder is None:
-            return self._station_facts
-
-        nearest_station_finder = self._get_nearest_station_finder()
-        if nearest_station_finder is None:
-            return self._station_facts
-
-        station_distance_calculator = self._get_station_distance_calculator()
-        if station_distance_calculator is None:
-            return self._station_facts
-
-        self._station_facts = StationFacts(
-            self._data_munger, None, None, station_distance_calculator)
-        return self._station_facts
+        raise KeyError("must be implemented in subclass")
 
     def _get_stop_locations(self):
         if self._stop_locations is None:
@@ -493,6 +476,30 @@ class Solver:
 
         return self._minimum_known_possible_duration_with_travel_time_to_unvisited(location, progress)
 
+    def _minimum_possible_duration_with_travel_time_to_unvisited_and_time_within_unvisited(self, location, progress):
+        station_facts = self._get_station_facts()
+        if station_facts is None:
+            return progress.duration + progress.minimum_remaining_time
+
+        if location.arrival_route != self._transfer_route:
+            unvisited_stations = self._get_unvisited_station_names(location.unvisited)
+            known_unvisited_stations = [s for s in unvisited_stations if
+                                        station_facts.know_time_between(location.location, s)]
+            time_to_closest_unvisited_station = min(
+                station_facts.time_to_station(location.location, s, self._start_time, avoid_calculation=True)
+                for s in known_unvisited_stations
+            ) if known_unvisited_stations else 0
+            time_within_unvisited_stations = max(
+                max(
+                    station_facts.time_to_station(s1, s2, self._start_time, avoid_calculation=True)
+                    for s1 in unvisited_stations
+                ) for s2 in unvisited_stations
+            )
+
+            return progress.duration + time_to_closest_unvisited_station + time_within_unvisited_stations
+
+        return progress.duration + progress.minimum_remaining_time
+
     def _node_is_valid(self, node, best_solution_duration):
         if node is None:
             return False
@@ -519,6 +526,9 @@ class Solver:
                     new_location, new_progress) >= best_solution_duration:
                 return False
             if self._minimum_possible_duration_with_travel_time_to_unvisited(
+                    new_location, new_progress) >= best_solution_duration:
+                return False
+            if self._minimum_possible_duration_with_travel_time_to_unvisited_and_time_within_unvisited(
                     new_location, new_progress) >= best_solution_duration:
                 return False
 
