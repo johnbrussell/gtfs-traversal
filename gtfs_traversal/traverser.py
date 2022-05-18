@@ -1,12 +1,18 @@
 import math
 from datetime import datetime
 
+import os
+import psutil
+import tracemalloc
+
 from gtfs_traversal.data_structures import *
 from gtfs_traversal.expansion_queue import ExpansionQueue
-from gtfs_traversal.nearest_endpoint_finder import NearestEndpointFinder
-from gtfs_traversal.nearest_station_finder import NearestStationFinder
 from gtfs_traversal.solver import Solver
-from gtfs_traversal.station_distance_calculator import StationDistanceCalculator
+from gtfs_traversal.station_facts import StationFacts
+
+
+QUIT_AT = 10
+TRACE_MEMORY = False
 
 
 class Traverser(Solver):
@@ -38,6 +44,22 @@ class Traverser(Solver):
                     if int((num_stations * num_completed_stations +
                             self._exp_queue._num_remaining_stops_to_pop) / stations_denominator * 100.0) > \
                             best_progress:
+                        if TRACE_MEMORY:
+                            if best_progress < 1:
+                                tracemalloc.start()
+                            else:
+                                snapshot = tracemalloc.take_snapshot()
+                                top_stats = snapshot.statistics('lineno')
+                                print("[ Top 10 ]")
+                                for stat in top_stats[:10]:
+                                    print(stat)
+                                # print('The CPU usage is: ', psutil.cpu_percent(4))
+                                # # Getting all memory using os.popen()
+                                # total_memory, used_memory, free_memory = map(
+                                #     int, os.popen('free -t -m').readlines()[-1].split()[1:])
+                                #
+                                # # Memory usage
+                                # print("RAM memory % used:", round((used_memory / total_memory) * 100, 2))
                         best_progress = int((num_stations * num_completed_stations +
                                              self._exp_queue._num_remaining_stops_to_pop) / stations_denominator *
                                             100.0)
@@ -45,38 +67,23 @@ class Traverser(Solver):
                         #  prunable nodes, number of expansions
                         print(best_progress, datetime.now() - self._initialization_time, self._exp_queue.len(),
                               len(self._progress_dict), len(self.prunable_nodes()), total_num_expansions)
+                        if QUIT_AT and best_progress >= QUIT_AT:
+                            quit()
                 if num_expansions % self._expansions_to_prune == 0:
                     num_expansions = 0
                     self.prune_progress_dict()
 
         return known_best_time, self._progress_dict, self._start_time
 
-    def _get_nearest_endpoint_finder(self):
-        return NearestEndpointFinder(
-            data_munger=self._data_munger, progress_between_pruning_progress_dict=self._expansions_to_prune,
-            prune_thoroughness=self._prune_severity, stop_join_string=self._stop_join_string,
-            transfer_duration_seconds=self._transfer_duration_seconds,
-            transfer_route=self._transfer_route, walk_route=self._walk_route,
-            walk_speed_mph=self._walk_speed_mph, end_date=self._end_date,
-            route_types_to_solve=self._route_types_to_solve, stops_to_solve=self._stops_to_solve)
+    def _get_station_facts(self):
+        if self._station_facts is not None:
+            return self._station_facts
 
-    def _get_nearest_station_finder(self):
-        return NearestStationFinder(
-            data_munger=self._data_munger, progress_between_pruning_progress_dict=self._expansions_to_prune,
-            prune_thoroughness=self._prune_severity, stop_join_string=self._stop_join_string,
-            transfer_duration_seconds=self._transfer_duration_seconds,
-            transfer_route=self._transfer_route, walk_route=self._walk_route,
-            walk_speed_mph=self._walk_speed_mph, end_date=self._end_date,
-            route_types_to_solve=self._route_types_to_solve, stops_to_solve=self._stops_to_solve)
-
-    def _get_station_distance_calculator(self):
-        return StationDistanceCalculator(
-            data_munger=self._data_munger, progress_between_pruning_progress_dict=self._expansions_to_prune,
-            prune_thoroughness=self._prune_severity, stop_join_string=self._stop_join_string,
-            transfer_duration_seconds=self._transfer_duration_seconds,
-            transfer_route=self._transfer_route, walk_route=self._walk_route,
-            walk_speed_mph=self._walk_speed_mph, end_date=self._end_date,
-            route_types_to_solve=self._route_types_to_solve, stops_to_solve=None)
+        self._station_facts = StationFacts(
+            self._data_munger, self._end_date, self._stop_join_string, self._transfer_duration_seconds,
+            self._transfer_route, self._walk_route, self._walk_speed_mph,
+        )
+        return self._station_facts
 
     def initialize_progress_dict(self, begin_time):
         progress_dict = dict()
