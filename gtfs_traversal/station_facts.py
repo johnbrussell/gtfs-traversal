@@ -21,7 +21,7 @@ class StationFacts:
         self._unfinished_search_dict = dict()
 
     def _get_increased_max_search_time(self, max_search_time, origin):
-        max_search_time = max(max_search_time, self._unfinished_search_dict.get(origin, 0) * 4)
+        max_search_time = max(max_search_time, min(self._unfinished_search_dict.get(origin, 0) ** 1.25, 60*60*24*3))
         self._unfinished_search_dict[origin] = max_search_time
         return max_search_time
 

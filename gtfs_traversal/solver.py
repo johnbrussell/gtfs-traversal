@@ -463,9 +463,9 @@ class Solver:
 
         max_search_time = best_known_time - progress.duration
         if location.location not in self._data_munger.get_unique_stops_to_solve():
-            max_search_time = max_search_time / 40
+            max_search_time = max_search_time / 59.999
         else:
-            max_search_time = max_search_time / 40
+            max_search_time = max_search_time / 59.999
 
         is_on = True
         if is_on:
