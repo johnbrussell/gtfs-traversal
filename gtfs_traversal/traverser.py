@@ -11,13 +11,14 @@ from gtfs_traversal.solver import Solver
 from gtfs_traversal.station_facts import StationFacts
 
 
-QUIT_AT = 10
+QUIT_AT = None
 TRACE_MEMORY = False
 
 
 class Traverser(Solver):
     def find_solution(self, begin_time, known_best_time, print_analytics=False):
         self.initialize_progress_dict(begin_time)
+        print(f"Solving {len(self._data_munger.get_unique_stops_to_solve())} stops")
         self._exp_queue = ExpansionQueue(len(self._data_munger.get_unique_stops_to_solve()), self._stop_join_string)
         if len(self._progress_dict) > 0:
             self._exp_queue.add(self._progress_dict.keys())

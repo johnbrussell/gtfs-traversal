@@ -6,13 +6,16 @@ CACHE_TRIP = "cached"
 
 
 class StationDistanceCalculator(NearestStationFinder):
-    def travel_time_secs(self, origin, destination, known_times, analysis_start_time):
+    def travel_time_secs(self, origin, destination, known_times, analysis_start_time, limit_time=None):
         self._stops_to_solve = [destination]
         self._storage["known"] = known_times
         self._storage["destination"] = destination
         self._storage["dict"] = {}
 
-        known_best_time = self._find_travel_time_secs(origin, analysis_start_time)
+        if limit_time:
+            known_best_time = self._find_travel_time_secs_with_limit(origin, analysis_start_time, limit_time + 0.0001)
+        else:
+            known_best_time = self._find_travel_time_secs(origin, analysis_start_time)
 
         solution_dict = {k: v for k, v in self._storage["dict"].items() if
                          k == self._storage["destination"] or v < known_best_time}
@@ -23,17 +26,13 @@ class StationDistanceCalculator(NearestStationFinder):
         if known_best_time is None:
             return
         for location, progress in self._progress_dict.items():
-            if progress.duration < known_best_time and \
-                    location.location in self._data_munger.get_unique_stops_to_solve():
+            if (progress.duration < known_best_time and
+                    location.location in self._data_munger.get_unique_stops_to_solve()) or \
+                    (progress.duration == known_best_time and location.location == self._storage["destination"]):
                 if location.location not in self._storage["dict"]:
                     self._storage["dict"][location.location] = known_best_time
                 self._storage["dict"][location.location] = min(self._storage["dict"][location.location],
                                                                progress.duration)
-
-        if self._storage["destination"] not in self._storage["dict"]:
-            self._storage["dict"][self._storage["destination"]] = known_best_time
-        self._storage["dict"][self._storage["destination"]] = min(
-            self._storage["dict"][self._storage["destination"]], known_best_time)
 
     def _get_initial_unsolved_string(self):
         if self._initial_unsolved_string is None:

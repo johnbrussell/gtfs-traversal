@@ -56,7 +56,9 @@ class NearestStationFinder(Solver):
 
     def _find_travel_time_secs(self, origin, analysis_start_time):
         best_travel_time = None
+        return self._find_travel_time_secs_with_limit(origin, analysis_start_time, best_travel_time)
 
+    def _find_travel_time_secs_with_limit(self, origin, analysis_start_time, best_travel_time):
         departure_time = self._find_next_departure_time(origin, analysis_start_time)
         while departure_time is not None:
             best_travel_time = self._find_next_travel_time_secs(departure_time, origin, best_travel_time)

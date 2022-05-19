@@ -55,9 +55,10 @@ if __name__ == "__main__":
                              route_types_to_solve=analysis.route_types, stops_to_solve=None)
 
     traverser = Traverser(end_date=analysis.end_date, route_types_to_solve=analysis.route_types, stops_to_solve=None,
-                          data_munger=data_munger, progress_between_pruning_progress_dict=500, prune_thoroughness=.005,
-                          stop_join_string=STOP_JOIN_STRING, transfer_duration_seconds=TRANSFER_DURATION_SECONDS,
-                          transfer_route=TRANSFER_ROUTE, walk_route=WALK_ROUTE, walk_speed_mph=WALK_SPEED_MPH)
+                          data_munger=data_munger, progress_between_pruning_progress_dict=10000,
+                          prune_thoroughness=.001, stop_join_string=STOP_JOIN_STRING,
+                          transfer_duration_seconds=TRANSFER_DURATION_SECONDS, transfer_route=TRANSFER_ROUTE,
+                          walk_route=WALK_ROUTE, walk_speed_mph=WALK_SPEED_MPH)
 
     best_time = None
     best_progress_dictionary = None

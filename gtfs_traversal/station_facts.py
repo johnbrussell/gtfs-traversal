@@ -18,6 +18,12 @@ class StationFacts:
         self._time_between_stations_dict = dict()
         self._time_to_nearest_endpoint_dict = dict()
         self._time_to_nearest_solution_station_dict = dict()
+        self._unfinished_search_dict = dict()
+
+    def _get_increased_max_search_time(self, max_search_time, origin):
+        max_search_time = max(max_search_time, self._unfinished_search_dict.get(origin, 0) * 4)
+        self._unfinished_search_dict[origin] = max_search_time
+        return max_search_time
 
     def _get_nearest_endpoint_finder(self):
         return NearestEndpointFinder(
@@ -73,6 +79,39 @@ class StationFacts:
     def known_time_to_nearest_solution_station(self, origin):
         return self._time_to_nearest_solution_station_dict.get(origin, 0)
 
+    def _perform_station_time_analysis(self, origin, destination, max_search_time, after_time, repeat, solution,
+                                       should_save_result):
+        if destination in self._time_between_stations_dict[origin] or \
+                destination not in self._data_munger.get_unique_stops_to_solve():
+            return
+
+        if should_save_result:
+            travel_time_dict = self._get_station_distance_calculator().travel_time_secs(
+                origin, destination, self._time_between_stations_dict, after_time, max_search_time)
+        else:
+            travel_time_dict = {}
+        if should_save_result and destination not in travel_time_dict:
+            print("".join([repeat, "unfinished travel time dict"]), len(travel_time_dict),
+                  "".join([origin, solution]), destination, "max travel time was:", max_search_time)
+        for dict_destination, travel_time in travel_time_dict.items():
+            if travel_time is not None:
+                self._time_between_stations_dict[origin][dict_destination] = travel_time
+                if dict_destination == destination:
+                    print("".join([repeat, "time between stations"]), len(travel_time_dict),
+                          "".join([origin, solution]), dict_destination, travel_time, max_search_time)
+                    self._unfinished_search_dict[origin] = travel_time
+            else:
+                self._time_between_stations_dict[origin][dict_destination] = 0
+                print("aborting time to station", "".join([origin, solution]), dict_destination, after_time)
+
+        if travel_time_dict:
+            travel_time_dict = {k: v for k, v in travel_time_dict.items() if v is not None}
+            self._time_to_nearest_solution_station_dict[origin] = min(travel_time_dict.values())
+            if any(v in self._data_munger.get_endpoint_solution_stops(after_time) for v in travel_time_dict.values()):
+                endpoint_dict = {k: v for k, v in travel_time_dict.items() if
+                                 v in self._data_munger.get_endpoint_solution_stops(after_time)}
+                self._time_to_nearest_endpoint_dict[origin] = min(endpoint_dict.values())
+
     def time_to_nearest_endpoint(self, origin, after_time):
         if origin not in self._time_to_nearest_endpoint_dict:
             travel_time = self._get_nearest_endpoint_finder().travel_time_secs_to_nearest_endpoint(
@@ -100,35 +139,34 @@ class StationFacts:
 
         return self._time_to_nearest_solution_station_dict.get(origin, 0)
 
-    def time_to_station(self, origin, destination, after_time, avoid_calculation=False):
-        if origin not in self._time_between_stations_dict:
-            self._time_between_stations_dict[origin] = {}
+    def time_to_station(self, subject, destination, farthest_station_from_destination, after_time,
+                        avoid_calculation=False, max_search_time=0):
+        if subject not in self._time_between_stations_dict:
+            if not avoid_calculation:
+                self._time_between_stations_dict[subject] = {}
             repeat = ""
         else:
             repeat = "repeat "
-        if origin == destination:
-            self._time_between_stations_dict[origin][destination] = 0
-            if not repeat:
-                print("".join([repeat, "time between stations"]),
-                      len(self._time_between_stations_dict[origin]), origin, destination, 0)
+        solution = " (solution)" if subject in self._data_munger.get_unique_stops_to_solve() else ""
+        if subject == destination:
+            if subject not in self._time_between_stations_dict:
+                self._time_between_stations_dict[subject] = {}
+            self._time_between_stations_dict[subject][destination] = 0
+            # if not repeat:
+            #     print("".join([repeat, "time between stations"]),
+            #           len(self._time_between_stations_dict[origin]),
+            #           "".join([origin, solution]), destination, 0, max_search_time)
             return 0
-        if not avoid_calculation and destination not in self._time_between_stations_dict[origin]:
-            travel_time_dict = self._get_station_distance_calculator().travel_time_secs(
-                origin, destination, self._time_between_stations_dict, after_time)
-            for dict_destination, travel_time in travel_time_dict.items():
-                if travel_time is not None:
-                    self._time_between_stations_dict[origin][dict_destination] = travel_time
-                    if dict_destination == destination:
-                        print("".join([repeat, "time between stations"]),
-                              len(self._time_between_stations_dict[origin]), origin, dict_destination, travel_time)
-                else:
-                    self._time_between_stations_dict[origin][dict_destination] = 0
-                    print("aborting time to station", origin, dict_destination, after_time)
 
-            travel_time_dict = {k: v for k, v in travel_time_dict.items() if v is not None}
-            self._time_to_nearest_solution_station_dict[origin] = min(travel_time_dict.values())
-            if any(v in self._data_munger.get_endpoint_solution_stops(after_time) for v in travel_time_dict.values()):
-                endpoint_dict = {k: v for k, v in travel_time_dict.items() if
-                                 v in self._data_munger.get_endpoint_solution_stops(after_time)}
-                self._time_to_nearest_endpoint_dict[origin] = min(endpoint_dict.values())
-        return self._time_between_stations_dict.get(origin, 0).get(destination, 0)
+        max_known_time_from_origin = self._unfinished_search_dict.get(subject, 0)
+
+        # The original fast implementation validated that max_search_time was greater than max_known_time_from_origin
+        #  and if so ran perform_station_time_analysis for origin -> destination and destination -> alt origin
+        if max_search_time > max_known_time_from_origin and not avoid_calculation:
+            self._get_increased_max_search_time(max_search_time, subject)
+            max_search_time = self._get_increased_max_search_time(max_search_time, destination)
+            self._perform_station_time_analysis(destination, farthest_station_from_destination,
+                                                max_search_time, after_time, repeat, solution, max_search_time >= 120)
+
+        return self._time_between_stations_dict.get(subject, {}).get(
+            destination, self._unfinished_search_dict.get(subject, 0))
