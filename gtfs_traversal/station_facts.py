@@ -92,13 +92,13 @@ class StationFacts:
             travel_time_dict = {}
         if should_save_result and destination not in travel_time_dict:
             print("".join([repeat, "unfinished travel time dict"]), len(travel_time_dict),
-                  "".join([origin, solution]), destination, "max travel time was:", max_search_time)
+                  "".join([origin, solution]), "max travel time was:", max_search_time)
         for dict_destination, travel_time in travel_time_dict.items():
             if travel_time is not None:
                 self._time_between_stations_dict[origin][dict_destination] = travel_time
                 if dict_destination == destination:
                     print("".join([repeat, "time between stations"]), len(travel_time_dict),
-                          "".join([origin, solution]), dict_destination, travel_time, max_search_time)
+                          "".join([origin, solution]), travel_time, f"({dict_destination})", max_search_time)
                     self._unfinished_search_dict[origin] = travel_time
             else:
                 self._time_between_stations_dict[origin][dict_destination] = 0
