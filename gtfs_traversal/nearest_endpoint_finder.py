@@ -10,7 +10,8 @@ class NearestEndpointFinder(NearestStationFinder):
         self._storage["destination"] = list(
             self._data_munger.get_endpoint_solution_stops(analysis_start_time).copy())[0]
 
-        return self._find_travel_time_secs(origin, analysis_start_time)
+        return self._find_travel_time_secs(origin, analysis_start_time,
+                                           self._data_munger._get_buffered_analysis_end_time())
 
     def _is_solution(self, location):
         return location.location in self._data_munger.get_endpoint_solution_stops(self._start_time)

@@ -19,7 +19,8 @@ class NearestStationFinder(Solver):
         self._storage["known"] = known
         self._storage["destination"] = list(self._data_munger.get_unique_stops_to_solve().copy())[0]
 
-        return self._find_travel_time_secs(origin, analysis_start_time)
+        return self._find_travel_time_secs(origin, analysis_start_time,
+                                           self._data_munger._get_buffered_analysis_end_time())
 
     def _announce_solution(self, new_progress):
         pass
@@ -54,13 +55,15 @@ class NearestStationFinder(Solver):
         self._extract_relevant_data_from_progress_dict(known_best_time)
         return known_best_time
 
-    def _find_travel_time_secs(self, origin, analysis_start_time):
+    def _find_travel_time_secs(self, origin, analysis_start_time, latest_start_time):
         best_travel_time = None
-        return self._find_travel_time_secs_with_limit(origin, analysis_start_time, best_travel_time)
+        return self._find_travel_time_secs_with_limit(origin, analysis_start_time, best_travel_time, latest_start_time)
 
-    def _find_travel_time_secs_with_limit(self, origin, analysis_start_time, best_travel_time):
+    def _find_travel_time_secs_with_limit(self, origin, analysis_start_time, best_travel_time, latest_start_time):
         departure_time = self._find_next_departure_time(origin, analysis_start_time)
         while departure_time is not None:
+            if departure_time > latest_start_time:
+                break
             best_travel_time = self._find_next_travel_time_secs(departure_time, origin, best_travel_time)
             departure_time = self._find_next_departure_time(origin, departure_time + timedelta(seconds=1))
 

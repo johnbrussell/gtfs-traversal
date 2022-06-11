@@ -6,16 +6,18 @@ CACHE_TRIP = "cached"
 
 
 class StationsFinder(StationDistanceCalculator):
-    def travel_time_secs(self, origin, destination, known_times, analysis_start_time, limit_time=None):
+    def travel_time_secs(self, origin, destination, known_times, analysis_start_time, latest_start_time,
+                         limit_time=None):
         self._stops_to_solve = [destination]
         self._storage["known"] = known_times
         self._storage["destination"] = destination
         self._storage["dict"] = {}
 
         if limit_time:
-            known_best_time = self._find_travel_time_secs_with_limit(origin, analysis_start_time, limit_time + 0.0001)
+            known_best_time = self._find_travel_time_secs_with_limit(origin, analysis_start_time, limit_time + 0.0001,
+                                                                     latest_start_time)
         else:
-            known_best_time = self._find_travel_time_secs(origin, analysis_start_time)
+            known_best_time = self._find_travel_time_secs(origin, analysis_start_time, latest_start_time)
 
         solution_dict = {k: v for k, v in self._storage["dict"].items() if
                          k == self._storage["destination"] or v < known_best_time}

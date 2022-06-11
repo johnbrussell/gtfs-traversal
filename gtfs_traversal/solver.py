@@ -436,16 +436,17 @@ class Solver:
             return progress.duration + progress.minimum_remaining_time
 
         unvisited_stations = self._get_unvisited_station_names(location.unvisited)
+        current_time = self._start_time + timedelta(seconds=progress.duration)
 
         max_time_to_known_station = max(
-            [station_facts.time_to_station(location.location, s, None, self._start_time, avoid_calculation=True) for
+            [station_facts.known_time_between(location.location, s, current_time) for
              s in unvisited_stations])
         min_time_to_known_station = min(
-            [station_facts.time_to_station(location.location, s, None, self._start_time, avoid_calculation=True) for
+            [station_facts.known_time_between(location.location, s, current_time) for
              s in unvisited_stations])
         max_time_within_known_stations = max(
             max(
-                station_facts.time_to_station(s1, s2, None, self._start_time, avoid_calculation=True)
+                station_facts.known_time_between(s1, s2, current_time)
                 for s1 in unvisited_stations
             ) for s2 in unvisited_stations
         )
@@ -461,6 +462,8 @@ class Solver:
         if station_facts is None:
             return progress.duration + progress.minimum_remaining_time
 
+        current_time = self._start_time + timedelta(seconds=progress.duration)
+        latest_start_time = current_time + timedelta(seconds=best_known_time)
         max_search_time = best_known_time - progress.duration
         if location.location not in self._data_munger.get_unique_stops_to_solve():
             max_search_time = max_search_time / 59.999
@@ -475,7 +478,7 @@ class Solver:
                 visited_stations = [s for s in self._data_munger.get_unique_stops_to_solve() if
                                     s not in unvisited_stations]
                 unknown_stations = [s for s in unvisited_stations if
-                                    not station_facts.know_time_between(location.location, s)]
+                                    not station_facts.know_time_between(location.location, s, current_time)]
                 if unknown_stations:
                     all_coordinates = self._data_munger.get_all_stop_coordinates()
                     # if location.location in self._data_munger.get_unique_stops_to_solve():
@@ -494,7 +497,7 @@ class Solver:
 
                     station_facts.time_to_station(location.location, station_to_calculate,
                                                   alternate_station_to_calculate, self._start_time,
-                                                  max_search_time=max_search_time)
+                                                  latest_start_time, max_search_time=max_search_time)
 
         return self._minimum_known_possible_duration_with_travel_time_to_unvisited(location, progress)
 
@@ -505,25 +508,26 @@ class Solver:
             return progress.duration + progress.minimum_remaining_time
 
         unvisited_stations = self._get_unvisited_station_names(location.unvisited)
+        current_time = self._start_time + timedelta(seconds=progress.duration)
 
         time = 0
         station_1 = None
         station_2 = None
         for s1 in unvisited_stations:
             for s2 in unvisited_stations:
-                if station_facts.time_to_station(s1, s2, None, self._start_time, avoid_calculation=True) > time:
+                if station_facts.known_time_between(s1, s2, current_time) > time:
                     station_1 = s1
                     station_2 = s2
-                    time = station_facts.time_to_station(s1, s2, None, self._start_time, avoid_calculation=True)
+                    time = station_facts.known_time_between(s1, s2, current_time)
 
         return progress.duration + station_facts.known_time_to_nearest_solution_station(location.location) + max(
             min(
-                station_facts.time_to_station(station_1, station_2, None, None, avoid_calculation=True) +
-                station_facts.time_to_station(station_2, station_3, None, None, avoid_calculation=True),
-                station_facts.time_to_station(station_2, station_3, None, None, avoid_calculation=True) +
-                station_facts.time_to_station(station_3, station_1, None, None, avoid_calculation=True),
-                station_facts.time_to_station(station_3, station_1, None, None, avoid_calculation=True) +
-                station_facts.time_to_station(station_1, station_2, None, None, avoid_calculation=True),
+                station_facts.known_time_between(station_1, station_2, current_time) +
+                station_facts.known_time_between(station_2, station_3, current_time),
+                station_facts.known_time_between(station_2, station_3, current_time) +
+                station_facts.known_time_between(station_3, station_1, current_time),
+                station_facts.known_time_between(station_3, station_1, current_time) +
+                station_facts.known_time_between(station_1, station_2, current_time),
             )
             for station_3 in unvisited_stations
         )
