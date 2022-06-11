@@ -145,11 +145,15 @@ class StationFacts:
 
         if travel_time_dict:
             travel_time_dict = {k: v for k, v in travel_time_dict.items() if v is not None}
-            self._time_to_nearest_solution_station_dict[origin] = min(travel_time_dict.values())
+            self._time_to_nearest_solution_station_dict[origin] = min(
+                min(travel_time_dict.values()),
+                self._time_to_nearest_solution_station_dict.get(origin, min(travel_time_dict.values())))
             if any(v in self._data_munger.get_endpoint_solution_stops(after_time) for v in travel_time_dict.values()):
                 endpoint_dict = {k: v for k, v in travel_time_dict.items() if
                                  v in self._data_munger.get_endpoint_solution_stops(after_time)}
-                self._time_to_nearest_endpoint_dict[origin] = min(endpoint_dict.values())
+                self._time_to_nearest_endpoint_dict[origin] = min(
+                    min(endpoint_dict.values()),
+                    self._time_to_nearest_endpoint_dict.get(origin, min(endpoint_dict.values())))
 
     def time_to_nearest_endpoint(self, origin, after_time):
         if origin not in self._time_to_nearest_endpoint_dict:

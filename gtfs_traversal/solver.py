@@ -466,9 +466,9 @@ class Solver:
         latest_start_time = current_time + timedelta(seconds=best_known_time)
         max_search_time = best_known_time - progress.duration
         if location.location not in self._data_munger.get_unique_stops_to_solve():
-            max_search_time = max_search_time / 59.999
+            max_search_time = max_search_time / 59.9
         else:
-            max_search_time = max_search_time / 59.999
+            max_search_time = max_search_time / 59.9
 
         is_on = True
         if is_on:
@@ -501,14 +501,15 @@ class Solver:
         if station_facts is None:
             return progress.duration + progress.minimum_remaining_time
 
-        unvisited_stations = self._get_unvisited_station_names(location.unvisited)
+        unvisited_stations_and_current_station = self._get_unvisited_station_names(location.unvisited)
+        unvisited_stations_and_current_station.append(location.location)
         current_time = self._start_time + timedelta(seconds=progress.duration)
 
         time = 0
         station_1 = None
         station_2 = None
-        for s1 in unvisited_stations:
-            for s2 in unvisited_stations:
+        for s1 in unvisited_stations_and_current_station:
+            for s2 in unvisited_stations_and_current_station:
                 if station_facts.known_time_between(s1, s2, current_time) > time:
                     station_1 = s1
                     station_2 = s2
@@ -523,7 +524,7 @@ class Solver:
                 station_facts.known_time_between(station_3, station_1, current_time) +
                 station_facts.known_time_between(station_1, station_2, current_time),
             )
-            for station_3 in unvisited_stations
+            for station_3 in unvisited_stations_and_current_station
         )
 
     def _node_is_valid(self, node, best_solution_duration):
