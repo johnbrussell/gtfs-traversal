@@ -475,23 +475,17 @@ class Solver:
             if location.arrival_route != self._transfer_route and \
                     location.arrival_route != self._walk_route:
                 unvisited_stations = self._get_unvisited_station_names(location.unvisited)
-                visited_stations = [s for s in self._data_munger.get_unique_stops_to_solve() if
-                                    s not in unvisited_stations]
                 unknown_stations = [s for s in unvisited_stations if
                                     not station_facts.know_time_between(location.location, s, current_time)]
                 if unknown_stations:
                     all_coordinates = self._data_munger.get_all_stop_coordinates()
-                    # if location.location in self._data_munger.get_unique_stops_to_solve():
-                    #     destination_determination_fcn = max
-                    # else:
-                    #     destination_determination_fcn = min
 
                     station_to_calculate = max(
                         unknown_stations, key=lambda x: self._walk_time_seconds(
                             all_coordinates[location.location].lat, all_coordinates[x].lat,
                             all_coordinates[location.location].long, all_coordinates[x].long))
                     alternate_station_to_calculate = max(
-                        visited_stations, key=lambda x: self._walk_time_seconds(
+                        self._data_munger.get_unique_stops_to_solve(), key=lambda x: self._walk_time_seconds(
                             all_coordinates[station_to_calculate].lat, all_coordinates[x].lat,
                             all_coordinates[station_to_calculate].long, all_coordinates[x].long))
 

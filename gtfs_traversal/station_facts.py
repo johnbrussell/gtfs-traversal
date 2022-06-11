@@ -1,3 +1,5 @@
+from datetime import timedelta
+
 from gtfs_traversal.nearest_endpoint_finder import NearestEndpointFinder
 from gtfs_traversal.nearest_station_finder import NearestStationFinder
 from gtfs_traversal.station_distance_calculator import StationDistanceCalculator
@@ -104,6 +106,9 @@ class StationFacts:
         if destination in self._time_between_stations_dict[origin]:
             if latest_start_time <= self._latest_start_time_dict[origin][destination]:
                 return
+            else:
+                latest_start_time = max(latest_start_time, self._latest_start_time_dict[origin][destination] +
+                                        timedelta(hours=1))
             # if after_time >= self._latest_start_time_dict[origin][destination]:
             #     return
             # I don't think the above line is useful?  Seems harmful?
@@ -119,13 +124,13 @@ class StationFacts:
                   "".join([origin, solution]), destination, "max travel time was:", max_search_time, after_time,
                   latest_start_time)
 
-        if not travel_time_dict:
-            for dest in self._latest_start_time_dict[origin].keys():
-                self._latest_start_time_dict[origin][dest] = latest_start_time
+        for dest in self._latest_start_time_dict[origin].keys():
+            self._latest_start_time_dict[origin][dest] = latest_start_time
 
         for dict_destination, travel_time in travel_time_dict.items():
             if travel_time is not None:
-                self._time_between_stations_dict[origin][dict_destination] = travel_time
+                self._time_between_stations_dict[origin][dict_destination] = min(
+                    self._time_between_stations_dict[origin].get(dict_destination, travel_time), travel_time)
                 self._latest_start_time_dict[origin][dict_destination] = latest_start_time
                 if dict_destination == destination:
                     print("".join([repeat, "time between stations"]), len(travel_time_dict),
