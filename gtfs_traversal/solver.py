@@ -21,7 +21,6 @@ class Solver:
         self._prune_severity = prune_thoroughness
         self._string_shortener = StringShortener()
 
-        self._best_duration = None
         self._exp_queue = None
         self._initial_unsolved_string = None
         self._initialization_time = datetime.now()
@@ -39,7 +38,6 @@ class Solver:
         self._walking_coordinates = None
 
         self._data_munger = data_munger
-        # print(self.__class__.__name__, hex(id(self._data_munger)))
         self._nearest_endpoint_finder = None
         self._nearest_station_finder = None
         self._station_distance_calculator = None
@@ -140,10 +138,18 @@ class Solver:
         new_minimum_remaining_travel_time = self._data_munger.get_minimum_remaining_time(new_unvisited_stops,
                                                                                          self._start_time)
 
+        station_facts = self._get_station_facts()
+        if station_facts is None:
+            new_minimum_remaining_any_path_travel_time = 0
+        else:
+            new_minimum_remaining_any_path_travel_time = self._data_munger.get_minimum_remaining_any_path_time(
+                new_unvisited_stops, self._start_time, station_facts.get_nearest_different_station_finder())
+
         new_minimum_remaining_transfer_time = \
             self._data_munger.get_minimum_remaining_transfers(location.arrival_route, new_unvisited_stops) * \
             self._transfer_duration_seconds
-        return new_minimum_remaining_travel_time + new_minimum_remaining_transfer_time
+        return new_minimum_remaining_travel_time + new_minimum_remaining_transfer_time + \
+            new_minimum_remaining_any_path_travel_time
 
     def _get_new_nodes(self, location_status, known_best_time):
         if location_status.arrival_route == self._transfer_route:
@@ -463,12 +469,12 @@ class Solver:
             return progress.duration + progress.minimum_remaining_time
 
         current_time = self._start_time + timedelta(seconds=progress.duration)
-        latest_start_time = current_time + timedelta(seconds=best_known_time)
-        max_search_time = best_known_time - progress.duration
-        if location.location not in self._data_munger.get_unique_stops_to_solve():
-            max_search_time = max_search_time / 59.9
-        else:
-            max_search_time = max_search_time / 59.9
+        latest_start_time = self._start_time + timedelta(seconds=best_known_time)
+        max_search_time = 10/9  # best_known_time - progress.duration
+        # if location.location not in self._data_munger.get_unique_stops_to_solve():
+        #     max_search_time = max_search_time / 3
+        # else:
+        #     max_search_time = max_search_time / 3
 
         is_on = True
         if is_on:
@@ -480,10 +486,30 @@ class Solver:
                 if unknown_stations:
                     all_coordinates = self._data_munger.get_all_stop_coordinates()
 
-                    station_to_calculate = max(
-                        unknown_stations, key=lambda x: self._walk_time_seconds(
+                    station_to_calculate = min(
+                        self._data_munger.get_unique_stops_to_solve(), key=lambda x: self._walk_time_seconds(
                             all_coordinates[location.location].lat, all_coordinates[x].lat,
                             all_coordinates[location.location].long, all_coordinates[x].long))
+
+                    if location.location in self._data_munger.get_unique_stops_to_solve() or \
+                            station_facts.know_time_between(location.location, station_to_calculate, current_time):
+                        station_to_calculate = max(
+                            unknown_stations, key=lambda x: self._walk_time_seconds(
+                                all_coordinates[location.location].lat, all_coordinates[x].lat,
+                                all_coordinates[location.location].long, all_coordinates[x].long))
+
+                    # Make station_to_calculate the farthest head of the routes serving station_to_calculate
+                    routes_serving_station_to_calculate = self._data_munger.get_routes_at_stop(station_to_calculate)
+                    first_stops_on_routes = [self._data_munger.get_first_stop_on_route(r)
+                                             for r in routes_serving_station_to_calculate]
+                    first_stops_on_routes = [s for s in first_stops_on_routes if
+                                             not station_facts.know_time_between(location.location, s, current_time)]
+                    if first_stops_on_routes:
+                        station_to_calculate = max(
+                            first_stops_on_routes, key=lambda x: self._walk_time_seconds(
+                                all_coordinates[location.location].lat, all_coordinates[x].lat,
+                                all_coordinates[location.location].long, all_coordinates[x].long))
+
                     alternate_station_to_calculate = max(
                         self._data_munger.get_unique_stops_to_solve(), key=lambda x: self._walk_time_seconds(
                             all_coordinates[station_to_calculate].lat, all_coordinates[x].lat,

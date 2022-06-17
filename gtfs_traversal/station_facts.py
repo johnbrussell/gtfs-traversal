@@ -1,8 +1,12 @@
 from datetime import timedelta
 
 from gtfs_traversal.nearest_endpoint_finder import NearestEndpointFinder
+from gtfs_traversal.nearest_different_station_finder import NearestDifferentStationFinder
 from gtfs_traversal.nearest_station_finder import NearestStationFinder
 from gtfs_traversal.station_distance_calculator import StationDistanceCalculator
+
+
+MINIMUM_SEARCH_TIME = 900
 
 
 class StationFacts:
@@ -24,11 +28,26 @@ class StationFacts:
         self._unfinished_search_dict = dict()
 
     def _get_increased_max_search_time(self, max_search_time, origin, destination):
-        max_search_time = max(max_search_time, min(self._unfinished_search_dict.get(origin, 0) ** 1.25, 60*60*24*3))
+        max_search_time = max(max_search_time, min(self._unfinished_search_dict.get(origin, 0) * 30, 60*60*24*3))
         if origin in self._time_between_stations_dict and destination in self._time_between_stations_dict[origin]:
             max_search_time = min(self._time_between_stations_dict[origin][destination], max_search_time)
         self._unfinished_search_dict[origin] = max_search_time
         return max_search_time
+
+    def get_nearest_different_station_finder(self):
+        return NearestDifferentStationFinder(
+            end_date=self._end_date,
+            data_munger=self._data_munger,
+            progress_between_pruning_progress_dict=None,
+            prune_thoroughness=None,
+            route_types_to_solve=[],
+            stop_join_string=self._stop_join_string,
+            stops_to_solve=self._data_munger.get_unique_stops_to_solve(),
+            transfer_duration_seconds=self._transfer_duration,
+            transfer_route=self._transfer_route,
+            walk_route=self._walk_route,
+            walk_speed_mph=self._walk_speed_mph,
+        )
 
     def _get_nearest_endpoint_finder(self):
         return NearestEndpointFinder(
@@ -205,19 +224,17 @@ class StationFacts:
             self._latest_start_time_dict[subject][destination] = 0
             return 0
 
-        max_known_time_from_origin = self._unfinished_search_dict.get(subject, 0)
-
         # The original fast implementation validated that max_search_time was greater than max_known_time_from_origin
         #  and if so ran perform_station_time_analysis for origin -> destination and destination -> alt origin
-        if max_search_time > max_known_time_from_origin:
-            max_search_time_subject = self._get_increased_max_search_time(
-                max_search_time, subject, destination)
-            self._perform_station_time_analysis(subject, destination, max_search_time_subject,
-                                                after_time, repeat, solution, max_search_time >= 300, latest_start_time)
-            max_search_time = self._get_increased_max_search_time(
-                max_search_time, destination, farthest_station_from_destination)
-            self._perform_station_time_analysis(destination, farthest_station_from_destination,
-                                                max_search_time, after_time, destination_repeat, solution,
-                                                max_search_time >= 300, latest_start_time)
+        max_search_time_subject = self._get_increased_max_search_time(
+            max_search_time, subject, destination)
+        self._perform_station_time_analysis(
+            subject, destination, max_search_time_subject, after_time, repeat, solution,
+            max_search_time >= MINIMUM_SEARCH_TIME, latest_start_time)
+        max_search_time = self._get_increased_max_search_time(
+            max_search_time, destination, farthest_station_from_destination)
+        self._perform_station_time_analysis(destination, farthest_station_from_destination,
+                                            max_search_time, after_time, destination_repeat, solution,
+                                            max_search_time >= MINIMUM_SEARCH_TIME, latest_start_time)
 
         return self.known_time_between(subject, destination, after_time)

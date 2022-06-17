@@ -20,7 +20,7 @@ class NearestStationFinder(Solver):
         self._storage["destination"] = list(self._data_munger.get_unique_stops_to_solve().copy())[0]
 
         return self._find_travel_time_secs(origin, analysis_start_time,
-                                           self._data_munger._get_buffered_analysis_end_time())
+                                           self._data_munger.get_buffered_analysis_end_time())
 
     def _announce_solution(self, new_progress):
         pass
@@ -133,16 +133,19 @@ class NearestStationFinder(Solver):
                 progress = ProgressInfo(duration=0, arrival_trip=trip, trip_stop_no=origin_stop_number,
                                         children=None, eliminated=False, expanded=False,
                                         minimum_remaining_time=0, parent=None)
-                transfer_location = LocationStatusInfo(
-                    location=origin, arrival_route=self._transfer_route, unvisited=self._get_initial_unsolved_string())
-                transfer_progress = ProgressInfo(
-                    duration=0, arrival_trip=trip, trip_stop_no=origin_stop_number, children=None, eliminated=False,
-                    expanded=False, minimum_remaining_time=0, parent=None)
+                # transfer_location = LocationStatusInfo(
+                #     location=origin, arrival_route=self._transfer_route, unvisited=self._get_initial_unsolved_string())
+                # transfer_progress = self._initialize_transfer_progress(trip, origin_stop_number)
                 self._progress_dict[location] = progress
-                self._progress_dict[transfer_location] = transfer_progress
+                # self._progress_dict[transfer_location] = transfer_progress
             else:
                 print(f"trip {trip} potentially visits stop {next_stop} multiple times")
         self._start_time = departure_time
+
+    def _initialize_transfer_progress(self, trip, origin_stop_number):
+        return ProgressInfo(
+            duration=0, arrival_trip=trip, trip_stop_no=origin_stop_number, children=None, eliminated=False,
+            expanded=False, minimum_remaining_time=0, parent=None)
 
     def _is_solution(self, location):
         return location.location in self._data_munger.get_unique_stops_to_solve()
