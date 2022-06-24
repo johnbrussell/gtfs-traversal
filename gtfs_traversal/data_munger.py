@@ -1,8 +1,9 @@
 from datetime import datetime, timedelta
+import math
 
 
 class DataMunger:
-    def __init__(self, end_date, route_types_to_solve, stops_to_solve, data, stop_join_string):
+    def __init__(self, end_date, route_types_to_solve, stops_to_solve, data, stop_join_string, walk_speed_mph):
         self.data = data
         self.stop_join_string = stop_join_string
 
@@ -20,6 +21,7 @@ class DataMunger:
         self._trip_time_cache = {}
         self._unique_routes_to_solve = None
         self._unique_stops_to_solve = stops_to_solve
+        self._walk_speed_mph = walk_speed_mph
 
     def first_trip_after(self, earliest_departure_time, route_number, origin_stop_id):
         # hmmm, what is earliest_departure_time, and what if it's after midnight toward the end of the service day?
@@ -446,3 +448,23 @@ class DataMunger:
 
     def is_solution_route(self, route_id):
         return route_id in self.get_unique_routes_to_solve()
+
+    @staticmethod
+    def _to_radians_from_degrees(degrees):
+        return degrees * math.pi / 180
+
+    def walk_time_seconds(self, lat1, lat2, long1, long2):
+        origin_lat = self._to_radians_from_degrees(lat1)
+        origin_long = self._to_radians_from_degrees(long1)
+        dest_lat = self._to_radians_from_degrees(lat2)
+        dest_long = self._to_radians_from_degrees(long2)
+
+        delta_lat = (origin_lat - dest_lat) / 2
+        delta_long = (origin_long - dest_long) / 2
+        delta_lat = math.pow(math.sin(delta_lat), 2)
+        delta_long = math.pow(math.sin(delta_long), 2)
+        origin_lat = math.cos(origin_lat)
+        dest_lat = math.cos(dest_lat)
+        haversine = delta_lat + origin_lat * dest_lat * delta_long
+        haversine = 2 * 3959 * math.asin(math.sqrt(haversine))
+        return haversine * 3600 / self._walk_speed_mph

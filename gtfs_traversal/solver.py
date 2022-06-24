@@ -1,5 +1,6 @@
 import math
 from datetime import datetime, timedelta
+import itertools
 
 from gtfs_traversal.data_structures import *
 from gtfs_traversal.string_shortener import StringShortener
@@ -129,7 +130,7 @@ class Solver:
     def _get_nearest_station_finder(self):
         raise KeyError("must be defined in subclass")
 
-    def _get_new_minimum_remaining_time(self, prior_minimum_remaining_time, prior_location, location):
+    def _get_new_minimum_remaining_time(self, prior_minimum_remaining_time, prior_location, location, known_best_time):
         # Both the travel and transfer parts of this function seem to speed things up.
         if prior_location.unvisited == location.unvisited and prior_location.arrival_route == location.arrival_route:
             return prior_minimum_remaining_time
@@ -139,7 +140,7 @@ class Solver:
                                                                                          self._start_time)
 
         station_facts = self._get_station_facts()
-        if station_facts is None:
+        if station_facts is None or known_best_time is None:
             new_minimum_remaining_any_path_travel_time = 0
         else:
             new_minimum_remaining_any_path_travel_time = self._data_munger.get_minimum_remaining_any_path_time(
@@ -160,9 +161,9 @@ class Solver:
         if location_status.arrival_route == self._walk_route:
             return [transfer_node]
 
-        return [transfer_node, self._get_next_stop_data_for_trip(location_status)]
+        return [transfer_node, self._get_next_stop_data_for_trip(location_status, known_best_time)]
 
-    def _get_next_stop_data_for_trip(self, location_status):
+    def _get_next_stop_data_for_trip(self, location_status, known_best_time):
         progress = self._progress_dict[location_status]
 
         if self._data_munger.is_last_stop_on_route(location_status.location, location_status.arrival_route):
@@ -179,7 +180,8 @@ class Solver:
         new_location = LocationStatusInfo(location=next_stop_id, arrival_route=location_status.arrival_route,
                                           unvisited=new_unvisited_string)
         new_minimum_remaining_time = self._get_new_minimum_remaining_time(progress.minimum_remaining_time,
-                                                                          location_status, new_location)
+                                                                          location_status, new_location,
+                                                                          known_best_time)
         return (
             new_location,
             ProgressInfo(duration=new_duration, arrival_trip=progress.arrival_trip,
@@ -464,62 +466,103 @@ class Solver:
         )
 
     def _minimum_possible_duration_with_travel_time_to_unvisited(self, location, progress, best_known_time):
+        def return_value():
+            return max(
+                self._minimum_known_possible_duration_with_travel_time_to_unvisited(location, progress),
+                self._minimum_possible_duration_within_network(location, progress)
+            )
+
         station_facts = self._get_station_facts()
         if station_facts is None:
-            return progress.duration + progress.minimum_remaining_time
+            return return_value()
 
         current_time = self._start_time + timedelta(seconds=progress.duration)
         latest_start_time = self._start_time + timedelta(seconds=best_known_time)
-        max_search_time = 10/9  # best_known_time - progress.duration
-        # if location.location not in self._data_munger.get_unique_stops_to_solve():
-        #     max_search_time = max_search_time / 3
-        # else:
-        #     max_search_time = max_search_time / 3
 
         is_on = True
         if is_on:
-            if location.arrival_route != self._transfer_route and \
-                    location.arrival_route != self._walk_route:
+            if location.arrival_route != self._transfer_route and location.arrival_route != self._walk_route:
                 unvisited_stations = self._get_unvisited_station_names(location.unvisited)
                 unknown_stations = [s for s in unvisited_stations if
                                     not station_facts.know_time_between(location.location, s, current_time)]
-                if unknown_stations:
-                    all_coordinates = self._data_munger.get_all_stop_coordinates()
 
-                    station_to_calculate = min(
-                        self._data_munger.get_unique_stops_to_solve(), key=lambda x: self._walk_time_seconds(
+                all_coordinates = self._data_munger.get_all_stop_coordinates()
+
+                if not unknown_stations:
+                    unknown_stations = [s for s in self._data_munger.get_unique_stops_to_solve() if
+                                        not station_facts.know_time_between(location.location, s, current_time)]
+                if not unknown_stations:
+                    unknown_stations = [location.location]
+
+                station_to_calculate = max(
+                    unknown_stations, key=lambda x: self._walk_time_seconds(
+                        all_coordinates[location.location].lat, all_coordinates[x].lat,
+                        all_coordinates[location.location].long, all_coordinates[x].long))
+
+                routes_serving_station_to_calculate = self._data_munger.get_routes_at_stop(station_to_calculate)
+                first_stops_on_routes = [self._data_munger.get_first_stop_on_route(r)
+                                         for r in routes_serving_station_to_calculate]
+                first_stops_on_routes.append(station_to_calculate)
+                first_stops_on_routes = [s for s in first_stops_on_routes if
+                                         not station_facts.know_time_between(location.location, s, current_time)]
+                if first_stops_on_routes:
+                    station_to_calculate = max(
+                        first_stops_on_routes, key=lambda x: self._walk_time_seconds(
                             all_coordinates[location.location].lat, all_coordinates[x].lat,
                             all_coordinates[location.location].long, all_coordinates[x].long))
 
-                    if location.location in self._data_munger.get_unique_stops_to_solve() or \
-                            station_facts.know_time_between(location.location, station_to_calculate, current_time):
-                        station_to_calculate = max(
-                            unknown_stations, key=lambda x: self._walk_time_seconds(
-                                all_coordinates[location.location].lat, all_coordinates[x].lat,
-                                all_coordinates[location.location].long, all_coordinates[x].long))
-
-                    # Make station_to_calculate the farthest head of the routes serving station_to_calculate
-                    routes_serving_station_to_calculate = self._data_munger.get_routes_at_stop(station_to_calculate)
-                    first_stops_on_routes = [self._data_munger.get_first_stop_on_route(r)
-                                             for r in routes_serving_station_to_calculate]
-                    first_stops_on_routes = [s for s in first_stops_on_routes if
-                                             not station_facts.know_time_between(location.location, s, current_time)]
-                    if first_stops_on_routes:
-                        station_to_calculate = max(
-                            first_stops_on_routes, key=lambda x: self._walk_time_seconds(
-                                all_coordinates[location.location].lat, all_coordinates[x].lat,
-                                all_coordinates[location.location].long, all_coordinates[x].long))
-
-                    alternate_station_to_calculate = max(
+                if location.location not in self._data_munger.get_unique_stops_to_solve():
+                    closest_station = min(
                         self._data_munger.get_unique_stops_to_solve(), key=lambda x: self._walk_time_seconds(
+                            all_coordinates[location.location].lat, all_coordinates[x].lat,
+                            all_coordinates[location.location].long, all_coordinates[x].long))
+                    if not station_facts.know_time_between(location.location, closest_station, current_time):
+                        station_to_calculate = closest_station
+
+                unknown_stations_from_station_to_calculate = [
+                    s for s in self._data_munger.get_unique_stops_to_solve() if not
+                    station_facts.know_time_between(station_to_calculate, s, current_time)
+                ]
+                if not unknown_stations_from_station_to_calculate:
+                    unknown_stations_from_station_to_calculate = [station_to_calculate]
+
+                alternate_station_to_calculate = max(
+                    unknown_stations_from_station_to_calculate, key=lambda x: self._walk_time_seconds(
+                        all_coordinates[station_to_calculate].lat, all_coordinates[x].lat,
+                        all_coordinates[station_to_calculate].long, all_coordinates[x].long))
+
+                routes_serving_station_to_calculate = self._data_munger.get_routes_at_stop(
+                    alternate_station_to_calculate)
+                first_stops_on_routes = [self._data_munger.get_first_stop_on_route(r)
+                                         for r in routes_serving_station_to_calculate]
+                first_stops_on_routes.append(alternate_station_to_calculate)
+                first_stops_on_routes = [s for s in first_stops_on_routes if
+                                         not station_facts.know_time_between(station_to_calculate, s, current_time)]
+                if first_stops_on_routes:
+                    alternate_station_to_calculate = max(
+                        first_stops_on_routes, key=lambda x: self._walk_time_seconds(
                             all_coordinates[station_to_calculate].lat, all_coordinates[x].lat,
                             all_coordinates[station_to_calculate].long, all_coordinates[x].long))
 
-                    station_facts.time_to_station(location.location, station_to_calculate,
-                                                  alternate_station_to_calculate, self._start_time,
-                                                  latest_start_time, max_search_time=max_search_time)
+                station_facts.time_to_station(location.location, station_to_calculate, alternate_station_to_calculate,
+                                              self._start_time, latest_start_time)
 
-        return self._minimum_known_possible_duration_with_travel_time_to_unvisited(location, progress)
+                unvisited_unknown = [
+                    s for s in self._get_unvisited_station_names(location.unvisited) if
+                    len(station_facts._time_between_stations_dict.get(s, {})) <
+                    len(self._data_munger.get_unique_stops_to_solve())
+                ]
+
+                most_distant_stop_1, most_distant_stop_2 = max(
+                    itertools.product(unvisited_unknown, unvisited_unknown),
+                    key=lambda x: self._walk_time_seconds(
+                        all_coordinates[x[0]].lat, all_coordinates[x[1]].lat,
+                        all_coordinates[x[0]].long, all_coordinates[x[1]].long))
+
+                station_facts.time_to_station(most_distant_stop_1, most_distant_stop_2, most_distant_stop_1,
+                                              self._start_time, latest_start_time, adjust_destinations=True)
+
+        return return_value()
 
     def _minimum_possible_duration_within_network(self, location, progress):
         station_facts = self._get_station_facts()
@@ -573,12 +616,6 @@ class Solver:
                     new_location, new_progress) >= best_solution_duration:
                 return False
             if self._minimum_possible_duration_with_travel_time_to_endpoint(
-                    new_location, new_progress) >= best_solution_duration:
-                return False
-            if self._minimum_known_possible_duration_with_travel_time_to_unvisited(
-                    new_location, new_progress) >= best_solution_duration:
-                return False
-            if self._minimum_possible_duration_within_network(
                     new_location, new_progress) >= best_solution_duration:
                 return False
             if self._minimum_possible_duration_with_travel_time_to_unvisited(

@@ -52,7 +52,8 @@ if __name__ == "__main__":
     data = data._replace(dateTrips=None)
 
     data_munger = DataMunger(end_date=analysis.end_date, data=data, stop_join_string=STOP_JOIN_STRING,
-                             route_types_to_solve=analysis.route_types, stops_to_solve=None)
+                             route_types_to_solve=analysis.route_types, stops_to_solve=None,
+                             walk_speed_mph=WALK_SPEED_MPH)
 
     traverser = Traverser(end_date=analysis.end_date, route_types_to_solve=analysis.route_types, stops_to_solve=None,
                           data_munger=data_munger, progress_between_pruning_progress_dict=10000,
