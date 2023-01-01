@@ -132,7 +132,7 @@ class Solver:
         if prior_location.unvisited == location.unvisited and prior_location.arrival_route == location.arrival_route:
             return prior_minimum_remaining_time
 
-        new_unvisited_stops = self._get_unvisited_station_names(location.unvisited)
+        new_unvisited_stops = list(location.unvisited)
         new_minimum_remaining_travel_time = self._data_munger.get_minimum_remaining_time(new_unvisited_stops,
                                                                                          self._start_time)
 
@@ -267,6 +267,7 @@ class Solver:
 
     @staticmethod
     def _get_unvisited_station_names(unvisited_stations_tuple):
+        # Replaced usages to reduce function calls
         return list(unvisited_stations_tuple)
 
     def _get_walking_coordinates(self):
@@ -437,7 +438,7 @@ class Solver:
         if station_facts is None:
             return progress.duration + progress.minimum_remaining_time
 
-        unvisited_stations = self._get_unvisited_station_names(location.unvisited)
+        unvisited_stations = list(location.unvisited)
         current_time = self._start_time + timedelta(seconds=progress.duration)
 
         max_time_to_known_station = max(
@@ -539,7 +540,7 @@ class Solver:
                                               self._start_time, latest_start_time)
 
                 unvisited_unknown = [
-                    s for s in self._get_unvisited_station_names(location.unvisited) if
+                    s for s in list(location.unvisited) if
                     len(station_facts._time_between_stations_dict.get(s, {})) <
                     len(self._data_munger.get_unique_stops_to_solve())
                 ]
@@ -561,7 +562,7 @@ class Solver:
         if station_facts is None:
             return progress.duration + progress.minimum_remaining_time
 
-        unvisited_stations_and_current_station = self._get_unvisited_station_names(location.unvisited)
+        unvisited_stations_and_current_station = list(location.unvisited)
         unvisited_stations_and_current_station.append(location.location)
         current_time = self._start_time + timedelta(seconds=progress.duration)
 
@@ -661,6 +662,7 @@ class Solver:
 
     @staticmethod
     def _to_radians_from_degrees(degrees):
+        # Replaced usages to reduce function calls
         return degrees * math.pi / 180
 
     def _travel_time_to_nearest_endpoint(self, origin):
@@ -678,10 +680,10 @@ class Solver:
         return station_facts.time_to_nearest_solution_station(origin, self._start_time)
 
     def _walk_time_seconds(self, lat1, lat2, long1, long2):
-        origin_lat = self._to_radians_from_degrees(lat1)
-        origin_long = self._to_radians_from_degrees(long1)
-        dest_lat = self._to_radians_from_degrees(lat2)
-        dest_long = self._to_radians_from_degrees(long2)
+        origin_lat = lat1 * math.pi / 180  # self._to_radians_from_degrees(lat1)
+        origin_long = long1 * math.pi / 180  # self._to_radians_from_degrees(long1)
+        dest_lat = lat2 * math.pi / 180  # self._to_radians_from_degrees(lat2)
+        dest_long = long2 * math.pi / 180  # self._to_radians_from_degrees(long2)
 
         delta_lat = (origin_lat - dest_lat) / 2
         delta_long = (origin_long - dest_long) / 2

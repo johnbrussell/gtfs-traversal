@@ -10,7 +10,7 @@ class ExpansionQueue:
             self.add_node(node)
 
     def add_node(self, node):
-        num_remaining_stops = self._num_remaining_stops(node.unvisited)
+        num_remaining_stops = len(node.unvisited)  # self._num_remaining_stops(node.unvisited)
         if num_remaining_stops == 0:
             return
         if num_remaining_stops not in self._queue:
@@ -20,7 +20,7 @@ class ExpansionQueue:
         self._queue[num_remaining_stops].add(node)
 
     def _handle_empty_queue_at_key(self, key):
-        if self.is_set_empty(self._queue[key]):
+        if not self._queue[key]:  # self.is_set_empty(self._queue[key])
             del self._queue[key]
             self._reset_num_remaining_stops_to_pop()
 
@@ -29,6 +29,7 @@ class ExpansionQueue:
 
     @staticmethod
     def is_set_empty(lst):
+        # Replaced usages to reduce function calls
         return True if not lst else False
 
     def len(self):
@@ -39,6 +40,7 @@ class ExpansionQueue:
 
     @staticmethod
     def _num_remaining_stops(stops_tuple):
+        # Replaced usages to reduce function calls
         return len(stops_tuple)
 
     def pop(self, solver_progress_dict, ordered=True):
@@ -61,7 +63,7 @@ class ExpansionQueue:
             self.remove_key(key)
 
     def remove_key(self, bad_key):
-        num_stops_at_key = self._num_remaining_stops(bad_key.unvisited)
+        num_stops_at_key = len(bad_key.unvisited)  # self._num_remaining_stops(bad_key.unvisited)
 
         # pruning a node that has been expanded
         if num_stops_at_key not in self._queue:

@@ -20,6 +20,8 @@ class Traverser(Solver):
         self.initialize_progress_dict(begin_time)
         print(f"Solving {len(self._data_munger.get_unique_stops_to_solve())} stops")
         print(datetime.now())
+        print("percent complete", "running time", "expansion queue size", "progress dict size",
+              "number of prunable nodes", "total expansions")
         self._exp_queue = ExpansionQueue(len(self._data_munger.get_unique_stops_to_solve()), self._stop_join_string)
         if len(self._progress_dict) > 0:
             self._exp_queue.add(self._progress_dict.keys())
