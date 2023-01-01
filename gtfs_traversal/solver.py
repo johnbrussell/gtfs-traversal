@@ -399,7 +399,6 @@ class Solver:
             if location.location in self._data_munger.get_unique_stops_to_solve():
                 if any(endpoint in location.unvisited for
                         endpoint in self._data_munger.get_endpoint_solution_stops(self._start_time)):
-                    # TODO this code below is currently unreached, but should it have a return?
                     self._travel_time_to_nearest_endpoint(location.location)
         if any(endpoint in location.unvisited for
                endpoint in self._data_munger.get_endpoint_solution_stops(self._start_time)):

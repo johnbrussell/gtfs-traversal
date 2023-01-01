@@ -196,6 +196,7 @@ class StationFacts:
                     self._time_to_nearest_endpoint_dict.get(origin, min(endpoint_dict.values())))
 
     def time_to_nearest_endpoint(self, origin, after_time):
+        # Currently not called; calculated as a derivative of time_to_station
         if origin not in self._time_to_nearest_endpoint_dict:
             travel_time = self._get_nearest_endpoint_finder().travel_time_secs_to_nearest_endpoint(
                 origin, self._time_to_nearest_endpoint_dict, after_time)
@@ -210,6 +211,7 @@ class StationFacts:
         return self._time_to_nearest_endpoint_dict.get(origin, 0)
 
     def time_to_nearest_solution_station(self, origin, after_time):
+        # Currently not called; calculated as a derivative of time_to_station
         if origin not in self._time_to_nearest_solution_station_dict:
             travel_time = self._get_nearest_station_finder().travel_time_secs_to_nearest_solution_station(
                 origin, self._time_to_nearest_solution_station_dict, after_time)
