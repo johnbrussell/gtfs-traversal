@@ -8,7 +8,7 @@ from gtfs_traversal.station_distance_calculator import StationDistanceCalculator
 
 ENDPOINT_MINIMUM = 1
 MINIMUM_SEARCH_TIME = 1
-NUM_SEARCHES_MULTIPLIER = 2
+NUM_SEARCHES_MULTIPLIER = 1
 POWER = 1.5
 
 
@@ -31,18 +31,17 @@ class StationFacts:
         self._time_to_nearest_solution_station_dict = dict()
         self._unfinished_search_dict = dict()
 
-    def _adjust_destination(self, origin, original_destination):
+    def _adjust_destination(self, origin, latest_search_time):
         all_coordinates = self._data_munger.get_all_stop_coordinates()
         destination = max(self._unfinished_search_dict.get(origin, {}).keys(), key=lambda x:
                           self._data_munger.walk_time_seconds(
                               all_coordinates[origin].lat, all_coordinates[x].lat,
-                              all_coordinates[origin].long, all_coordinates[x].long))
+                              all_coordinates[origin].long, all_coordinates[x].long) if
+                          not self.know_time_between(origin, x, latest_search_time) else 0)
 
         if destination not in self._time_between_stations_dict:
             self._time_between_stations_dict[destination] = {}
             self._latest_start_time_dict[destination] = {}
-
-        print(f"adjusted from {origin}-->{original_destination} to {origin}-->{destination}")
 
         return destination
 
@@ -119,12 +118,6 @@ class StationFacts:
         )
 
     def know_time_between(self, origin, destination, at_time):
-        # if origin in self._time_between_stations_dict and \
-        #         destination in self._time_between_stations_dict[origin]:
-        #     print(self._latest_start_time_dict[origin][destination], at_time)
-        #     quit()
-        # The above looks correct.
-
         return origin in self._time_between_stations_dict and \
             destination in self._time_between_stations_dict[origin] and \
             self._latest_start_time_dict[origin][destination] >= at_time
@@ -231,8 +224,10 @@ class StationFacts:
 
     def time_to_station(self, subject, destination, farthest_station_from_destination, after_time, latest_start_time,
                         adjust_destinations=False):
-        if subject == destination:
-            return 0
+        if subject == destination or \
+                (self.know_time_between(subject, destination, latest_start_time) and
+                 self.know_time_between(destination, farthest_station_from_destination, latest_start_time)):
+            return
 
         if subject not in self._time_between_stations_dict:
             self._time_between_stations_dict[subject] = {}
@@ -258,7 +253,7 @@ class StationFacts:
                 max_search_time_subject = 10000
             self._num_searches += 1
             if adjust_destinations:
-                destination = self._adjust_destination(subject, destination)
+                destination = self._adjust_destination(subject, latest_start_time)
             self._perform_station_time_analysis(
                 subject, destination, max_search_time_subject ** POWER, after_time, repeat, solution,
                 latest_start_time)
@@ -269,10 +264,7 @@ class StationFacts:
                 max_search_time = 10000
             self._num_searches += 1
             if adjust_destinations:
-                farthest_station_from_destination = self._adjust_destination(
-                    destination, farthest_station_from_destination)
+                farthest_station_from_destination = self._adjust_destination(destination, latest_start_time)
             self._perform_station_time_analysis(destination, farthest_station_from_destination,
                                                 max_search_time ** POWER, after_time, destination_repeat,
                                                 destination_solution, latest_start_time)
-
-        return self.known_time_between(subject, destination, after_time)
