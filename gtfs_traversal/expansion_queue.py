@@ -33,12 +33,13 @@ class ExpansionQueue:
 
     def len(self):
         length = 0
-        for l in self._queue.values():
-            length += len(l)
+        for ql in self._queue.values():
+            length += len(ql)
         return length
 
-    def _num_remaining_stops(self, stops_string):
-        return len(stops_string.split(self._stop_join_string)) - 2
+    @staticmethod
+    def _num_remaining_stops(stops_tuple):
+        return len(stops_tuple)
 
     def pop(self, solver_progress_dict, ordered=True):
         if ordered:

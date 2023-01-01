@@ -38,10 +38,7 @@ class StationDistanceCalculator(NearestStationFinder):
 
     def _get_initial_unsolved_string(self):
         if self._initial_unsolved_string is None:
-            self._initial_unsolved_string = \
-                self._stop_join_string + self._stop_join_string.join(
-                    self._string_shortener.shorten(stop) for stop in self._stops_to_solve) + \
-                self._stop_join_string
+            self._initial_unsolved_string = tuple(self._stops_to_solve)
         return self._initial_unsolved_string
 
     def _have_cached_data(self, location):

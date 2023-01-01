@@ -73,7 +73,7 @@ class Traverser(Solver):
                             quit()
                 if num_expansions % self._expansions_to_prune == 0:
                     num_expansions = 0
-                    self.prune_progress_dict()
+                    # self.prune_progress_dict()
 
         return known_best_time, self._progress_dict, self._start_time
 
@@ -125,7 +125,7 @@ class Traverser(Solver):
         def ineffectiveness(node):
             # smaller is more ineffective
             transfer_bonus = 10 if node.arrival_route == self._transfer_route else 1
-            return len(node.unvisited.strip(self._stop_join_string).split(self._stop_join_string)) * transfer_bonus
+            return len(node.unvisited) * transfer_bonus
 
         prunable_nodes = self.prunable_nodes()
         num_nodes_to_prune = math.floor(self._prune_severity * float(len(prunable_nodes)))

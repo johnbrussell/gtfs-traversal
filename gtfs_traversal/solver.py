@@ -95,10 +95,9 @@ class Solver:
                               self._is_too_slow(k, v, best_solution_duration, preserve)}
         self._mark_nodes_as_eliminated(nodes_to_eliminate)
 
-    def _eliminate_stops_from_string(self, stops, uneliminated):
-        for stop in stops:
-            uneliminated = self._eliminate_stop_from_string(stop, uneliminated)
-        return uneliminated
+    @staticmethod
+    def _eliminate_stops_from_tuple(stops, uneliminated):
+        return tuple(us for us in uneliminated if us not in stops)
 
     def _eliminate_stop_from_string(self, name, uneliminated):
         return uneliminated.replace(self._add_separators_to_stop_name(self._string_shortener.shorten(name)),
@@ -119,9 +118,7 @@ class Solver:
     def _get_initial_unsolved_string(self):
         if self._initial_unsolved_string is None:
             self._initial_unsolved_string = \
-                self._stop_join_string + self._stop_join_string.join(
-                    self._string_shortener.shorten(stop) for stop in self._data_munger.get_unique_stops_to_solve()) + \
-                self._stop_join_string
+                tuple(self._data_munger.get_unique_stops_to_solve())
         return self._initial_unsolved_string
 
     def _get_nearest_endpoint_finder(self):
@@ -172,13 +169,13 @@ class Solver:
         stop_number = progress.trip_stop_no
         next_stop_no = str(int(stop_number) + 1)
         next_stop_id = self._data_munger.get_next_stop_id(location_status.location, location_status.arrival_route)
-        new_unvisited_string = self._eliminate_stops_from_string(
+        new_unvisited_tuple = self._eliminate_stops_from_tuple(
             [location_status.location, next_stop_id], location_status.unvisited) \
             if self._data_munger.is_solution_route(location_status.arrival_route) else location_status.unvisited
         new_duration = progress.duration + self._data_munger.get_travel_time_between_stops_in_seconds(
             progress.arrival_trip, stop_number, next_stop_no)
         new_location = LocationStatusInfo(location=next_stop_id, arrival_route=location_status.arrival_route,
-                                          unvisited=new_unvisited_string)
+                                          unvisited=new_unvisited_tuple)
         new_minimum_remaining_time = self._get_new_minimum_remaining_time(progress.minimum_remaining_time,
                                                                           location_status, new_location,
                                                                           known_best_time)
@@ -268,11 +265,9 @@ class Solver:
                              minimum_remaining_time=minimum_remaining_time, children=None, expanded=False,
                              eliminated=False))
 
-    def _get_unvisited_station_names(self, unvisited_stations_string):
-        if not unvisited_stations_string.strip(self._stop_join_string):
-            return []
-        new_unvisited_stop_ids = unvisited_stations_string.strip(self._stop_join_string).split(self._stop_join_string)
-        return [self._string_shortener.lengthen(stop_id) for stop_id in new_unvisited_stop_ids]
+    @staticmethod
+    def _get_unvisited_station_names(unvisited_stations_tuple):
+        return list(unvisited_stations_tuple)
 
     def _get_walking_coordinates(self):
         if self._walking_coordinates is None:
@@ -322,7 +317,7 @@ class Solver:
         ]
 
     def _is_solution(self, location):
-        return location.unvisited == self._stop_join_string
+        return location.unvisited == tuple()
 
     @staticmethod
     def _is_too_slow(location, progress_info, best_duration, preserve):
@@ -401,12 +396,11 @@ class Solver:
         is_on = False
         if is_on:
             if location.location in self._data_munger.get_unique_stops_to_solve():
-                if any(self._add_separators_to_stop_name(
-                        self._string_shortener.shorten(endpoint)) in location.unvisited for
+                if any(endpoint in location.unvisited for
                         endpoint in self._data_munger.get_endpoint_solution_stops(self._start_time)):
+                    # TODO this code below is currently unreached, but should it have a return?
                     self._travel_time_to_nearest_endpoint(location.location)
-        if any(self._add_separators_to_stop_name(
-                self._string_shortener.shorten(endpoint)) in location.unvisited for
+        if any(endpoint in location.unvisited for
                endpoint in self._data_munger.get_endpoint_solution_stops(self._start_time)):
             return max([
                 progress.duration + progress.minimum_remaining_time,

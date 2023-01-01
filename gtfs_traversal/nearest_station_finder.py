@@ -74,7 +74,7 @@ class NearestStationFinder(Solver):
 
     def _get_initial_unsolved_string(self):
         if self._initial_unsolved_string is None:
-            self._initial_unsolved_string = self._stop_join_string + "any_solution_stop" + self._stop_join_string
+            self._initial_unsolved_string = tuple(["any_solution_stop"])
         return self._initial_unsolved_string
 
     def _get_nearest_endpoint_finder(self):
