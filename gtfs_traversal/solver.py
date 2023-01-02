@@ -567,10 +567,14 @@ class Solver:
         station_1 = None
         station_2 = None
         for s1, s2 in itertools.product(unvisited_stations_and_current_station, unvisited_stations_and_current_station):
-            if station_facts.known_time_between(s1, s2, current_time) > time:
+            if station_facts.known_time_between(s1, s2, current_time) > time and \
+                    station_facts.known_time_between(s2, s1, current_time) > time:
                 station_1 = s1
                 station_2 = s2
-                time = station_facts.known_time_between(s1, s2, current_time)
+                time = min(
+                    station_facts.known_time_between(s1, s2, current_time),
+                    station_facts.known_time_between(s2, s1, current_time)
+                )
 
         return progress.duration + station_facts.known_time_to_nearest_solution_station(location.location) + max(
             min(
@@ -580,6 +584,12 @@ class Solver:
                 station_facts.known_time_between(station_3, station_1, current_time),
                 station_facts.known_time_between(station_3, station_1, current_time) +
                 station_facts.known_time_between(station_1, station_2, current_time),
+                station_facts.known_time_between(station_3, station_2, current_time) +
+                station_facts.known_time_between(station_2, station_1, current_time),
+                station_facts.known_time_between(station_2, station_1, current_time) +
+                station_facts.known_time_between(station_1, station_3, current_time),
+                station_facts.known_time_between(station_1, station_3, current_time) +
+                station_facts.known_time_between(station_3, station_2, current_time),
             )
             for station_3 in unvisited_stations_and_current_station
         )
