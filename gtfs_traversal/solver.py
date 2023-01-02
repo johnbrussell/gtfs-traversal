@@ -754,6 +754,8 @@ class Solver:
                 return False
 
         if best_solution_duration is not None:
+            if self._is_solution(new_location):
+                return new_progress.duration < best_solution_duration
             if self._minimum_possible_duration(new_progress) >= best_solution_duration:
                 return False
             if self._minimum_possible_duration_with_travel_time_to_network(
