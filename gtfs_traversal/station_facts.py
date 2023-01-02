@@ -75,13 +75,33 @@ class StationFacts:
                                                           adjust_destinations, latest_start_time, after_time,
                                                           destination_repeat, destination_solution)
 
+    def calculate_one_inter_station_travel_time(self, origin, destination, after_time, latest_start_time):
+        if origin == destination or \
+                self.know_time_between(origin, destination, latest_start_time):
+            return
+
+        if origin not in self._time_between_stations_dict:
+            self._time_between_stations_dict[origin] = {}
+            self._latest_start_time_dict[origin] = {}
+
+        solution = " (solution)" if origin in self._data_munger.get_unique_stops_to_solve() else ""
+        repeat = "" if self._unfinished_search_dict.get(origin, {}).get(destination, 0) < MINIMUM_SEARCH_TIME else \
+            "repeat "
+
+        self._perform_station_time_analysis_if_worthwhile(origin, destination, False, latest_start_time, after_time,
+                                                          repeat, solution)
+
     def _get_increased_max_search_time(self, origin, destination):
         max_search_time = min(self._unfinished_search_dict.get(origin, {}).get(destination, 0) + 1, 60*60*24*3)
+
+        # if we know the solution for an earlier time of day, limit the search to a similar time
         if origin in self._time_between_stations_dict and destination in self._time_between_stations_dict[origin]:
-            max_search_time = min(self._time_between_stations_dict[origin][destination], max_search_time)
+            max_search_time = min(self._time_between_stations_dict[origin][destination] + 20 * 60, max_search_time)
+
         if origin not in self._unfinished_search_dict:
             self._unfinished_search_dict[origin] = {}
         self._unfinished_search_dict[origin][destination] = max_search_time
+
         return max_search_time
 
     def _get_minimum_search_time(self):
@@ -170,14 +190,8 @@ class StationFacts:
                          .get(destination, after_time))
 
         if destination in self._time_between_stations_dict[origin]:
-            if latest_start_time <= self._latest_start_time_dict[origin][destination]:
-                return
-            else:
-                latest_start_time = max(latest_start_time, self._latest_start_time_dict[origin][destination] +
-                                        timedelta(hours=1))
-            # if after_time >= self._latest_start_time_dict[origin][destination]:
-            #     return
-            # I don't think the above line is useful?  Seems harmful?
+            latest_start_time = max(latest_start_time, self._latest_start_time_dict[origin][destination] +
+                                    timedelta(hours=1))
 
         destination_solution = " (solution)" if destination in self._data_munger.get_unique_stops_to_solve() else ""
         endpoint = " (endpoint)" if origin in self._data_munger.get_endpoint_solution_stops(after_time) else ""
@@ -227,6 +241,9 @@ class StationFacts:
 
     def _perform_station_time_analysis_if_worthwhile(self, origin, destination, adjust_destinations, latest_start_time,
                                                      after_time, repeat, solution):
+        if destination in self._time_between_stations_dict[origin] and \
+                latest_start_time <= self._latest_start_time_dict[origin][destination]:
+            return
         max_search_time_subject = self._get_increased_max_search_time(origin, destination)
         minimum_search_time_subject = self._get_minimum_search_time()
         if max_search_time_subject >= minimum_search_time_subject:
