@@ -45,6 +45,36 @@ class StationFacts:
 
         return destination
 
+    def calculate_more_inter_station_travel_times(self, subject, destination, farthest_station_from_destination,
+                                                  after_time, latest_start_time, adjust_destinations):
+        if subject == destination or \
+                (self.know_time_between(subject, destination, latest_start_time) and
+                 self.know_time_between(destination, farthest_station_from_destination, latest_start_time)):
+            return
+
+        if subject not in self._time_between_stations_dict:
+            self._time_between_stations_dict[subject] = {}
+            self._latest_start_time_dict[subject] = {}
+
+        if destination not in self._time_between_stations_dict:
+            self._time_between_stations_dict[destination] = {}
+            self._latest_start_time_dict[destination] = {}
+
+        solution = " (solution)" if subject in self._data_munger.get_unique_stops_to_solve() else ""
+        repeat = "" if self._unfinished_search_dict.get(subject, {}).get(destination, 0) < MINIMUM_SEARCH_TIME else \
+            "repeat "
+        destination_repeat = "" if self._unfinished_search_dict.get(destination, {}) \
+            .get(farthest_station_from_destination, 0) < MINIMUM_SEARCH_TIME else "repeat "
+        destination_solution = " (solution)"
+
+        # The original fast implementation validated that max_search_time was greater than max_known_time_from_origin
+        #  and if so ran perform_station_time_analysis for origin -> destination and destination -> alt origin
+        self._perform_station_time_analysis_if_worthwhile(subject, destination, adjust_destinations, latest_start_time,
+                                                          after_time, repeat, solution)
+        self._perform_station_time_analysis_if_worthwhile(destination, farthest_station_from_destination,
+                                                          adjust_destinations, latest_start_time, after_time,
+                                                          destination_repeat, destination_solution)
+
     def _get_increased_max_search_time(self, origin, destination):
         max_search_time = min(self._unfinished_search_dict.get(origin, {}).get(destination, 0) + 1, 60*60*24*3)
         if origin in self._time_between_stations_dict and destination in self._time_between_stations_dict[origin]:
@@ -237,33 +267,3 @@ class StationFacts:
                 print("aborting solution station", origin, after_time)
 
         return self._time_to_nearest_solution_station_dict.get(origin, 0)
-
-    def time_to_station(self, subject, destination, farthest_station_from_destination, after_time, latest_start_time,
-                        adjust_destinations=False):
-        if subject == destination or \
-                (self.know_time_between(subject, destination, latest_start_time) and
-                 self.know_time_between(destination, farthest_station_from_destination, latest_start_time)):
-            return
-
-        if subject not in self._time_between_stations_dict:
-            self._time_between_stations_dict[subject] = {}
-            self._latest_start_time_dict[subject] = {}
-
-        if destination not in self._time_between_stations_dict:
-            self._time_between_stations_dict[destination] = {}
-            self._latest_start_time_dict[destination] = {}
-
-        solution = " (solution)" if subject in self._data_munger.get_unique_stops_to_solve() else ""
-        repeat = "" if self._unfinished_search_dict.get(subject, {}).get(destination, 0) < MINIMUM_SEARCH_TIME else \
-            "repeat "
-        destination_repeat = "" if self._unfinished_search_dict.get(destination, {}) \
-            .get(farthest_station_from_destination, 0) < MINIMUM_SEARCH_TIME else "repeat "
-        destination_solution = " (solution)"
-
-        # The original fast implementation validated that max_search_time was greater than max_known_time_from_origin
-        #  and if so ran perform_station_time_analysis for origin -> destination and destination -> alt origin
-        self._perform_station_time_analysis_if_worthwhile(subject, destination, adjust_destinations, latest_start_time,
-                                                          after_time, repeat, solution)
-        self._perform_station_time_analysis_if_worthwhile(destination, farthest_station_from_destination,
-                                                          adjust_destinations, latest_start_time, after_time,
-                                                          destination_repeat, destination_solution)

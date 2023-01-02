@@ -533,8 +533,9 @@ class Solver:
                         all_coordinates[station_to_calculate].lat, all_coordinates[x].lat,
                         all_coordinates[station_to_calculate].long, all_coordinates[x].long))
 
-                station_facts.time_to_station(location.location, station_to_calculate, alternate_station_to_calculate,
-                                              self._start_time, latest_start_time)
+                station_facts.calculate_more_inter_station_travel_times(location.location, station_to_calculate,
+                                                                        alternate_station_to_calculate,
+                                                                        self._start_time, latest_start_time, False)
 
                 unvisited_unknown = [
                     s for s in list(location.unvisited) if
@@ -548,8 +549,9 @@ class Solver:
                         all_coordinates[x[0]].lat, all_coordinates[x[1]].lat,
                         all_coordinates[x[0]].long, all_coordinates[x[1]].long))
 
-                station_facts.time_to_station(most_distant_stop_1, most_distant_stop_2, most_distant_stop_1,
-                                              self._start_time, latest_start_time, adjust_destinations=True)
+                station_facts.calculate_more_inter_station_travel_times(most_distant_stop_1, most_distant_stop_2,
+                                                                        most_distant_stop_1,
+                                                                        self._start_time, latest_start_time, True)
 
         return return_value()
 
