@@ -195,6 +195,20 @@ class StationFacts:
                     min(endpoint_dict.values()),
                     self._time_to_nearest_endpoint_dict.get(origin, min(endpoint_dict.values())))
 
+    def _perform_station_time_analysis_if_worthwhile(self, origin, destination, adjust_destinations, latest_start_time,
+                                                     after_time, repeat, solution):
+        max_search_time_subject = self._get_increased_max_search_time(origin, destination)
+        minimum_search_time_subject = self._get_minimum_search_time()
+        if max_search_time_subject >= minimum_search_time_subject:
+            if origin in self._data_munger.get_unique_stops_to_solve():
+                max_search_time_subject = 10000
+            self._num_searches += 1
+            if adjust_destinations:
+                destination = self._adjust_destination(origin, latest_start_time)
+            self._perform_station_time_analysis(
+                origin, destination, max_search_time_subject ** POWER, after_time, repeat, solution,
+                latest_start_time)
+
     def time_to_nearest_endpoint(self, origin, after_time):
         # Currently not called; calculated as a derivative of time_to_station
         if origin not in self._time_to_nearest_endpoint_dict:
@@ -248,25 +262,8 @@ class StationFacts:
 
         # The original fast implementation validated that max_search_time was greater than max_known_time_from_origin
         #  and if so ran perform_station_time_analysis for origin -> destination and destination -> alt origin
-        max_search_time_subject = self._get_increased_max_search_time(subject, destination)
-        minimum_search_time_subject = self._get_minimum_search_time()
-        if max_search_time_subject >= minimum_search_time_subject:
-            if subject in self._data_munger.get_unique_stops_to_solve():
-                max_search_time_subject = 10000
-            self._num_searches += 1
-            if adjust_destinations:
-                destination = self._adjust_destination(subject, latest_start_time)
-            self._perform_station_time_analysis(
-                subject, destination, max_search_time_subject ** POWER, after_time, repeat, solution,
-                latest_start_time)
-        max_search_time = self._get_increased_max_search_time(destination, farthest_station_from_destination)
-        minimum_search_time = self._get_minimum_search_time()
-        if max_search_time >= minimum_search_time:
-            if destination in self._data_munger.get_unique_stops_to_solve():
-                max_search_time = 10000
-            self._num_searches += 1
-            if adjust_destinations:
-                farthest_station_from_destination = self._adjust_destination(destination, latest_start_time)
-            self._perform_station_time_analysis(destination, farthest_station_from_destination,
-                                                max_search_time ** POWER, after_time, destination_repeat,
-                                                destination_solution, latest_start_time)
+        self._perform_station_time_analysis_if_worthwhile(subject, destination, adjust_destinations, latest_start_time,
+                                                          after_time, repeat, solution)
+        self._perform_station_time_analysis_if_worthwhile(destination, farthest_station_from_destination,
+                                                          adjust_destinations, latest_start_time, after_time,
+                                                          destination_repeat, destination_solution)
