@@ -563,12 +563,11 @@ class Solver:
                 #  origin station of the location's route might be more valuable in some cases.
                 # Step 1: determine distance from location to unvisited solution endpoint stops
                 # Step 2: determine distance from location to unvisited solution stops
-                # Step 3: determine distance from the stop used in steps (1) or (2) to the origin stop of the route
-                # Step 4: determine distance from the stop used in steps (1) or (2) to location
+                # Step 3: determine distance from the stop used in steps (1) or (2) to unknown solution endpoint stops
+                # Step 4: determine distance from the stop used in steps (1) or (2) to unknown solution stops
                 # Step 5: determine distance from the stop used in steps (1) or (2) to the most distant
-                #          unvisited solution stop
-                # Step 6: determine distance from each unvisited solution stop to its most distant unvisited solution
-                #          stop
+                #          unvisited solution stop (will never calculate due to changes to (3) and (4))
+                # Step 6: determine distance from each unvisited solution stop to its most distant solution stop
                 # Skip step 2 if step 1 calculates
                 # Skip step 4 if step 3 calculates
                 # Skip step 5 if steps 3 or 4 calculate
@@ -609,29 +608,36 @@ class Solver:
                     route_origin_stop = self._data_munger.get_first_stop_on_route(location.arrival_route)
                     reverse_origin_stop = farthest_station
 
+                    solution_stops_unknown_to_farthest_station = [
+                        s for s in self._data_munger.get_unique_stops_to_solve() if not
+                        station_facts.know_time_between(farthest_station, s, current_time)
+                    ]
+                    endpoint_solution_stops_unknown_to_farthest_station = [
+                        s for s in solution_stops_unknown_to_farthest_station if
+                        s in self._data_munger.get_endpoint_solution_stops(self._start_time)
+                    ]
+
                     # Step 3
-                    if not station_facts.know_time_between(farthest_station, route_origin_stop, current_time):
-                        reverse_destination_stop = route_origin_stop
+                    if endpoint_solution_stops_unknown_to_farthest_station:
+                        reverse_destination_stop = max(endpoint_solution_stops_unknown_to_farthest_station,
+                                                       key=lambda s: self._walk_time_seconds(
+                                                           all_coordinates[farthest_station].lat,
+                                                           all_coordinates[s].lat,
+                                                           all_coordinates[farthest_station].long,
+                                                           all_coordinates[s].long,
+                                                       ))
 
                     # Step 4
-                    elif not station_facts.know_time_between(farthest_station, location.location, current_time):
-                        reverse_destination_stop = location.location
+                    elif solution_stops_unknown_to_farthest_station:
+                        reverse_destination_stop = max(solution_stops_unknown_to_farthest_station,
+                                                       key=lambda s: self._walk_time_seconds(
+                                                           all_coordinates[farthest_station].lat,
+                                                           all_coordinates[s].lat,
+                                                           all_coordinates[farthest_station].long,
+                                                           all_coordinates[s].long,
+                                                       ))
 
                     # Step 5
-                    elif any(not station_facts.know_time_between(farthest_station, s, current_time) for
-                             s in location.unvisited):
-                        candidate_destination_stops = [
-                            s for s in location.unvisited if
-                            not station_facts.know_time_between(farthest_station, s, current_time)
-                        ]
-                        reverse_destination_stop = max(candidate_destination_stops,
-                                                  key=lambda s: self._walk_time_seconds(
-                                                      all_coordinates[farthest_station].lat,
-                                                      all_coordinates[s].lat,
-                                                      all_coordinates[farthest_station].long,
-                                                      all_coordinates[s].long,
-                                                  ))
-
                     else:
                         reverse_destination_stop = None
 
@@ -642,7 +648,9 @@ class Solver:
                 # Step 6
                 if not farthest_station and (not reverse_origin_stop or not reverse_destination_stop) and \
                         len(location.unvisited) >= 2:
-                    unknown_pairs = [pair for pair in itertools.product(location.unvisited, location.unvisited) if
+                    unknown_pairs = [pair for pair in
+                                     itertools.product(
+                                         location.unvisited, self._data_munger.get_unique_stops_to_solve()) if
                                      not station_facts.know_time_between(pair[0], pair[1], current_time)]
                     if unknown_pairs:
                         most_distant_pair = max(unknown_pairs, key=lambda s: self._walk_time_seconds(
