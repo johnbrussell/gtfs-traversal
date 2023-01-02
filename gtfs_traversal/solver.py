@@ -605,7 +605,6 @@ class Solver:
 
                 # Steps 3, 4, 5
                 if location.arrival_route in self._data_munger.get_unique_routes_to_solve() and farthest_station:
-                    route_origin_stop = self._data_munger.get_first_stop_on_route(location.arrival_route)
                     reverse_origin_stop = farthest_station
 
                     solution_stops_unknown_to_farthest_station = [
