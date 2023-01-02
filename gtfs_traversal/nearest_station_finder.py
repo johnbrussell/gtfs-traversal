@@ -107,8 +107,9 @@ class NearestStationFinder(Solver):
         return 0
 
     def _have_cached_data(self, location):
-        known_times = self._storage["known"]
-        return location.location in known_times
+        # known_times = self._storage["known"]
+        # return location.location in known_times
+        return False
 
     def _initialize_progress_dict(self, origin, earliest_departure_time):
         self._progress_dict = dict()

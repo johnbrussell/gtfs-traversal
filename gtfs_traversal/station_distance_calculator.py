@@ -10,8 +10,9 @@ class StationDistanceCalculator(NearestStationFinder):
                          limit_time=None):
         self._stops_to_solve = [destination]
         self._storage["known"] = known_times
+        self._storage["origin"] = origin
         self._storage["destination"] = destination
-        self._storage["dict"] = {}
+        self._storage["dict"] = {origin: {}}
 
         if limit_time:
             known_best_time = self._find_travel_time_secs_with_limit(origin, analysis_start_time, limit_time + 0.0001,
@@ -19,8 +20,10 @@ class StationDistanceCalculator(NearestStationFinder):
         else:
             known_best_time = self._find_travel_time_secs(origin, analysis_start_time, latest_start_time)
 
-        solution_dict = {k: v for k, v in self._storage["dict"].items() if
-                         k == self._storage["destination"] or v < known_best_time}
+        solution_dict = {k1: {k2: v2 for k2, v2 in v1.items() if
+                              (k1 == self._storage["origin"] and k2 == self._storage["destination"]) or
+                              v2 < known_best_time}
+                         for k1, v1 in self._storage["dict"].items()}
 
         return solution_dict
 
@@ -31,10 +34,29 @@ class StationDistanceCalculator(NearestStationFinder):
             if (progress.duration < known_best_time and
                     location.location in self._data_munger.get_unique_stops_to_solve()) or \
                     (progress.duration == known_best_time and location.location == self._storage["destination"]):
-                if location.location not in self._storage["dict"]:
-                    self._storage["dict"][location.location] = known_best_time
-                self._storage["dict"][location.location] = min(self._storage["dict"][location.location],
-                                                               progress.duration)
+                if location.location not in self._storage["dict"][self._storage["origin"]]:
+                    self._storage["dict"][self._storage["origin"]][location.location] = known_best_time
+                self._storage["dict"][self._storage["origin"]][location.location] = \
+                    min(self._storage["dict"][self._storage["origin"]][location.location], progress.duration)
+
+            if progress.duration < known_best_time:
+                climbing_progress = progress
+                cumulative_duration = 0
+                while climbing_progress.parent is not None and not climbing_progress.eliminated:
+                    if climbing_progress.eliminated:
+                        print("unexpected elimination reached")
+                    cumulative_duration += climbing_progress.duration - \
+                        self._progress_dict[climbing_progress.parent].duration
+                    if climbing_progress.parent.location not in self._storage["dict"]:
+                        self._storage["dict"][climbing_progress.parent.location] = {}
+                    if location.location in self._data_munger.get_unique_stops_to_solve():
+                        if location.location not in self._storage["dict"][climbing_progress.parent.location]:
+                            self._storage["dict"][climbing_progress.parent.location][location.location] = \
+                                known_best_time
+                        self._storage["dict"][climbing_progress.parent.location][location.location] = \
+                            min(self._storage["dict"][climbing_progress.parent.location][location.location],
+                                cumulative_duration)
+                    climbing_progress = self._progress_dict[climbing_progress.parent]
 
     def _get_initial_unsolved_string(self):
         if self._initial_unsolved_string is None:
