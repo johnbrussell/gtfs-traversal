@@ -559,9 +559,14 @@ class Solver:
         if station_facts is None:
             return progress.duration + progress.minimum_remaining_time
 
+        current_time = self._start_time + timedelta(seconds=progress.duration)
+
+        if len(location.unvisited) <= 6:
+            return progress.duration + self._minimum_possible_duration_within_stops(
+                list(location.unvisited), current_time, station_facts, 0, location.location)
+
         unvisited_stations_and_current_station = list(location.unvisited)
         unvisited_stations_and_current_station.append(location.location)
-        current_time = self._start_time + timedelta(seconds=progress.duration)
 
         time = 0
         station_1 = None
@@ -593,6 +598,22 @@ class Solver:
             )
             for station_3 in unvisited_stations_and_current_station
         )
+
+    def _minimum_possible_duration_within_stops(self, stops, current_time, station_facts,
+                                                arrival_duration, arrival_location):
+        if len(stops) < 1:
+            print("something went wrong; must call with at least one stop")
+            return 0
+
+        if len(stops) == 1:
+            return arrival_duration + station_facts.known_time_between(arrival_location, stops[0], current_time)
+
+        return min([
+            self._minimum_possible_duration_within_stops(
+                [st for st in stops if st != s], current_time, station_facts,
+                arrival_duration + station_facts.known_time_between(arrival_location, s, current_time), s
+            ) for s in stops
+        ])
 
     def _node_is_valid(self, node, best_solution_duration):
         if node is None:
