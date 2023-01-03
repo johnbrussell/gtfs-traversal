@@ -167,8 +167,19 @@ class Solver:
             return None
 
         stop_number = progress.trip_stop_no
-        next_stop_no = str(int(stop_number) + 1)
-        next_stop_id = self._data_munger.get_next_stop_id(location_status.location, location_status.arrival_route)
+        station_facts = self._get_station_facts()
+        if location_status.arrival_route not in self._data_munger.get_unique_routes_to_solve() and \
+                progress.parent is not None and progress.parent.arrival_route == self._transfer_route and \
+                station_facts is not None:
+            next_stop_id = station_facts.get_next_relevant_station(
+                location_status.location, location_status.arrival_route, self._start_time)
+            if next_stop_id is None:
+                return None
+            next_stop_no = self._data_munger.get_stop_number_from_stop_id(next_stop_id, location_status.arrival_route)
+        else:
+            next_stop_no = str(int(stop_number) + 1)
+            next_stop_id = self._data_munger.get_next_stop_id(location_status.location, location_status.arrival_route)
+
         new_unvisited_tuple = self._eliminate_stops_from_tuple(
             [location_status.location, next_stop_id], location_status.unvisited) \
             if self._data_munger.is_solution_route(location_status.arrival_route) else location_status.unvisited

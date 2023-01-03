@@ -3,6 +3,7 @@ from datetime import timedelta
 from gtfs_traversal.nearest_endpoint_finder import NearestEndpointFinder
 from gtfs_traversal.nearest_different_station_finder import NearestDifferentStationFinder
 from gtfs_traversal.nearest_station_finder import NearestStationFinder
+from gtfs_traversal.relevant_next_stop_finder import RelevantNextStopFinder
 from gtfs_traversal.station_distance_calculator import StationDistanceCalculator
 
 
@@ -25,7 +26,9 @@ class StationFacts:
         self._walk_speed_mph = walk_speed_mph
 
         self._latest_start_time_dict = dict()
+        self._next_relevant_stations = dict()
         self._num_searches = 0
+        self._relevant_next_stop_finder = None
         self._time_between_stations_dict = dict()
         self._time_to_nearest_endpoint_dict = dict()
         self._time_to_nearest_solution_station_dict = dict()
@@ -151,6 +154,31 @@ class StationFacts:
             walk_route=self._walk_route,
             walk_speed_mph=self._walk_speed_mph,
         )
+
+    def get_next_relevant_station(self, origin, route, after_time):
+        if origin in self._next_relevant_stations and route in self._next_relevant_stations[origin]:
+            return self._next_relevant_stations[origin][route]
+
+        if origin not in self._next_relevant_stations:
+            self._next_relevant_stations[origin] = {}
+
+        if route not in self._next_relevant_stations[origin]:
+            next_relevant_station = self._get_relevant_next_stop_finder().find_first_relevant_stop(
+                origin_stop=origin, route=route, after_time=after_time
+            )
+            self._next_relevant_stations[origin][route] = next_relevant_station
+
+        return self._next_relevant_stations[origin][route]
+
+    def _get_relevant_next_stop_finder(self):
+        if self._relevant_next_stop_finder is None:
+            self._relevant_next_stop_finder = RelevantNextStopFinder(
+                data_munger=self._data_munger, end_date=self._end_date, progress_between_pruning_progress_dict=None,
+                prune_thoroughness=None, route_types_to_solve=[], stop_join_string=self._stop_join_string,
+                stops_to_solve=[], transfer_duration_seconds=self._transfer_duration,
+                transfer_route=self._transfer_route, walk_route=self._walk_route, walk_speed_mph=self._walk_speed_mph,
+            )
+        return self._relevant_next_stop_finder
 
     def _get_station_distance_calculator(self):
         return StationDistanceCalculator(

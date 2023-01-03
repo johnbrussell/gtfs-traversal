@@ -287,7 +287,7 @@ class DataMunger:
             if stop_departure_namedtuple.stopId == stop_id:
                 return stop_number
 
-        raise ValueError("route_id and origin_stop_id mismatch")
+        raise ValueError(f"route_id and origin_stop_id mismatch: stop {stop_id}, route {route_id}")
 
     def get_stops_at_ends_of_solution_routes(self):
         stops_at_ends_of_solution_routes = set()
