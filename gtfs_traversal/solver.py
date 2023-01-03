@@ -46,6 +46,7 @@ class Solver:
         self._storage = {}
 
     def _add_child_to_parent(self, parent, child):
+        # Removed call to reduce function calls
         if self._progress_dict[parent].children is None:
             self._progress_dict[parent] = self._progress_dict[parent]._replace(children=set())
         self._progress_dict[parent].children.add(child)
@@ -56,7 +57,10 @@ class Solver:
         if new_location in self._progress_dict and not self._progress_dict[new_location].eliminated:
             self._mark_nodes_as_eliminated({new_location})
         self._progress_dict[new_location] = new_progress
-        self._add_child_to_parent(new_progress.parent, new_location)
+        # self._add_child_to_parent(new_progress.parent, new_location)
+        if self._progress_dict[new_progress.parent].children is None:
+            self._progress_dict[new_progress.parent] = self._progress_dict[new_progress.parent]._replace(children=set())
+        self._progress_dict[new_progress.parent].children.add(new_location)
 
         if self._is_solution(new_location):
             if verbose:
