@@ -36,7 +36,7 @@ class StationFacts:
 
     def _adjust_destination(self, origin, latest_search_time):
         all_coordinates = self._data_munger.get_all_stop_coordinates()
-        destination = max(self._unfinished_search_dict.get(origin, {}).keys(), key=lambda x:
+        destination = max(self._data_munger.get_unique_stops_to_solve(), key=lambda x:
                           self._data_munger.walk_time_seconds(
                               all_coordinates[origin].lat, all_coordinates[x].lat,
                               all_coordinates[origin].long, all_coordinates[x].long) if
