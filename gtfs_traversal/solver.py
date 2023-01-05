@@ -74,6 +74,7 @@ class Solver:
         return best_solution_duration
 
     def _add_new_nodes_to_progress_dict(self, new_nodes_list, best_solution_duration, parent, *, verbose=True):
+        # This function requires the transfer node to occur first
         have_seen_valid_node = False
 
         for node in new_nodes_list:
@@ -763,8 +764,12 @@ class Solver:
         if new_progress.eliminated:
             return False
 
-        if self._progress_dict.get(new_location, None) is not None:
+        if self._progress_dict.get(new_location) is not None:
             if self._progress_dict[new_location].duration <= new_progress.duration:
+                return False
+            new_location_transfer = new_location._replace(arrival_route=self._transfer_route)
+            if new_location_transfer in self._progress_dict and \
+                    self._progress_dict[new_location_transfer].duration < new_progress.duration:
                 return False
 
         if best_solution_duration is not None:
