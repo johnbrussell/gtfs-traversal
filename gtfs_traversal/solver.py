@@ -58,9 +58,9 @@ class Solver:
             self._mark_nodes_as_eliminated({new_location})
         self._progress_dict[new_location] = new_progress
         # self._add_child_to_parent(new_progress.parent, new_location)
-        if self._progress_dict[new_progress.parent].children is None:
-            self._progress_dict[new_progress.parent] = self._progress_dict[new_progress.parent]._replace(children=set())
-        self._progress_dict[new_progress.parent].children.add(new_location)
+        # if self._progress_dict[new_progress.parent].children is None:
+        #     self._progress_dict[new_progress.parent] = self._progress_dict[new_progress.parent]._replace(children=set())
+        # self._progress_dict[new_progress.parent].children.add(new_location)
 
         if self._is_solution(new_location):
             if verbose:
@@ -192,14 +192,14 @@ class Solver:
             progress.arrival_trip, stop_number, next_stop_no)
         new_location = LocationStatusInfo(location=next_stop_id, arrival_route=location_status.arrival_route,
                                           unvisited=new_unvisited_tuple)
-        new_minimum_remaining_time = self._get_new_minimum_remaining_time(progress.minimum_remaining_time,
-                                                                          location_status, new_location,
-                                                                          known_best_time)
+        # new_minimum_remaining_time = self._get_new_minimum_remaining_time(progress.minimum_remaining_time,
+        #                                                                   location_status, new_location,
+        #                                                                   known_best_time)
         return (
             new_location,
             ProgressInfo(duration=new_duration, arrival_trip=progress.arrival_trip,
                          trip_stop_no=next_stop_no, parent=location_status, children=None,
-                         minimum_remaining_time=new_minimum_remaining_time,
+                         minimum_remaining_time=0,
                          expanded=False, eliminated=False)
         )
 
@@ -271,10 +271,10 @@ class Solver:
             0, progress.minimum_remaining_time - self._transfer_duration_seconds)
         new_location_status = location_status._replace(arrival_route=self._transfer_route)
         new_duration = progress.duration + self._transfer_duration_seconds
-        if location_status.location in self._get_stop_locations_to_solve() and \
-                location_status.arrival_route not in self._data_munger.get_unique_routes_to_solve() and \
-                self._location_has_been_reached_faster(new_location_status, new_duration, location_status):
-            return None
+        # if location_status.location in self._get_stop_locations_to_solve() and \
+        #         location_status.arrival_route not in self._data_munger.get_unique_routes_to_solve() and \
+        #         self._location_has_been_reached_faster(new_location_status, new_duration, location_status):
+        #     return None
         return (new_location_status,
                 ProgressInfo(duration=new_duration, arrival_trip=self._transfer_route,
                              trip_stop_no=self._transfer_route, parent=location_status,
@@ -400,10 +400,10 @@ class Solver:
             # eliminate node's parent (if it hasn't already been eliminated)
             parent = self._progress_dict[node_to_eliminate].parent
             self._progress_dict[node_to_eliminate] = self._progress_dict[node_to_eliminate]._replace(parent=None)
-            if parent and not self._progress_dict[parent].eliminated:
-                self._progress_dict[parent].children.remove(node_to_eliminate)
-                if len(self._progress_dict[parent].children) == 0:
-                    nodes_to_eliminate.add(parent)
+            # if parent and not self._progress_dict[parent].eliminated:
+            #     self._progress_dict[parent].children.remove(node_to_eliminate)
+            #     if len(self._progress_dict[parent].children) == 0:
+            #         nodes_to_eliminate.add(parent)
 
     @staticmethod
     def _minimum_possible_duration(progress):
@@ -450,7 +450,7 @@ class Solver:
 
     def _minimum_known_possible_duration_with_travel_time_to_unvisited(self, location, progress):
         station_facts = self._get_station_facts()
-        if station_facts is None:
+        if station_facts is None or location.arrival_route == self._transfer_route:
             return progress.duration + progress.minimum_remaining_time
 
         unvisited_stations = list(location.unvisited)
@@ -701,7 +701,8 @@ class Solver:
 
         current_time = self._start_time + timedelta(seconds=progress.duration)
 
-        if len(location.unvisited) <= 6:
+        if len(location.unvisited) <= 36 * math.sqrt(float(len(station_facts._time_between_stations_dict))) / \
+                len(self._data_munger.get_unique_stops_to_solve()):
             return progress.duration + self._minimum_possible_duration_within_stops(
                 list(location.unvisited), current_time, station_facts, 0, location.location)
 
@@ -764,6 +765,9 @@ class Solver:
         if new_progress.eliminated:
             return False
 
+        if self._reject_if_off_network(new_location):
+            return False
+
         if self._progress_dict.get(new_location) is not None:
             if self._progress_dict[new_location].duration <= new_progress.duration:
                 return False
@@ -788,6 +792,9 @@ class Solver:
                 return False
 
         return True
+
+    def _reject_if_off_network(self, location):
+        return location.location not in self._data_munger.get_unique_stops_to_solve()
 
     def _reset_time_to_nearest_station(self):
         self._time_to_nearest_station = {

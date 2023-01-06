@@ -84,19 +84,19 @@ class NearestStationFinder(Solver):
         return None
 
     def _get_new_nodes(self, location_status, known_best_time):
-        if self._have_cached_data(location_status):
-            old_progress = self._progress_dict[location_status]
-            new_location_status = location_status._replace(
-                location=self._storage["destination"], arrival_route=CACHE_ROUTE)
-            known_time = self._retrieve_known_data(location_status)
-            return [
-                (
-                    new_location_status,
-                    ProgressInfo(duration=old_progress.duration + known_time, arrival_trip=CACHE_TRIP,
-                                 trip_stop_no=CACHE_ROUTE, parent=location_status,
-                                 minimum_remaining_time=0, children=None, expanded=False, eliminated=False)
-                )
-            ]
+        # if self._have_cached_data(location_status):
+        #     old_progress = self._progress_dict[location_status]
+        #     new_location_status = location_status._replace(
+        #         location=self._storage["destination"], arrival_route=CACHE_ROUTE)
+        #     known_time = self._retrieve_known_data(location_status)
+        #     return [
+        #         (
+        #             new_location_status,
+        #             ProgressInfo(duration=old_progress.duration + known_time, arrival_trip=CACHE_TRIP,
+        #                          trip_stop_no=CACHE_ROUTE, parent=location_status,
+        #                          minimum_remaining_time=0, children=None, expanded=False, eliminated=False)
+        #         )
+        #     ]
 
         return super()._get_new_nodes(location_status, known_best_time)
 
@@ -107,6 +107,7 @@ class NearestStationFinder(Solver):
         return 0
 
     def _have_cached_data(self, location):
+        # Commented out all usages to reduce function calls
         known_times = self._storage["known"]
         return location.location in known_times
 
@@ -149,6 +150,9 @@ class NearestStationFinder(Solver):
 
     def _is_solution(self, location):
         return location.location in self._data_munger.get_unique_stops_to_solve()
+
+    def _reject_if_off_network(self, location):
+        return False
 
     def _retrieve_known_data(self, location_status):
         known_times = self._storage["known"]
