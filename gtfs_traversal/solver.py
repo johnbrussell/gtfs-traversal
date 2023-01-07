@@ -53,7 +53,11 @@ class Solver:
         self._progress_dict[parent].children.add(child)
 
     def _add_new_node_to_expansion_queue(self, new_location):
-        if new_location.location in self._data_munger.get_unique_stops_to_solve():
+        parent = self._progress_dict[new_location].parent
+        if new_location.arrival_route == self._walk_route and parent is not None and \
+                self._progress_dict[new_location].duration - self._progress_dict[parent].duration >= 60:
+            self._exp_queue_off_network.add_node(new_location)
+        elif new_location.location in self._data_munger.get_unique_stops_to_solve():
             self._exp_queue.add_node(new_location)
         else:
             self._exp_queue_off_network.add_node(new_location)
@@ -490,6 +494,9 @@ class Solver:
                 self._minimum_possible_duration_within_network(location, progress)
             )
 
+        def return_value_fast():
+            return self._minimum_possible_duration_within_network(location, progress)
+
         station_facts = self._get_station_facts()
         if station_facts is None:
             return return_value()
@@ -581,7 +588,7 @@ class Solver:
                                                                         most_distant_stop_1,
                                                                         self._start_time, latest_start_time, True)
 
-        other_is_on = True
+        other_is_on = False
         if other_is_on:
             if location.arrival_route != self._transfer_route and location.arrival_route != self._walk_route:
                 # Want to calculate between location and other stations; if location is a solution stop, also
@@ -701,12 +708,15 @@ class Solver:
                     station_facts.calculate_one_inter_station_travel_time(
                         most_distant_pair[0], most_distant_pair[1], self._start_time, latest_start_time)
 
+        if not is_on and not other_is_on:
+            return return_value_fast()
+
         return return_value()
 
     def _minimum_possible_duration_within_network(self, location, progress):
         station_facts = self._get_station_facts()
 
-        if station_facts is None:
+        if station_facts is None or len(location.unvisited) > 6:
             return progress.duration + progress.minimum_remaining_time
 
         current_time = self._start_time + timedelta(seconds=progress.duration)
