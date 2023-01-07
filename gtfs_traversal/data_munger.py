@@ -209,10 +209,12 @@ class DataMunger:
         #                 best_time_at_stop = min(best_time_at_stop, travel_time_from_previous_stop)
         #     total_minimum_remaining_time += best_time_at_stop
 
-        for stop in unvisited_stops:
-            total_minimum_remaining_time += self._minimum_stop_times[stop]
+        # for stop in unvisited_stops:
+        #     total_minimum_remaining_time += self._minimum_stop_times[stop]
 
-        return total_minimum_remaining_time
+        return sum(self._minimum_stop_times[stop] for stop in unvisited_stops)
+
+        # return total_minimum_remaining_time
 
     def get_minimum_remaining_transfers(self, current_route, unvisited_stops):
         minimum_remaining_transfers = 0

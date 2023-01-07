@@ -144,7 +144,8 @@ class Solver:
         if prior_location.unvisited == location.unvisited and prior_location.arrival_route == location.arrival_route:
             return prior_minimum_remaining_time
 
-        new_unvisited_stops = list(location.unvisited)
+        # new_unvisited_stops = list(location.unvisited)
+        new_unvisited_stops = location.unvisited
         new_minimum_remaining_travel_time = self._data_munger.get_minimum_remaining_time(new_unvisited_stops,
                                                                                          self._start_time)
 
@@ -460,7 +461,8 @@ class Solver:
         if station_facts is None or location.arrival_route == self._transfer_route:
             return progress.duration + progress.minimum_remaining_time
 
-        unvisited_stations = list(location.unvisited)
+        # unvisited_stations = list(location.unvisited)
+        unvisited_stations = location.unvisited
         current_time = self._start_time + timedelta(seconds=progress.duration)
 
         max_time_to_known_station = max(
@@ -563,7 +565,7 @@ class Solver:
                                                                         self._start_time, latest_start_time, False)
 
                 unvisited_unknown = [
-                    s for s in list(location.unvisited) if
+                    s for s in location.unvisited if
                     len(station_facts._time_between_stations_dict.get(s, {})) <
                     len(self._data_munger.get_unique_stops_to_solve())
                 ]
@@ -711,10 +713,10 @@ class Solver:
         if len(location.unvisited) <= 36 * math.sqrt(float(len(station_facts._time_between_stations_dict))) / \
                 len(self._data_munger.get_unique_stops_to_solve()):
             return progress.duration + self._minimum_possible_duration_within_stops(
-                list(location.unvisited), current_time, station_facts, 0, location.location)
+                location.unvisited, current_time, station_facts, 0, location.location)
 
-        unvisited_stations_and_current_station = list(location.unvisited)
-        unvisited_stations_and_current_station.append(location.location)
+        unvisited_stations_and_current_station = location.unvisited + (location.location,)
+        # unvisited_stations_and_current_station.append(location.location)
 
         time = 0
         station_1 = None
