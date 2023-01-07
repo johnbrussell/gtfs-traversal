@@ -22,6 +22,9 @@ class NearestStationFinder(Solver):
         return self._find_travel_time_secs(origin, analysis_start_time,
                                            self._data_munger.get_buffered_analysis_end_time())
 
+    def _add_new_node_to_expansion_queue(self, new_location):
+        self._exp_queue.add_node(new_location)
+
     def _announce_solution(self, new_progress):
         pass
 

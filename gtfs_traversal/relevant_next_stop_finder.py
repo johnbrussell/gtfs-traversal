@@ -6,6 +6,9 @@ from gtfs_traversal.solver import Solver
 
 
 class RelevantNextStopFinder(Solver):
+    def _add_new_node_to_expansion_queue(self, new_location):
+        self._exp_queue.add_node(new_location)
+
     def _determine_first_relevant_stop(self, origin_stop, route):
         route_stops = {}
         for k, v in self._progress_dict.items():

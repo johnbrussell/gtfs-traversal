@@ -23,6 +23,8 @@ class Traverser(Solver):
         print("percent complete", "running time", "expansion queue size", "progress dict size",
               "number of prunable nodes", "total expansions")
         self._exp_queue = ExpansionQueue(len(self._data_munger.get_unique_stops_to_solve()), self._stop_join_string)
+        self._exp_queue_off_network = ExpansionQueue(len(self._data_munger.get_unique_stops_to_solve()),
+                                                     self._stop_join_string)
         if len(self._progress_dict) > 0:
             self._exp_queue.add(self._progress_dict.keys())
 
@@ -35,13 +37,16 @@ class Traverser(Solver):
 
         num_expansions = 0
         total_num_expansions = 0
-        while not self._exp_queue.is_empty():
+        while not self._exp_queue.is_empty() or not self._exp_queue_off_network.is_empty():
             num_expansions += 1
             total_num_expansions += 1
             if self._exp_queue._num_remaining_stops_to_pop == num_stations:
                 num_completed_stations = min(num_initial_start_points - 1, num_initial_start_points - num_start_points)
                 num_start_points = max(num_start_points - 1, 0)
-            expandee = self._exp_queue.pop(self._progress_dict)
+            if not self._exp_queue.is_empty():
+                expandee = self._exp_queue.pop(self._progress_dict)
+            else:
+                expandee = self._exp_queue_off_network.pop(self._progress_dict)
             known_best_time = self._expand(expandee, known_best_time)
             if known_best_time is not None:
                 if print_analytics:

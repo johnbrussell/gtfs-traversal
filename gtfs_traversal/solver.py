@@ -23,6 +23,7 @@ class Solver:
         self._string_shortener = StringShortener()
 
         self._exp_queue = None
+        self._exp_queue_off_network = None
         self._initial_unsolved_string = None
         self._initialization_time = datetime.now()
         self._off_course_stop_locations = None
@@ -51,6 +52,12 @@ class Solver:
             self._progress_dict[parent] = self._progress_dict[parent]._replace(children=set())
         self._progress_dict[parent].children.add(child)
 
+    def _add_new_node_to_expansion_queue(self, new_location):
+        if new_location.location in self._data_munger.get_unique_stops_to_solve():
+            self._exp_queue.add_node(new_location)
+        else:
+            self._exp_queue_off_network.add_node(new_location)
+
     def _add_new_node_to_progress_dict(self, new_node, best_solution_duration, *, verbose=True):
         new_location, new_progress = new_node
 
@@ -69,7 +76,7 @@ class Solver:
             self._eliminate_nodes_slower_than_time(best_solution_duration, preserve={new_location})
             self._reset_walking_coordinates(best_solution_duration)
         else:
-            self._exp_queue.add_node(new_location)
+            self._add_new_node_to_expansion_queue(new_location)
 
         return best_solution_duration
 
@@ -794,7 +801,7 @@ class Solver:
         return True
 
     def _reject_if_off_network(self, location):
-        return location.location not in self._data_munger.get_unique_stops_to_solve()
+        return False  # location.location not in self._data_munger.get_unique_stops_to_solve()
 
     def _reset_time_to_nearest_station(self):
         self._time_to_nearest_station = {

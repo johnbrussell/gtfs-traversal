@@ -9,7 +9,7 @@ from gtfs_traversal.station_distance_calculator import StationDistanceCalculator
 
 ENDPOINT_MINIMUM = 1
 MINIMUM_SEARCH_TIME = 1
-NUM_SEARCHES_MULTIPLIER = 1
+NUM_SEARCHES_MULTIPLIER = 2
 POWER = 1.5
 
 
