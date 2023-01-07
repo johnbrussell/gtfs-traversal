@@ -711,10 +711,9 @@ class Solver:
 
         current_time = self._start_time + timedelta(seconds=progress.duration)
 
-        if len(location.unvisited) <= 36 * math.sqrt(float(len(station_facts._time_between_stations_dict))) / \
-                len(self._data_munger.get_unique_stops_to_solve()):
+        if len(location.unvisited) <= 6:
             return progress.duration + self._minimum_possible_duration_within_stops(
-                location.unvisited, current_time, station_facts, 0, location.location)
+                location.unvisited, current_time, station_facts, 0, location.location, location, progress.duration)
 
         unvisited_stations_and_current_station = location.unvisited + (location.location,)
         # unvisited_stations_and_current_station.append(location.location)
@@ -751,10 +750,15 @@ class Solver:
         )
 
     def _minimum_possible_duration_within_stops(self, stops, current_time, station_facts,
-                                                arrival_duration, arrival_location):
+                                                arrival_duration, arrival_location, original_location_status,
+                                                original_duration):
         if len(stops) < 1:
             print("something went wrong; must call with at least one stop")
             return 0
+
+        test_location = original_location_status._replace(unvisited=tuple(stops))
+        if test_location in self._progress_dict and self._progress_dict[test_location].duration <= original_duration:
+            return 60 * 60 * 24 * 3
 
         if len(stops) == 1:
             return arrival_duration + station_facts.known_time_between(arrival_location, stops[0], current_time)
@@ -762,7 +766,8 @@ class Solver:
         return min([
             self._minimum_possible_duration_within_stops(
                 [st for st in stops if st != s], current_time, station_facts,
-                arrival_duration + station_facts.known_time_between(arrival_location, s, current_time), s
+                arrival_duration + station_facts.known_time_between(arrival_location, s, current_time),
+                s, original_location_status, original_duration
             ) for s in stops
         ])
 
