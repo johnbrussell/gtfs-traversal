@@ -200,14 +200,14 @@ class Solver:
             progress.arrival_trip, stop_number, next_stop_no)
         new_location = LocationStatusInfo(location=next_stop_id, arrival_route=location_status.arrival_route,
                                           unvisited=new_unvisited_tuple)
-        # new_minimum_remaining_time = self._get_new_minimum_remaining_time(progress.minimum_remaining_time,
-        #                                                                   location_status, new_location,
-        #                                                                   known_best_time)
+        new_minimum_remaining_time = self._get_new_minimum_remaining_time(progress.minimum_remaining_time,
+                                                                          location_status, new_location,
+                                                                          known_best_time)
         return (
             new_location,
             ProgressInfo(duration=new_duration, arrival_trip=progress.arrival_trip,
                          trip_stop_no=next_stop_no, parent=location_status, children=None,
-                         minimum_remaining_time=0,
+                         minimum_remaining_time=new_minimum_remaining_time,
                          expanded=False, eliminated=False)
         )
 
@@ -415,6 +415,7 @@ class Solver:
 
     @staticmethod
     def _minimum_possible_duration(progress):
+        # Removed function call to reduce function calls
         return progress.duration + progress.minimum_remaining_time
 
     def _minimum_possible_duration_with_travel_time_to_endpoint(self, location, progress):
@@ -788,7 +789,9 @@ class Solver:
         if best_solution_duration is not None:
             if self._is_solution(new_location):
                 return new_progress.duration < best_solution_duration
-            if self._minimum_possible_duration(new_progress) >= best_solution_duration:
+            # if self._minimum_possible_duration(new_progress) >= best_solution_duration:
+            #     return False
+            if new_progress.duration + new_progress.minimum_remaining_time >= best_solution_duration:
                 return False
             if self._minimum_possible_duration_with_travel_time_to_network(
                     new_location, new_progress) >= best_solution_duration:
