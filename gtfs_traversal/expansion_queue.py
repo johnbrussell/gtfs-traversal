@@ -1,5 +1,6 @@
 class ExpansionQueue:
     def __init__(self, num_solution_stops, stop_join_string):
+        self._length = 0
         self._one_more_than_number_of_solution_stops = num_solution_stops + 1
         self._num_remaining_stops_to_pop = self._one_more_than_number_of_solution_stops
         self._queue = dict()
@@ -18,6 +19,7 @@ class ExpansionQueue:
             if num_remaining_stops < self._num_remaining_stops_to_pop:
                 self._num_remaining_stops_to_pop = num_remaining_stops
         self._queue[num_remaining_stops].add(node)
+        self._length += 1
 
     def _handle_empty_queue_at_key(self, key):
         if not self._queue[key]:  # self.is_set_empty(self._queue[key])
@@ -33,10 +35,11 @@ class ExpansionQueue:
         return True if not lst else False
 
     def len(self):
-        length = 0
-        for ql in self._queue.values():
-            length += len(ql)
-        return length
+        # length = 0
+        # for ql in self._queue.values():
+        #     length += len(ql)
+        # return length
+        return self._length
 
     @staticmethod
     def _num_remaining_stops(stops_tuple):
@@ -50,6 +53,8 @@ class ExpansionQueue:
         else:
             best = self._queue[self._num_remaining_stops_to_pop].pop()
         self._handle_empty_queue_at_key(self._num_remaining_stops_to_pop)
+        if best is not None:
+            self._length -= 1
         return best
 
     def sort_latest_nodes(self, solver_progress_dict):
@@ -71,6 +76,7 @@ class ExpansionQueue:
 
         while bad_key in self._queue[num_stops_at_key]:
             self._queue[num_stops_at_key].remove(bad_key)
+            self._length -= 1
         self._handle_empty_queue_at_key(num_stops_at_key)
         self._reset_num_remaining_stops_to_pop()
 
