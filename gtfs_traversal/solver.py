@@ -80,13 +80,13 @@ class Solver:
         #     self._progress_dict[new_progress.parent]._replace(children=set())
         # self._progress_dict[new_progress.parent].children.add(new_location)
 
-        if self._is_solution(new_location):
+        if self._is_solution(new_location) and not new_progress.eliminated:
             if verbose:
                 self._announce_solution(new_progress)
             best_solution_duration = new_progress.duration
             self._eliminate_nodes_slower_than_time(best_solution_duration, preserve={new_location})
             self._reset_walking_coordinates(best_solution_duration)
-        else:
+        elif not new_progress.eliminated:
             self._add_new_node_to_expansion_queue(new_location, best_solution_duration)
 
         return best_solution_duration
@@ -100,6 +100,13 @@ class Solver:
                 have_seen_valid_node = True
                 best_solution_duration = self._add_new_node_to_progress_dict(
                     node, best_solution_duration, verbose=verbose)
+            elif node is not None and best_solution_duration is not None:
+                new_location, new_progress = node
+                if (new_location not in self._progress_dict or
+                        new_progress.duration < self._progress_dict[new_location].duration) and \
+                        new_progress.duration < best_solution_duration:
+                    best_solution_duration = self._add_new_node_to_progress_dict(
+                        node, best_solution_duration, verbose=verbose)
 
         if not have_seen_valid_node:
             self._mark_nodes_as_eliminated({parent})
@@ -191,18 +198,18 @@ class Solver:
             return None
 
         stop_number = progress.trip_stop_no
-        station_facts = self._get_station_facts()
-        if location_status.arrival_route not in self._data_munger.get_unique_routes_to_solve() and \
-                progress.parent is not None and progress.parent.arrival_route == self._transfer_route and \
-                station_facts is not None:
-            next_stop_id = station_facts.get_next_relevant_station(
-                location_status.location, location_status.arrival_route, self._start_time)
-            if next_stop_id is None:
-                return None
-            next_stop_no = self._data_munger.get_stop_number_from_stop_id(next_stop_id, location_status.arrival_route)
-        else:
-            next_stop_no = str(int(stop_number) + 1)
-            next_stop_id = self._data_munger.get_next_stop_id(location_status.location, location_status.arrival_route)
+        # station_facts = self._get_station_facts()
+        # if location_status.arrival_route not in self._data_munger.get_unique_routes_to_solve() and \
+        #         progress.parent is not None and progress.parent.arrival_route == self._transfer_route and \
+        #         station_facts is not None:
+        #     next_stop_id = station_facts.get_next_relevant_station(
+        #         location_status.location, location_status.arrival_route, self._start_time)
+        #     if next_stop_id is None:
+        #         return None
+        #     next_stop_no = self._data_munger.get_stop_number_from_stop_id(next_stop_id, location_status.arrival_route)
+        # else:
+        next_stop_id = self._data_munger.get_next_stop_id(location_status.location, location_status.arrival_route)
+        next_stop_no = self._data_munger.get_stop_number_from_stop_id(next_stop_id, location_status.arrival_route)
 
         new_unvisited_tuple = self._eliminate_stops_from_tuple(
             [location_status.location, next_stop_id], location_status.unvisited) \

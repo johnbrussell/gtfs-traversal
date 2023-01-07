@@ -13,6 +13,7 @@ from gtfs_traversal.station_facts import StationFacts
 
 QUIT_AT = None
 TRACE_MEMORY = False
+ROUNDING = 5
 
 
 class Traverser(Solver):
@@ -34,6 +35,7 @@ class Traverser(Solver):
         num_initial_start_points = num_start_points
         stations_denominator = num_initial_start_points * num_stations + 1
         best_progress = 0
+        best_depriority_seen = 0
 
         num_expansions = 0
         total_num_expansions = 0
@@ -47,6 +49,8 @@ class Traverser(Solver):
                 expandee = self._exp_queue.pop(self._progress_dict)
             else:
                 expandee = self._exp_queue_off_network.pop(self._progress_dict)
+                best_depriority_seen = max(
+                    best_depriority_seen, self._exp_queue_off_network._num_remaining_stops_to_pop)
             known_best_time = self._expand(expandee, known_best_time)
             if known_best_time is not None:
                 if print_analytics:
@@ -74,13 +78,21 @@ class Traverser(Solver):
                                             100.0)
                         # Prints percent complete, elapsed time, unexpanded nodes, size of progress dict, number of
                         #  prunable nodes, number of expansions
-                        print(best_progress, datetime.now() - self._initialization_time, self._exp_queue.len(),
-                              len(self._progress_dict), len(self.prunable_nodes()), total_num_expansions)
+                        # print(best_progress, datetime.now() - self._initialization_time, self._exp_queue.len(),
+                        #       len(self._progress_dict), len(self.prunable_nodes()), total_num_expansions)
+                        if num_expansions % self._expansions_to_prune != 0:
+                            print(best_progress, datetime.now() - self._initialization_time, self._exp_queue.len(),
+                                  self._exp_queue_off_network.len(), len(self._progress_dict),
+                                  len(self.prunable_nodes()), total_num_expansions,
+                                  round(100 * float(total_num_expansions) /
+                                        (total_num_expansions + self._exp_queue_off_network.len()), ROUNDING))
                     if num_expansions % self._expansions_to_prune == 0:
-                        print(best_progress, datetime.now() - self._initialization_time,
+                        print(best_depriority_seen,
+                              datetime.now() - self._initialization_time,
                               self._exp_queue_off_network.len(), len(self._progress_dict),
                               len(self.prunable_nodes()), total_num_expansions,
-                              float(total_num_expansions) / (total_num_expansions + self._exp_queue_off_network.len()))
+                              round(100 * float(total_num_expansions) /
+                                    (total_num_expansions + self._exp_queue_off_network.len()), ROUNDING))
                         if QUIT_AT and best_progress >= QUIT_AT:
                             quit()
                 if num_expansions % self._expansions_to_prune == 0:
@@ -136,8 +148,7 @@ class Traverser(Solver):
     def prune_progress_dict(self):
         def ineffectiveness(node):
             # smaller is more ineffective
-            transfer_bonus = 10 if node.arrival_route == self._transfer_route else 1
-            return len(node.unvisited) * transfer_bonus
+            return len(node.unvisited)
 
         prunable_nodes = self.prunable_nodes()
         num_nodes_to_prune = math.floor(self._prune_severity * float(len(prunable_nodes)))
