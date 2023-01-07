@@ -10,6 +10,7 @@ class DataMunger:
         self._buffered_analysis_end_time = None
         self._end_date = end_date
         self._endpoint_solution_stops = None
+        self._junction_stations = None
         self._location_routes = None
         self._minimum_stop_times = None
         self._minimum_remaining_any_path_time_dict = {}
@@ -75,22 +76,39 @@ class DataMunger:
 
         for stop in self.get_unique_stops_to_solve():
             routes_at_stop = self.get_solution_routes_at_stop(stop)
+            next_stops = [self.get_next_stop_id(stop, route) for route in self.get_routes_at_stop(stop) if
+                          route in self.get_unique_routes_to_solve()]
+            if any(next_stop is None for next_stop in next_stops):
+                endpoint_stops.add(stop)
 
-            for route in routes_at_stop:
-                stop_number = self.get_stop_number_from_stop_id(stop, route)
-                if stop_number == '1':
-                    endpoint_stops.add(stop)
-
-                _, best_trip_id = self.first_trip_after(start_time, route, stop)
-
-                if best_trip_id is None:
-                    endpoint_stops.add(stop)
+            # for route in routes_at_stop:
+            #     stop_number = self.get_stop_number_from_stop_id(stop, route)
+            #     if stop_number == '1':
+            #         endpoint_stops.add(stop)
+            #
+            #     _, best_trip_id = self.first_trip_after(start_time, route, stop)
+            #
+            #     if best_trip_id is None:
+            #         endpoint_stops.add(stop)
 
         self._endpoint_solution_stops = endpoint_stops
         return self._endpoint_solution_stops
 
     def get_first_stop_on_route(self, route_id):
         return self.get_stops_for_route(route_id)["1"].stopId
+
+    def get_junction_stations(self):
+        if self._junction_stations is not None:
+            return self._junction_stations
+
+        self._junction_stations = set()
+        for stop in self.get_unique_stops_to_solve():
+            next_stops = [self.get_next_stop_id(stop, route) for route in self.get_routes_at_stop(stop) if
+                          route in self.get_unique_routes_to_solve()]
+            if len(set(next_stops)) > 1:
+                self._junction_stations.add(stop)
+
+        return self._junction_stations
 
     def get_minimum_stop_times(self, start_time):
         if self._minimum_stop_times is not None:

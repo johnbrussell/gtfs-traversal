@@ -52,10 +52,16 @@ class Solver:
             self._progress_dict[parent] = self._progress_dict[parent]._replace(children=set())
         self._progress_dict[parent].children.add(child)
 
-    def _add_new_node_to_expansion_queue(self, new_location):
+    def _add_new_node_to_expansion_queue(self, new_location, best_solution_duration):
         parent = self._progress_dict[new_location].parent
-        if new_location.arrival_route == self._walk_route and parent is not None and \
+        if best_solution_duration is None and new_location.location in self._data_munger.get_unique_stops_to_solve():
+            self._exp_queue.add_node(new_location)
+        elif new_location.arrival_route == self._walk_route and parent is not None and \
                 self._progress_dict[new_location].duration - self._progress_dict[parent].duration >= 60:
+            self._exp_queue_off_network.add_node(new_location)
+        elif new_location.arrival_route == self._transfer_route and \
+                new_location.location not in self._data_munger.get_junction_stations() and \
+                new_location.location not in self._data_munger.get_endpoint_solution_stops(self._start_time):
             self._exp_queue_off_network.add_node(new_location)
         elif new_location.location in self._data_munger.get_unique_stops_to_solve():
             self._exp_queue.add_node(new_location)
@@ -70,7 +76,8 @@ class Solver:
         self._progress_dict[new_location] = new_progress
         # self._add_child_to_parent(new_progress.parent, new_location)
         # if self._progress_dict[new_progress.parent].children is None:
-        #     self._progress_dict[new_progress.parent] = self._progress_dict[new_progress.parent]._replace(children=set())
+        #     self._progress_dict[new_progress.parent] = \
+        #     self._progress_dict[new_progress.parent]._replace(children=set())
         # self._progress_dict[new_progress.parent].children.add(new_location)
 
         if self._is_solution(new_location):
@@ -80,7 +87,7 @@ class Solver:
             self._eliminate_nodes_slower_than_time(best_solution_duration, preserve={new_location})
             self._reset_walking_coordinates(best_solution_duration)
         else:
-            self._add_new_node_to_expansion_queue(new_location)
+            self._add_new_node_to_expansion_queue(new_location, best_solution_duration)
 
         return best_solution_duration
 
@@ -410,7 +417,7 @@ class Solver:
                 self._progress_dict[node_to_eliminate] = self._progress_dict[node_to_eliminate]._replace(children=set())
 
             # eliminate node's parent (if it hasn't already been eliminated)
-            parent = self._progress_dict[node_to_eliminate].parent
+            # parent = self._progress_dict[node_to_eliminate].parent
             self._progress_dict[node_to_eliminate] = self._progress_dict[node_to_eliminate]._replace(parent=None)
             # if parent and not self._progress_dict[parent].eliminated:
             #     self._progress_dict[parent].children.remove(node_to_eliminate)
@@ -766,9 +773,9 @@ class Solver:
             print("something went wrong; must call with at least one stop")
             return 0
 
-        test_location = original_location_status._replace(unvisited=tuple(stops))
-        if test_location in self._progress_dict and self._progress_dict[test_location].duration <= original_duration:
-            return 60 * 60 * 24 * 3
+        # test_location = original_location_status._replace(unvisited=tuple(stops))
+        # if test_location in self._progress_dict and self._progress_dict[test_location].duration <= original_duration:
+        #     return 60 * 60 * 24 * 3
 
         if len(stops) == 1:
             return arrival_duration + station_facts.known_time_between(arrival_location, stops[0], current_time)

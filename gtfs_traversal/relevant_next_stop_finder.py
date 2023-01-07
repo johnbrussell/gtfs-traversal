@@ -6,7 +6,7 @@ from gtfs_traversal.solver import Solver
 
 
 class RelevantNextStopFinder(Solver):
-    def _add_new_node_to_expansion_queue(self, new_location):
+    def _add_new_node_to_expansion_queue(self, new_location, best_solution_duration):
         self._exp_queue.add_node(new_location)
 
     def _determine_first_relevant_stop(self, origin_stop, route):

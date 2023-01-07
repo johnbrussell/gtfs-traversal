@@ -76,6 +76,11 @@ class Traverser(Solver):
                         #  prunable nodes, number of expansions
                         print(best_progress, datetime.now() - self._initialization_time, self._exp_queue.len(),
                               len(self._progress_dict), len(self.prunable_nodes()), total_num_expansions)
+                    if num_expansions % self._expansions_to_prune == 0:
+                        print(best_progress, datetime.now() - self._initialization_time,
+                              self._exp_queue_off_network.len(), len(self._progress_dict),
+                              len(self.prunable_nodes()), total_num_expansions,
+                              float(total_num_expansions) / (total_num_expansions + self._exp_queue_off_network.len()))
                         if QUIT_AT and best_progress >= QUIT_AT:
                             quit()
                 if num_expansions % self._expansions_to_prune == 0:
