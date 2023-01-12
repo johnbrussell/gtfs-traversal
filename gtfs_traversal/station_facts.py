@@ -28,6 +28,7 @@ class StationFacts:
         self._latest_start_time_dict = dict()
         self._next_relevant_stations = dict()
         self._num_searches = 0
+        self._num_finished_searches = 0
         self._relevant_next_stop_finder = None
         self._time_between_stations_dict = dict()
         self._time_to_nearest_endpoint_dict = dict()
@@ -233,7 +234,7 @@ class StationFacts:
             print("".join([repeat, "unfinished travel time dict"]), len(travel_time_dict),
                   "".join([origin, solution, endpoint]),
                   "".join([destination, destination_solution, destination_endpoint]), "max travel time was:",
-                  max_search_time, after_time, latest_start_time)
+                  max_search_time, self._num_searches, after_time, latest_start_time)
 
         for dest in self._latest_start_time_dict[origin].keys():
             self._latest_start_time_dict[origin][dest] = latest_start_time
@@ -247,7 +248,7 @@ class StationFacts:
                     print("".join([repeat, "time between stations"]), len(travel_time_dict),
                           "".join([origin, solution, endpoint]), travel_time,
                           "".join([dict_destination, destination_solution, destination_endpoint]), max_search_time,
-                          after_time, latest_start_time)
+                          self._num_searches, after_time, latest_start_time)
                     self._unfinished_search_dict[origin][dict_destination] = travel_time
             else:
                 self._time_between_stations_dict[origin][dict_destination] = 0

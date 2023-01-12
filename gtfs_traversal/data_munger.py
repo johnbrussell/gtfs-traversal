@@ -103,9 +103,25 @@ class DataMunger:
 
         self._junction_stations = set()
         for stop in self.get_unique_stops_to_solve():
-            next_stops = [self.get_next_stop_id(stop, route) for route in self.get_routes_at_stop(stop) if
-                          route in self.get_unique_routes_to_solve()]
-            if len(set(next_stops)) > 1:
+            route_locations = set()
+            for route in self.get_routes_at_stop(stop):
+                stop_number = self.get_stop_number_from_stop_id(stop, route)
+                previous_stop_number = str(int(stop_number) - 1)
+                next_stop_number = str(int(stop_number) + 1)
+                stops_for_route = self.get_stops_for_route(route)
+                if previous_stop_number in stops_for_route:
+                    previous_stop = stops_for_route[previous_stop_number].stopId
+                else:
+                    previous_stop = None
+                if next_stop_number in stops_for_route:
+                    next_stop = stops_for_route[next_stop_number].stopId
+                else:
+                    next_stop = None
+                if next_stop is None or previous_stop is None:
+                    route_locations.add((previous_stop, next_stop))
+                else:
+                    route_locations.add((min(previous_stop, next_stop), max(previous_stop, next_stop)))
+            if len(route_locations) > 1:
                 self._junction_stations.add(stop)
 
         return self._junction_stations

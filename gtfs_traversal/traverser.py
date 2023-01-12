@@ -36,6 +36,7 @@ class Traverser(Solver):
         stations_denominator = num_initial_start_points * num_stations + 1
         best_progress = 0
         best_depriority_seen = 0
+        num_eliminated_by_solution = None
 
         num_expansions = 0
         total_num_expansions = 0
@@ -48,7 +49,7 @@ class Traverser(Solver):
             if not self._exp_queue.is_empty():
                 expandee = self._exp_queue.pop(self._progress_dict)
             else:
-                expandee = self._exp_queue_off_network.pop(self._progress_dict)
+                expandee = self._exp_queue_off_network.pop(self._progress_dict, ordered=False)
                 best_depriority_seen = max(
                     best_depriority_seen, self._exp_queue_off_network._num_remaining_stops_to_pop)
             known_best_time = self._expand(expandee, known_best_time)
@@ -85,14 +86,18 @@ class Traverser(Solver):
                                   self._exp_queue_off_network.len(), len(self._progress_dict),
                                   len(self.prunable_nodes()), total_num_expansions,
                                   round(100 * float(total_num_expansions) /
-                                        (total_num_expansions + self._exp_queue_off_network.len()), ROUNDING))
+                                        (total_num_expansions + self._exp_queue_off_network.len()), ROUNDING),
+                                  round(100 * float(len(self.prunable_nodes())) /
+                                        (len(self._progress_dict)), ROUNDING))
                     if num_expansions % self._expansions_to_prune == 0:
                         print(best_depriority_seen,
                               datetime.now() - self._initialization_time,
                               self._exp_queue_off_network.len(), len(self._progress_dict),
                               len(self.prunable_nodes()), total_num_expansions,
                               round(100 * float(total_num_expansions) /
-                                    (total_num_expansions + self._exp_queue_off_network.len()), ROUNDING))
+                                    (total_num_expansions + self._exp_queue_off_network.len()), ROUNDING),
+                              round(100 * float(len(self.prunable_nodes())) /
+                                    (len(self._progress_dict)), ROUNDING))
                         if QUIT_AT and best_progress >= QUIT_AT:
                             quit()
                 if num_expansions % self._expansions_to_prune == 0:

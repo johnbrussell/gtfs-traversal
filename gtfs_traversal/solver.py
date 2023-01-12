@@ -45,6 +45,7 @@ class Solver:
         self._station_distance_calculator = None
 
         self._storage = {}
+        self._have_expanded_minimal_network = False
 
     def _add_child_to_parent(self, parent, child):
         # Removed call to reduce function calls
@@ -87,6 +88,11 @@ class Solver:
             self._eliminate_nodes_slower_than_time(best_solution_duration, preserve={new_location})
             self._reset_walking_coordinates(best_solution_duration)
         elif not new_progress.eliminated:
+            self._add_child_to_parent(new_progress.parent, new_location)
+            if self._progress_dict[new_progress.parent].children is None:
+                self._progress_dict[new_progress.parent] = \
+                self._progress_dict[new_progress.parent]._replace(children=set())
+            self._progress_dict[new_progress.parent].children.add(new_location)
             self._add_new_node_to_expansion_queue(new_location, best_solution_duration)
 
         return best_solution_duration
@@ -208,8 +214,8 @@ class Solver:
         #         return None
         #     next_stop_no = self._data_munger.get_stop_number_from_stop_id(next_stop_id, location_status.arrival_route)
         # else:
+        next_stop_no = str(int(stop_number) + 1)
         next_stop_id = self._data_munger.get_next_stop_id(location_status.location, location_status.arrival_route)
-        next_stop_no = self._data_munger.get_stop_number_from_stop_id(next_stop_id, location_status.arrival_route)
 
         new_unvisited_tuple = self._eliminate_stops_from_tuple(
             [location_status.location, next_stop_id], location_status.unvisited) \
@@ -420,16 +426,20 @@ class Solver:
 
             # eliminate node's children
             if self._progress_dict[node_to_eliminate].children is not None:
-                nodes_to_eliminate = nodes_to_eliminate.union(self._progress_dict[node_to_eliminate].children)
+                valid_children = set([c for c in self._progress_dict[node_to_eliminate].children if
+                                      self._progress_dict[c].parent == node_to_eliminate])
+                nodes_to_eliminate = nodes_to_eliminate.union(valid_children)
                 self._progress_dict[node_to_eliminate] = self._progress_dict[node_to_eliminate]._replace(children=set())
 
             # eliminate node's parent (if it hasn't already been eliminated)
-            # parent = self._progress_dict[node_to_eliminate].parent
+            parent = self._progress_dict[node_to_eliminate].parent
             self._progress_dict[node_to_eliminate] = self._progress_dict[node_to_eliminate]._replace(parent=None)
-            # if parent and not self._progress_dict[parent].eliminated:
-            #     self._progress_dict[parent].children.remove(node_to_eliminate)
-            #     if len(self._progress_dict[parent].children) == 0:
-            #         nodes_to_eliminate.add(parent)
+            if parent and not self._progress_dict[parent].eliminated and \
+                    self._progress_dict[parent].children is not None and \
+                    node_to_eliminate in self._progress_dict[parent].children:
+                self._progress_dict[parent].children.remove(node_to_eliminate)
+                if len(self._progress_dict[parent].children) == 0:
+                    nodes_to_eliminate.add(parent)
 
     @staticmethod
     def _minimum_possible_duration(progress):
@@ -509,7 +519,7 @@ class Solver:
             )
 
         def return_value_fast():
-            return self._minimum_possible_duration_within_network(location, progress)
+            return progress.duration + progress.minimum_remaining_time
 
         station_facts = self._get_station_facts()
         if station_facts is None:
@@ -602,7 +612,8 @@ class Solver:
                                                                         most_distant_stop_1,
                                                                         self._start_time, latest_start_time, True)
 
-        other_is_on = False
+        self._have_expanded_minimal_network = self._have_expanded_minimal_network or self._exp_queue.is_empty()
+        other_is_on = self._have_expanded_minimal_network
         if other_is_on:
             if location.arrival_route != self._transfer_route and location.arrival_route != self._walk_route:
                 # Want to calculate between location and other stations; if location is a solution stop, also
@@ -730,14 +741,19 @@ class Solver:
     def _minimum_possible_duration_within_network(self, location, progress):
         station_facts = self._get_station_facts()
 
-        if station_facts is None or len(location.unvisited) > 6:
+        critical_number = station_facts._num_searches ** 0.34 if station_facts else 0
+
+        if station_facts is None:
             return progress.duration + progress.minimum_remaining_time
 
         current_time = self._start_time + timedelta(seconds=progress.duration)
 
-        if len(location.unvisited) <= 6:
+        # if len(location.unvisited) <= critical_number:
+        if len(location.unvisited) > 0:
             return progress.duration + self._minimum_possible_duration_within_stops(
-                location.unvisited, current_time, station_facts, 0, location.location, location, progress.duration)
+                location.unvisited, current_time, station_facts, 0, location.location, location,
+                progress.duration, math.floor(critical_number)
+            )
 
         unvisited_stations_and_current_station = location.unvisited + (location.location,)
         # unvisited_stations_and_current_station.append(location.location)
@@ -775,23 +791,23 @@ class Solver:
 
     def _minimum_possible_duration_within_stops(self, stops, current_time, station_facts,
                                                 arrival_duration, arrival_location, original_location_status,
-                                                original_duration):
+                                                original_duration, more_searches_allowed):
         if len(stops) < 1:
             print("something went wrong; must call with at least one stop")
             return 0
 
-        # test_location = original_location_status._replace(unvisited=tuple(stops))
-        # if test_location in self._progress_dict and self._progress_dict[test_location].duration <= original_duration:
-        #     return 60 * 60 * 24 * 3
+        test_location = original_location_status._replace(unvisited=tuple(stops))
+        if test_location in self._progress_dict and self._progress_dict[test_location].duration <= original_duration:
+            return 60 * 60 * 24 * 3
 
-        if len(stops) == 1:
+        if len(stops) == 1 or more_searches_allowed == 0:
             return arrival_duration + station_facts.known_time_between(arrival_location, stops[0], current_time)
 
         return min([
             self._minimum_possible_duration_within_stops(
                 [st for st in stops if st != s], current_time, station_facts,
                 arrival_duration + station_facts.known_time_between(arrival_location, s, current_time),
-                s, original_location_status, original_duration
+                s, original_location_status, original_duration, more_searches_allowed - 1
             ) for s in stops
         ])
 
