@@ -32,16 +32,18 @@ class Traverser(Solver):
         num_stations = len(self._data_munger.get_unique_stops_to_solve())
         num_start_points = self._exp_queue.len()
         num_completed_stations = 0
+        num_expansions_to_reset_walking_coordinates = 5000
         num_initial_start_points = num_start_points
         stations_denominator = num_initial_start_points * num_stations + 1
         best_progress = 0
         best_depriority_seen = 0
-        num_eliminated_by_solution = None
 
         num_expansions = 0
+        num_walk_expansions = 0
         total_num_expansions = 0
         while not self._exp_queue.is_empty() or not self._exp_queue_off_network.is_empty():
             num_expansions += 1
+            num_walk_expansions += 1
             total_num_expansions += 1
             if self._exp_queue._num_remaining_stops_to_pop == num_stations:
                 num_completed_stations = min(num_initial_start_points - 1, num_initial_start_points - num_start_points)
@@ -84,7 +86,8 @@ class Traverser(Solver):
                         if num_expansions % self._expansions_to_prune != 0:
                             print(best_progress, datetime.now() - self._initialization_time, self._exp_queue.len(),
                                   self._exp_queue_off_network.len(), len(self._progress_dict),
-                                  len(self.prunable_nodes()), total_num_expansions,
+                                  len(self.prunable_nodes()), total_num_expansions, self._num_deep_searches,
+                                  self._avg_critical_number,
                                   round(100 * float(total_num_expansions) /
                                         (total_num_expansions + self._exp_queue_off_network.len()), ROUNDING),
                                   round(100 * float(len(self.prunable_nodes())) /
@@ -93,7 +96,8 @@ class Traverser(Solver):
                         print(best_depriority_seen,
                               datetime.now() - self._initialization_time,
                               self._exp_queue_off_network.len(), len(self._progress_dict),
-                              len(self.prunable_nodes()), total_num_expansions,
+                              len(self.prunable_nodes()), total_num_expansions, self._num_deep_searches,
+                              self._avg_critical_number,
                               round(100 * float(total_num_expansions) /
                                     (total_num_expansions + self._exp_queue_off_network.len()), ROUNDING),
                               round(100 * float(len(self.prunable_nodes())) /
@@ -103,6 +107,10 @@ class Traverser(Solver):
                 if num_expansions % self._expansions_to_prune == 0:
                     num_expansions = 0
                     # self.prune_progress_dict()
+                if num_walk_expansions % num_expansions_to_reset_walking_coordinates == 0:
+                    self._reset_walking_coordinates(known_best_time)
+                    num_walk_expansions = 0
+                    num_expansions_to_reset_walking_coordinates += 1000
 
         return known_best_time, self._progress_dict, self._start_time
 
@@ -183,3 +191,40 @@ class Traverser(Solver):
             print("solution:")
             for stop in path:
                 print(stop)
+
+    def _reset_walking_coordinates(self, known_best_time):
+        abs_max_walk_time = None if known_best_time is None else \
+            known_best_time - self._get_total_minimum_time(self._start_time)
+        all_coordinates = self._data_munger.get_all_stop_coordinates()
+        solution_stops = self._data_munger.get_unique_stops_to_solve()
+        self._viable_walking_stations = dict()
+        self._walking_coordinates = dict()
+        max_walk_time = 0
+        for stop1 in solution_stops:
+            # find walk time to farthest station from stop1
+            for stop2 in solution_stops:
+                wts = self._walk_time_seconds(all_coordinates[stop1].lat, all_coordinates[stop2].lat,
+                                              all_coordinates[stop1].long, all_coordinates[stop2].long)
+                max_walk_time = max(wts, max_walk_time)
+                if abs_max_walk_time is not None and abs_max_walk_time <= max_walk_time:
+                    break
+            if abs_max_walk_time is not None and abs_max_walk_time <= max_walk_time:
+                break
+        max_walk_time = min(max_walk_time, abs_max_walk_time) if abs_max_walk_time else max_walk_time
+
+        for stop1 in solution_stops:
+            self._viable_walking_stations[stop1] = dict()
+            for stop3, coordinates in all_coordinates.items():
+                wts = self._walk_time_seconds(all_coordinates[stop1].lat, coordinates.lat,
+                                              all_coordinates[stop1].long, coordinates.long)
+
+                known_time_to_station = self._known_travel_time_to_nearest_station(stop3)
+
+                if known_time_to_station + wts <= max_walk_time and stop1 != stop3:
+                    self._viable_walking_stations[stop1][stop3] = wts
+                    if stop3 not in self._walking_coordinates:
+                        self._walking_coordinates[stop3] = coordinates
+            # print(stop1, len(self._viable_walking_stations[stop1]))
+            # print(self.__class__)
+        print(max_walk_time,
+              sum([len(v) for v in self._viable_walking_stations.values()]) / float(len(self._viable_walking_stations)))

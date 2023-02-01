@@ -9,8 +9,11 @@ from gtfs_traversal.station_distance_calculator import StationDistanceCalculator
 
 ENDPOINT_MINIMUM = 1
 MINIMUM_SEARCH_TIME = 1
-NUM_SEARCHES_MULTIPLIER = 100
+NUM_SEARCHES_MULTIPLIER = 1
 POWER = 1.5
+MIN_SEARCH_TIME = 179
+MIN_SEARCH_TIME_SOLUTION = 875
+ABS_MAX_SEARCH_TIME = 1000 ** (1/POWER)
 
 
 class StationFacts:
@@ -65,10 +68,9 @@ class StationFacts:
             self._latest_start_time_dict[destination] = {}
 
         solution = " (solution)" if subject in self._data_munger.get_unique_stops_to_solve() else ""
-        repeat = "" if self._unfinished_search_dict.get(subject, {}).get(destination, 0) < MINIMUM_SEARCH_TIME else \
+        repeat = "" if self._unfinished_search_dict.get(subject, 0) < MINIMUM_SEARCH_TIME else \
             "repeat "
-        destination_repeat = "" if self._unfinished_search_dict.get(destination, {}) \
-            .get(farthest_station_from_destination, 0) < MINIMUM_SEARCH_TIME else "repeat "
+        destination_repeat = "" if self._unfinished_search_dict.get(destination, 0) < MINIMUM_SEARCH_TIME else "repeat "
         destination_solution = " (solution)"
 
         # The original fast implementation validated that max_search_time was greater than max_known_time_from_origin
@@ -89,27 +91,33 @@ class StationFacts:
             self._latest_start_time_dict[origin] = {}
 
         solution = " (solution)" if origin in self._data_munger.get_unique_stops_to_solve() else ""
-        repeat = "" if self._unfinished_search_dict.get(origin, {}).get(destination, 0) < MINIMUM_SEARCH_TIME else \
-            "repeat "
+        repeat = "" if self._unfinished_search_dict.get(origin, 0) < MINIMUM_SEARCH_TIME else "repeat "
 
         self._perform_station_time_analysis_if_worthwhile(origin, destination, False, latest_start_time, after_time,
                                                           repeat, solution)
 
-    def _get_increased_max_search_time(self, origin, destination):
-        max_search_time = min(self._unfinished_search_dict.get(origin, {}).get(destination, 0) + 1, 60*60*24*3)
+    def _get_increased_max_search_time(self, origin, destination, solution):
+        max_search_time = min(self._unfinished_search_dict.get(origin, 0) + 1, 60*60*24*3)
 
         # if we know the solution for an earlier time of day, limit the search to a similar time
         if origin in self._time_between_stations_dict and destination in self._time_between_stations_dict[origin]:
             max_search_time = min(self._time_between_stations_dict[origin][destination] + 20 * 60, max_search_time)
 
-        if origin not in self._unfinished_search_dict:
-            self._unfinished_search_dict[origin] = {}
-        self._unfinished_search_dict[origin][destination] = max_search_time
+        have_searched_before = origin in self._unfinished_search_dict
+        if max_search_time >= ABS_MAX_SEARCH_TIME:
+            max_search_time = max_search_time * 100/8
 
-        return max_search_time
+        self._unfinished_search_dict[origin] = max_search_time
+
+        if max_search_time < ABS_MAX_SEARCH_TIME and have_searched_before:
+            return 1
+
+        min_search_time = MIN_SEARCH_TIME_SOLUTION if solution else MIN_SEARCH_TIME
+
+        return max_search_time ** POWER if have_searched_before else min_search_time
 
     def _get_minimum_search_time(self):
-        return max(1, MINIMUM_SEARCH_TIME + self._num_searches * NUM_SEARCHES_MULTIPLIER)
+        return max(1, MINIMUM_SEARCH_TIME)  # + self._num_searches * NUM_SEARCHES_MULTIPLIER)
 
     def get_nearest_different_station_finder(self):
         return NearestDifferentStationFinder(
@@ -204,14 +212,14 @@ class StationFacts:
     def known_time_between(self, subject, destination, at_time):
         if self.know_time_between(subject, destination, at_time):
             return self._time_between_stations_dict.get(subject, {}).get(
-                destination, self._unfinished_search_dict.get(subject, {}).get(destination, 0))
+                destination, self._unfinished_search_dict.get(subject, 0))
         return 0
 
     def known_time_to_nearest_endpoint(self, origin):
-        return self._time_to_nearest_endpoint_dict.get(origin, 0)
+        return self._time_to_nearest_endpoint_dict.get(origin, self._unfinished_search_dict.get(origin, 0))
 
     def known_time_to_nearest_solution_station(self, origin):
-        return self._time_to_nearest_solution_station_dict.get(origin, 0)
+        return self._time_to_nearest_solution_station_dict.get(origin, self._unfinished_search_dict.get(origin, 0))
 
     def _perform_station_time_analysis(self, origin, destination, max_search_time, after_time, repeat, solution,
                                        latest_start_time):
@@ -234,7 +242,8 @@ class StationFacts:
             print("".join([repeat, "unfinished travel time dict"]), len(travel_time_dict),
                   "".join([origin, solution, endpoint]),
                   "".join([destination, destination_solution, destination_endpoint]), "max travel time was:",
-                  max_search_time, self._num_searches, after_time, latest_start_time)
+                  max_search_time, self._num_searches, len(self._unfinished_search_dict),
+                  after_time, latest_start_time)
 
         for dest in self._latest_start_time_dict[origin].keys():
             self._latest_start_time_dict[origin][dest] = latest_start_time
@@ -248,8 +257,8 @@ class StationFacts:
                     print("".join([repeat, "time between stations"]), len(travel_time_dict),
                           "".join([origin, solution, endpoint]), travel_time,
                           "".join([dict_destination, destination_solution, destination_endpoint]), max_search_time,
-                          self._num_searches, after_time, latest_start_time)
-                    self._unfinished_search_dict[origin][dict_destination] = travel_time
+                          self._num_searches, len(self._unfinished_search_dict), after_time, latest_start_time)
+                    self._unfinished_search_dict[origin] = travel_time
             else:
                 self._time_between_stations_dict[origin][dict_destination] = 0
                 self._latest_start_time_dict[origin][dict_destination] = latest_start_time
@@ -273,17 +282,25 @@ class StationFacts:
         if destination in self._time_between_stations_dict[origin] and \
                 latest_start_time <= self._latest_start_time_dict[origin][destination]:
             return
-        max_search_time_subject = self._get_increased_max_search_time(origin, destination)
-        minimum_search_time_subject = self._get_minimum_search_time()
-        if max_search_time_subject >= minimum_search_time_subject:
-            if origin in self._data_munger.get_unique_stops_to_solve():
-                max_search_time_subject = 10000
-            self._num_searches += 1
-            if adjust_destinations:
-                destination = self._adjust_destination(origin, latest_start_time)
-            self._perform_station_time_analysis(
-                origin, destination, max_search_time_subject ** POWER, after_time, repeat, solution,
-                latest_start_time)
+        max_search_time_subject = self._get_increased_max_search_time(origin, destination, solution)
+        if max_search_time_subject < MIN_SEARCH_TIME:
+            return
+        # Try time to nearest station with a limit on time of day like time to all stations
+
+        # if max_search_time_subject == MIN_SEARCH_TIME:
+        #     time_to_nearest_station = self.time_to_nearest_solution_station(origin, after_time)
+        #     if time_to_nearest_station >= MIN_SEARCH_TIME:
+        #         return
+        # minimum_search_time_subject = self._get_minimum_search_time()
+        # if max_search_time_subject >= minimum_search_time_subject:
+        # if origin in self._data_munger.get_unique_stops_to_solve():
+        #     max_search_time_subject *= 3
+        self._num_searches += 1
+        # if adjust_destinations:
+        #     destination = self._adjust_destination(origin, latest_start_time)
+        self._perform_station_time_analysis(
+            origin, destination, max_search_time_subject, after_time, repeat, solution,
+            latest_start_time)
 
     def time_to_nearest_endpoint(self, origin, after_time):
         # Currently not called; calculated as a derivative of time_to_station
