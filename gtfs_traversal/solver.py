@@ -51,6 +51,10 @@ class Solver:
         self._num_deep_searches = 0
         self._avg_critical_number = 0
 
+        self._arrival_stops = {}
+        self._arrival_trips = {}
+        self._arrival_stop_trips = {}
+
     def _add_child_to_parent(self, parent, child):
         # Removed call to reduce function calls
         if self._progress_dict[parent].children is None:
@@ -150,6 +154,12 @@ class Solver:
             return known_best_time
 
         self._progress_dict[location_status] = self._progress_dict[location_status]._replace(expanded=True)
+        self._arrival_trips[self._progress_dict[location_status].arrival_trip] = \
+            self._arrival_trips.get(self._progress_dict[location_status].arrival_trip, 0) + 1
+        self._arrival_stops[location_status.location] = self._arrival_stops.get(location_status.location, 0) + 1
+        self._arrival_stop_trips[(location_status.location, self._progress_dict[location_status].arrival_trip)] = \
+            self._arrival_stop_trips.get((location_status.location,
+                                          self._progress_dict[location_status].arrival_trip), 0) + 1
 
         new_nodes = self._get_new_nodes(location_status, known_best_time)
 
@@ -203,11 +213,14 @@ class Solver:
 
     def _get_next_stop_data_for_trip(self, location_status, known_best_time):
         progress = self._progress_dict[location_status]
+        stop_number = progress.trip_stop_no
 
-        if self._data_munger.is_last_stop_on_route(location_status.location, location_status.arrival_route):
+        if self._data_munger.is_last_stop_on_route(location_status.location,
+                                                   location_status.arrival_route, stop_number):
             return None
 
-        stop_number = progress.trip_stop_no
+        alt_stop_number = self._data_munger.get_stop_number_from_stop_id(
+            location_status.location, location_status.arrival_route)
         # station_facts = self._get_station_facts()
         # if location_status.arrival_route not in self._data_munger.get_unique_routes_to_solve() and \
         #         progress.parent is not None and progress.parent.arrival_route == self._transfer_route and \
@@ -219,13 +232,26 @@ class Solver:
         #     next_stop_no = self._data_munger.get_stop_number_from_stop_id(next_stop_id, location_status.arrival_route)
         # else:
         next_stop_no = str(int(stop_number) + 1)
-        next_stop_id = self._data_munger.get_next_stop_id(location_status.location, location_status.arrival_route)
+        next_stop_id = self._data_munger.get_next_stop_id(location_status.location, location_status.arrival_route,
+                                                          stop_number)
 
         new_unvisited_tuple = self._eliminate_stops_from_tuple(
             [location_status.location, next_stop_id], location_status.unvisited) \
             if self._data_munger.is_solution_route(location_status.arrival_route) else location_status.unvisited
-        new_duration = progress.duration + self._data_munger.get_travel_time_between_stops_in_seconds(
-            progress.arrival_trip, stop_number, next_stop_no)
+        try:
+            new_duration = progress.duration + self._data_munger.get_travel_time_between_stops_in_seconds(
+                progress.arrival_trip, stop_number, next_stop_no)
+            if stop_number != alt_stop_number:
+                raise ValueError("different stop number and alt_stop_number")
+        except Exception as e:
+            print(location_status)
+            print(progress)
+            print(progress.trip_stop_no)
+            print(alt_stop_number)
+            print(next_stop_no)
+            print(progress.arrival_trip)
+            print(self._data_munger.is_last_stop_on_route(location_status.location, location_status.arrival_route))
+            raise e
         new_location = LocationStatusInfo(location=next_stop_id, arrival_route=location_status.arrival_route,
                                           unvisited=new_unvisited_tuple)
         new_minimum_remaining_time = self._get_new_minimum_remaining_time(progress.minimum_remaining_time,

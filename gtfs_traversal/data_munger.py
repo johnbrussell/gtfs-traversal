@@ -267,11 +267,11 @@ class DataMunger:
             minimum_remaining_transfers -= 1
         return max(0, minimum_remaining_transfers)
 
-    def get_next_stop_id(self, stop_id, route):
-        if self.is_last_stop_on_route(stop_id, route):
+    def get_next_stop_id(self, stop_id, route, stop_number=None):
+        if self.is_last_stop_on_route(stop_id, route, stop_number):
             return None
 
-        stop_number = self.get_stop_number_from_stop_id(stop_id, route)
+        stop_number = self.get_stop_number_from_stop_id(stop_id, route) if not stop_number else stop_number
         next_stop_number = str(int(stop_number) + 1)
         stops_on_route = self.get_stops_for_route(route)
         return stops_on_route[next_stop_number].stopId
@@ -478,8 +478,8 @@ class DataMunger:
         self._unique_stops_to_solve = unique_stops_to_solve
         return unique_stops_to_solve
 
-    def is_last_stop_on_route(self, stop_id, route):
-        stop_number = self.get_stop_number_from_stop_id(stop_id, route)
+    def is_last_stop_on_route(self, stop_id, route, stop_number=None):
+        stop_number = self.get_stop_number_from_stop_id(stop_id, route) if not stop_number else stop_number
         return str(int(stop_number) + 1) not in self.get_stops_for_route(route)
 
     def is_solution_route(self, route_id):
