@@ -55,6 +55,8 @@ class Solver:
         self._arrival_trips = {}
         self._arrival_stop_trips = {}
 
+        self._fast_mode = False
+
     def _add_child_to_parent(self, parent, child):
         # Removed call to reduce function calls
         if self._progress_dict[parent].children is None:
@@ -63,19 +65,31 @@ class Solver:
 
     def _add_new_node_to_expansion_queue(self, new_location, best_solution_duration):
         parent = self._progress_dict[new_location].parent
+        # Get a solution as fast as possible if there isn't one yet
         if best_solution_duration is None and new_location.location in self._data_munger.get_unique_stops_to_solve():
             self._exp_queue.add_node(new_location)
-        elif new_location.arrival_route == self._walk_route and parent is not None and \
-                self._progress_dict[new_location].duration - self._progress_dict[parent].duration >= 60:
-            self._exp_queue_off_network.add_node(new_location)
-        elif new_location.arrival_route == self._transfer_route and \
+        # if you're not just traveling along a route, deprioritize if the station isn't a junction or endpoint
+        elif (new_location.arrival_route == self._transfer_route or
+              new_location.arrival_route == self._walk_route) and \
                 new_location.location not in self._data_munger.get_junction_stations() and \
                 new_location.location not in self._data_munger.get_endpoint_solution_stops(self._start_time):
-            self._exp_queue_off_network.add_node(new_location)
+            if not self._fast_mode:
+                self._exp_queue.add_node(new_location)
+            # self._exp_queue_off_network.add_node(new_location)
+        # If you're walking somewhere, deprioritize if the walk is too long
+        elif new_location.arrival_route == self._walk_route and parent is not None and \
+                self._progress_dict[new_location].duration - self._progress_dict[parent].duration >= 60:
+            if not self._fast_mode:
+                self._exp_queue.add_node(new_location)
+            # self._exp_queue_off_network.add_node(new_location)
+        # If you're at a solution stop, proceed
         elif new_location.location in self._data_munger.get_unique_stops_to_solve():
             self._exp_queue.add_node(new_location)
+        # If you're not at a solution stop, deprioritize
         else:
-            self._exp_queue_off_network.add_node(new_location)
+            if not self._fast_mode:
+                self._exp_queue.add_node(new_location)
+            # self._exp_queue_off_network.add_node(new_location)
 
     def _add_new_node_to_progress_dict(self, new_node, best_solution_duration, *, verbose=True):
         new_location, new_progress = new_node
@@ -219,8 +233,8 @@ class Solver:
                                                    location_status.arrival_route, stop_number):
             return None
 
-        alt_stop_number = self._data_munger.get_stop_number_from_stop_id(
-            location_status.location, location_status.arrival_route)
+        # alt_stop_number = self._data_munger.get_stop_number_from_stop_id(
+        #     location_status.location, location_status.arrival_route)
         # station_facts = self._get_station_facts()
         # if location_status.arrival_route not in self._data_munger.get_unique_routes_to_solve() and \
         #         progress.parent is not None and progress.parent.arrival_route == self._transfer_route and \
@@ -234,6 +248,9 @@ class Solver:
         next_stop_no = str(int(stop_number) + 1)
         next_stop_id = self._data_munger.get_next_stop_id(location_status.location, location_status.arrival_route,
                                                           stop_number)
+        alt_next_stop_number = self._data_munger.get_stop_number_from_stop_id(
+            next_stop_id, location_status.arrival_route)
+        alt_next_stop_id = self._data_munger.get_next_stop_id(location_status.location, location_status.arrival_route)
 
         new_unvisited_tuple = self._eliminate_stops_from_tuple(
             [location_status.location, next_stop_id], location_status.unvisited) \
@@ -241,16 +258,22 @@ class Solver:
         try:
             new_duration = progress.duration + self._data_munger.get_travel_time_between_stops_in_seconds(
                 progress.arrival_trip, stop_number, next_stop_no)
-            if stop_number != alt_stop_number:
-                raise ValueError("different stop number and alt_stop_number")
+            # if stop_number != alt_stop_number:
+            #     raise ValueError("different stop number and alt_stop_number")
+            # if next_stop_no != alt_next_stop_number:
+            #     raise ValueError("different next stop number and alt_next_stop_number")
         except Exception as e:
             print(location_status)
             print(progress)
             print(progress.trip_stop_no)
-            print(alt_stop_number)
+            # print(alt_stop_number)
             print(next_stop_no)
+            print(next_stop_id)
+            print(alt_next_stop_number)
+            print(alt_next_stop_id)
             print(progress.arrival_trip)
             print(self._data_munger.is_last_stop_on_route(location_status.location, location_status.arrival_route))
+            print(self._data_munger.get_stops_for_route(location_status.arrival_route))
             raise e
         new_location = LocationStatusInfo(location=next_stop_id, arrival_route=location_status.arrival_route,
                                           unvisited=new_unvisited_tuple)

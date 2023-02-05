@@ -17,10 +17,12 @@ ROUNDING = 5
 
 
 class Traverser(Solver):
-    def find_solution(self, begin_time, known_best_time, print_analytics=False):
+    def find_solution(self, begin_time, known_best_time, print_analytics=False, fast_mode=False):
+        self._fast_mode = fast_mode
         self.initialize_progress_dict(begin_time)
+        print(self._start_time)
         print(f"Solving {len(self._data_munger.get_unique_stops_to_solve())} stops")
-        print(datetime.now())
+        # print(datetime.now())
         print("percent complete", "running time", "expansion queue size", "progress dict size",
               "number of prunable nodes", "total expansions")
         self._exp_queue = ExpansionQueue(len(self._data_munger.get_unique_stops_to_solve()), self._stop_join_string)
@@ -59,7 +61,10 @@ class Traverser(Solver):
                 if print_analytics:
                     if int((num_stations * num_completed_stations +
                             self._exp_queue._num_remaining_stops_to_pop) / stations_denominator * 100.0) > \
-                            best_progress:
+                            best_progress and (best_progress > 0 or
+                                               int((num_stations * num_completed_stations +
+                                                    self._exp_queue._num_remaining_stops_to_pop) /
+                                                   stations_denominator * 100.0) < 25):
                         if TRACE_MEMORY:
                             if best_progress < 1:
                                 tracemalloc.start()

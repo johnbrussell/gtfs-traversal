@@ -88,6 +88,28 @@ if __name__ == "__main__":
         print(start_time)
         try:
             new_best_time, new_best_progress_dictionary, earliest_departure_time = traverser.find_solution(
+                start_time, best_time, print_analytics=True, fast_mode=True)
+        except Exception as e:
+            print(traverser._arrival_stops)
+            print(traverser._arrival_trips)
+            print(traverser._arrival_stop_trips)
+            raise e
+        assert new_best_time is not None
+        if best_time is None or new_best_time < best_time:
+            best_time = new_best_time
+            best_progress_dictionary = new_best_progress_dictionary.copy()
+            best_start_time = earliest_departure_time
+
+        if earliest_departure_time is None:
+            break
+        assert earliest_departure_time >= start_time
+        start_time = earliest_departure_time + timedelta(seconds=1)
+
+    start_time = start_date_midnight + timedelta(seconds=0)
+    while start_time < end_date_midnight:
+        print(start_time)
+        try:
+            new_best_time, new_best_progress_dictionary, earliest_departure_time = traverser.find_solution(
                 start_time, best_time, print_analytics=True)
         except Exception as e:
             print(traverser._arrival_stops)
