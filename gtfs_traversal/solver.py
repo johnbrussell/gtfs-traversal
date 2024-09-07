@@ -76,12 +76,17 @@ class Solver:
             if not self._fast_mode:
                 self._exp_queue.add_node(new_location)
             # self._exp_queue_off_network.add_node(new_location)
-        # If you're walking somewhere, deprioritize if the walk is too long
-        elif new_location.arrival_route == self._walk_route and parent is not None and \
-                self._progress_dict[new_location].duration - self._progress_dict[parent].duration >= 60:
-            if not self._fast_mode:
-                self._exp_queue.add_node(new_location)
-            # self._exp_queue_off_network.add_node(new_location)
+        # Allow walks of any length between stations that are junctions and endpoints
+        elif new_location.arrival_route == self._walk_route and \
+                (new_location.location in self._data_munger.get_junction_stations() or
+                 new_location.location in self._data_munger.get_endpoint_solution_stops(self._start_time)):
+            self._exp_queue.add_node(new_location)
+        # # If you're walking somewhere, deprioritize if the walk is too long
+        # elif new_location.arrival_route == self._walk_route and parent is not None and \
+        #         self._progress_dict[new_location].duration - self._progress_dict[parent].duration >= 40:
+        #     if not self._fast_mode:
+        #         self._exp_queue.add_node(new_location)
+        #     # self._exp_queue_off_network.add_node(new_location)
         # If you're at a solution stop, proceed
         elif new_location.location in self._data_munger.get_unique_stops_to_solve():
             self._exp_queue.add_node(new_location)
@@ -774,19 +779,21 @@ class Solver:
                 else:
                     most_distant_pair = None
 
-                if farthest_station:
+                if farthest_station and not (station_facts.have_searched_before(location.location) and self._fast_mode):
                     station_facts.calculate_one_inter_station_travel_time(
                         location.location, farthest_station, self._start_time, latest_start_time)
                     if station_facts.know_time_between(location.location, farthest_station, self._start_time):
                         self._stations_with_good_travel_time_data.add(location.location)
 
-                if reverse_origin_stop and reverse_destination_stop:
+                if reverse_origin_stop and reverse_destination_stop and \
+                        not (station_facts.have_searched_before(reverse_origin_stop) and self._fast_mode):
                     station_facts.calculate_one_inter_station_travel_time(
                         reverse_origin_stop, reverse_destination_stop, self._start_time, latest_start_time)
                     if station_facts.know_time_between(reverse_origin_stop, reverse_destination_stop, self._start_time):
                         self._stations_with_good_travel_time_data.add(reverse_origin_stop)
 
-                if most_distant_pair:
+                if most_distant_pair and  not (station_facts.have_searched_before(most_distant_pair[0]) and
+                                               self._fast_mode):
                     station_facts.calculate_one_inter_station_travel_time(
                         most_distant_pair[0], most_distant_pair[1], self._start_time, latest_start_time)
                     if station_facts.know_time_between(most_distant_pair[0], most_distant_pair[1], self._start_time):

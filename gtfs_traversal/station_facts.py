@@ -103,13 +103,12 @@ class StationFacts:
         if origin in self._time_between_stations_dict and destination in self._time_between_stations_dict[origin]:
             max_search_time = min(self._time_between_stations_dict[origin][destination] + 20 * 60, max_search_time)
 
-        have_searched_before = origin in self._unfinished_search_dict
         if max_search_time >= ABS_MAX_SEARCH_TIME:
             max_search_time = max_search_time * 100/8
 
         self._unfinished_search_dict[origin] = max_search_time
 
-        if max_search_time < ABS_MAX_SEARCH_TIME and have_searched_before:
+        if max_search_time < ABS_MAX_SEARCH_TIME and self.have_searched_before(origin):
             return 1
 
         min_search_time = MIN_SEARCH_TIME_SOLUTION if solution else MIN_SEARCH_TIME
@@ -203,6 +202,9 @@ class StationFacts:
             walk_route=self._walk_route,
             walk_speed_mph=self._walk_speed_mph,
         )
+
+    def have_searched_before(self, origin):
+        return origin in self._unfinished_search_dict
 
     def know_time_between(self, origin, destination, at_time):
         return origin in self._time_between_stations_dict and \
