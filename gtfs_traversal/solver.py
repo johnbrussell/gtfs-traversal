@@ -899,7 +899,7 @@ class Solver:
         if self._reject_if_off_network(new_location):
             return False
 
-        if self._progress_dict.get(new_location) is not None:
+        if new_location in self._progress_dict.get(new_location):
             if self._progress_dict[new_location].duration <= new_progress.duration:
                 return False
             new_location_transfer = new_location._replace(arrival_route=self._transfer_route)
