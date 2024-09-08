@@ -6,7 +6,8 @@ from gtfs_traversal_2.data_structures import *
 
 
 class Expander:
-    def __init__(self, data_munger, transfer_duration_seconds, transfer_route, walk_route, walk_speed_mph):
+    def __init__(self, data_munger, transfer_duration_seconds, transfer_route, walk_route, walk_speed_mph,
+                 max_solution_duration):
         self._data_munger = data_munger
         self._transfer_duration_seconds = transfer_duration_seconds
         self._transfer_route = transfer_route
@@ -14,10 +15,21 @@ class Expander:
         self._walk_speed_mph = walk_speed_mph
 
         self._exp_queue = None
-        self._progress_dict = dict()
+        self._progress_dict = None
         self._start_time = None
 
-        self._best_solution_duration = None
+        self._best_solution_duration = max_solution_duration
+
+        self._all_station_coordinates = self._data_munger.get_all_stop_coordinates()
+
+    def find_solution_at(self, start_time):
+        self._start_time = start_time
+        self._initialize_progress_dict_and_exp_queue()
+        while not self._exp_queue.is_empty():
+            self._expand()
+            if self._should_prune():
+                self._prune()
+        return self._best_solution_duration
 
     def _add_new_node_to_progress_dict(self, node):
         new_location, new_progress = node
@@ -70,13 +82,6 @@ class Expander:
 
         return self._add_new_nodes_to_progress_dict(new_nodes, location_status)
 
-    def find_solution(self):
-        while not self._exp_queue.is_empty():
-            self._expand()
-            if self._should_prune():
-                self._prune()
-        return self._best_solution_duration
-
     def _get_new_minimum_remaining_time(self, prior_minimum_remaining_time, prior_location, location):
         raise NotImplementedError("must be implemented in subclass")
 
@@ -94,18 +99,23 @@ class Expander:
 
         return [transfer_node] + [self._get_next_stop_data_for_trip(location_status)]
 
-    def _get_new_unvisited(self, location_status, next_stop_id):
-        if not self._is_solution_route(location_status.arrival_route):
-            return location_status.unvisited
-        return self._remove_stops_from_unvisited(location_status.unvisted, {next_stop_id, location_status.location})
+    def _get_new_unvisited(self, location, unvisited, route, next_stop_id):
+        if not self._is_solution_route(route):
+            return unvisited
+        return self._remove_stops_from_unvisited(unvisited, {next_stop_id, location})
 
     def _get_next_stop_data_for_trip(self, location_status):
         progress = self._progress_dict[location_status]
 
-        next_stop_no = str(int(location_status.stop_number) + 1)
-        next_stop_id = self._data_munger.get_stop_id_from_stop_number(next_stop_no, location_status.route)
+        next_stop_no = str(int(location_status.trip_stop_no) + 1)
+        next_stop_id = self._data_munger.get_stop_id_from_stop_number(next_stop_no, location_status.arrival_route)
 
-        new_unvisited = self._get_new_unvisited(location_status, next_stop_id)
+        new_unvisited = self._get_new_unvisited(
+            location_status.location,
+            location_status.unvisited,
+            location_status.arrival_route,
+            next_stop_id
+        )
         new_num_unvisited = self._get_num_unvisited(new_unvisited)
         new_duration = progress.duration + self._data_munger.get_travel_time_between_stops_in_seconds(
                 progress.arrival_trip, location_status.trip_stop_no, next_stop_no)
@@ -128,7 +138,7 @@ class Expander:
                 duration=new_duration,
                 arrival_trip=progress.arrival_trip,
                 parent=location_status,
-                children=None,
+                children=set(),
                 minimum_remaining_time=new_minimum_remaining_time,
                 expanded=False,
                 eliminated=False
@@ -149,14 +159,14 @@ class Expander:
                 location=old_location_status.location,
                 arrival_route=route,
                 trip_stop_no=stop_number,
-                unvisited=old_location_status.unvisted,
+                unvisited=old_location_status.unvisited,
                 num_unvisited=old_location_status.num_unvisited,
             ),
             ProgressInfo(
                 duration=new_duration,
                 arrival_trip=trip_id,
                 parent=old_location_status,
-                children=None,
+                children=set(),
                 minimum_remaining_time=old_progress.minimum_remaining_time,
                 expanded=False,
                 eliminated=False
@@ -176,13 +186,13 @@ class Expander:
         nodes_for_routes_leaving_location = [
             self._get_nodes_after_boarding_route(location_status, progress, route)
             for route in self._data_munger.get_routes_at_stop(location_status.location)
-            if not self._data_munger.is_last_stop_on_route(location_status.location, route)
+            if not self._data_munger.is_last_stop_on_route(location_status.trip_stop_no, route)
         ]
 
         return list(itertools.chain.from_iterable(nodes_for_routes_leaving_location))  # flatten a list
 
     def _get_nodes_after_transfer(self, location_status):
-        walking_data = self._get_walking_data(location_status)
+        walking_data = self._get_walking_nodes(location_status)
         new_route_data = self._get_nodes_after_boarding_routes(location_status)
 
         return walking_data + new_route_data
@@ -199,7 +209,7 @@ class Expander:
             LocationStatusInfo(
                 location=location_status.location,
                 arrival_route=self._transfer_route,
-                unvisited=location_status.unvisted,
+                unvisited=location_status.unvisited,
                 num_unvisited=location_status.num_unvisited,
                 trip_stop_no=0,
             ),
@@ -208,13 +218,48 @@ class Expander:
                 arrival_trip=self._transfer_route,
                 parent=location_status,
                 minimum_remaining_time=minimum_remaining_time,
-                children=None,
+                children=set(),
                 expanded=False,
                 eliminated=False,
             )
         )
 
-    def _get_walking_data(self, location_status):
+    def _get_walking_nodes(self, location_status):
+        progress = self._progress_dict[location_status]
+        stations_times_unvisiteds = [
+            (
+                station,
+                walk_time,
+                self._get_new_unvisited(location_status.location, location_status.unvisited, self._walk_route, station),
+            )
+            for station, walk_time in self._get_walking_stations_and_walk_times(location_status)
+        ]
+        return [
+            (
+                LocationStatusInfo(
+                    location=station,
+                    arrival_route=self._walk_route,
+                    trip_stop_no=None,
+                    unvisited=unvisited,
+                    num_unvisited=self._get_num_unvisited(unvisited),
+                ),
+                ProgressInfo(
+                    progress.duration + walk_time,
+                    self._walk_route,
+                    location_status,
+                    None,
+                    progress.minimum_remaining_time,
+                    False,
+                    False,
+                )
+            )
+            for station, walk_time, unvisited in stations_times_unvisiteds
+        ]
+
+    def _get_walking_stations_and_walk_times(self, location_status):
+        raise NotImplementedError("must be implemented in subclass")
+
+    def _initialize_progress_dict_and_exp_queue(self):
         raise NotImplementedError("must be implemented in subclass")
 
     def _is_solution(self, location):
@@ -319,3 +364,11 @@ class Expander:
         haversine = delta_lat + origin_lat * dest_lat * delta_long
         haversine = 2 * 3959 * math.asin(math.sqrt(haversine))
         return haversine * 3600 / self._walk_speed_mph
+
+    def _walk_time_seconds_between_stations(self, station_1, station_2):
+        return self._walk_time_seconds(
+            self._all_station_coordinates[station_1].lat,
+            self._all_station_coordinates[station_2].lat,
+            self._all_station_coordinates[station_1].long,
+            self._all_station_coordinates[station_2].long,
+        )

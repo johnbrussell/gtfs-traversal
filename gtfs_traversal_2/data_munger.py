@@ -65,6 +65,12 @@ class DataMunger:
             return None, None
         return latest_departure_time, solution_trip_id
 
+    def first_trip_at(self, departure_time, route_number, origin_stop_no):
+        earliest_departure_time, solution_trip_id = self.first_trip_after(departure_time, route_number, origin_stop_no)
+        if earliest_departure_time == departure_time:
+            return solution_trip_id
+        return None
+
     def get_all_stop_coordinates(self):
         return self.data.stopLocations
 

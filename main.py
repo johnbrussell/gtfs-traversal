@@ -5,7 +5,7 @@ if __name__ == "__main__":
     from gtfs_parsing.data_structures.data_structures import gtfsSchedules, uniqueRouteInfo
     from gtfs_traversal.data_munger import DataMunger
     from gtfs_traversal.read_data import *
-    from gtfs_traversal.traverser import Traverser
+    from gtfs_traversal_2.traverser import Traverser
 
     STOP_JOIN_STRING = '~~'
     TRANSFER_ROUTE = 'transfer'
@@ -51,83 +51,21 @@ if __name__ == "__main__":
 
     data = data._replace(dateTrips=None)
 
-    data_munger = DataMunger(end_date=analysis.end_date, data=data, stop_join_string=STOP_JOIN_STRING,
-                             route_types_to_solve=analysis.route_types, stops_to_solve=None,
-                             walk_speed_mph=WALK_SPEED_MPH)
-
-    print(data.tripSchedules["20479-1493860"].tripRouteInfo)
-    for route, info in data.uniqueRouteTrips.items():
-        if "20479-1493860" in info.tripIds:
-            print(route)
-            print(info.tripIds)
-            for tripId in info.tripIds:
-                print(len(data.tripSchedules[tripId].tripStops))
-                print(max([int(k) for k in data.tripSchedules[tripId].tripStops.keys()]))
-            print(data.tripSchedules["20479-1493860"].tripStops["76"])
-            print(data_munger.get_stop_number_from_stop_id("E35850", 156))
-            print(data_munger.is_last_stop_on_route("E35850", 156))
-            print("76" in data_munger.get_stops_for_route(156))
-            print("77" in data_munger.get_stops_for_route(156))
-            print(data_munger.get_stop_number_from_stop_id("E35850", 156) in data_munger.get_stops_for_route(156))
-            print(str(int("76") + 1))
-            print(str(int("76") + 1) in data_munger.get_stops_for_route(156))
-            print(data_munger.get_stop_number_from_stop_id("E26060", 156))
-    # quit()
-
-    traverser = Traverser(end_date=analysis.end_date, route_types_to_solve=analysis.route_types, stops_to_solve=None,
-                          data_munger=data_munger, progress_between_pruning_progress_dict=1000,
-                          prune_thoroughness=.001, stop_join_string=STOP_JOIN_STRING,
-                          transfer_duration_seconds=TRANSFER_DURATION_SECONDS, transfer_route=TRANSFER_ROUTE,
-                          walk_route=WALK_ROUTE, walk_speed_mph=WALK_SPEED_MPH)
-
     best_time = None
     best_progress_dictionary = None
     best_start_time = None
-    # start_time = datetime(year=2018, month=10, day=13, hour=22, minute=25)
     while start_time < end_date_midnight:
-        print(start_time)
-        try:
-            new_best_time, new_best_progress_dictionary, earliest_departure_time = traverser.find_solution(
-                start_time, best_time, print_analytics=True, fast_mode=True)
-        except Exception as e:
-            print(traverser._arrival_stops)
-            print(traverser._arrival_trips)
-            print(traverser._arrival_stop_trips)
-            raise e
-        assert new_best_time is not None
-        if best_time is None or new_best_time < best_time:
-            best_time = new_best_time
-            best_progress_dictionary = new_best_progress_dictionary.copy()
-            best_start_time = earliest_departure_time
+        traverser = Traverser(end_date=analysis.end_date, route_types_to_solve=analysis.route_types,
+                              transfer_duration_seconds=TRANSFER_DURATION_SECONDS, transfer_route=TRANSFER_ROUTE,
+                              walk_route=WALK_ROUTE, walk_speed_mph=WALK_SPEED_MPH, data=data,
+                              known_best_time=best_time)
 
-        if earliest_departure_time is None:
-            break
-        assert earliest_departure_time >= start_time
-        start_time = earliest_departure_time + timedelta(seconds=1)
+        start_time = traverser.next_worthwhile_departure_time_at_or_after(start_time)
 
-    start_time = start_date_midnight + timedelta(seconds=0)
-    while start_time < end_date_midnight:
-        print(start_time)
-        try:
-            new_best_time, new_best_progress_dictionary, earliest_departure_time = traverser.find_solution(
-                start_time, best_time, print_analytics=True)
-        except Exception as e:
-            print(traverser._arrival_stops)
-            print(traverser._arrival_trips)
-            print(traverser._arrival_stop_trips)
-            raise e
-        assert new_best_time is not None
-        if best_time is None or new_best_time < best_time:
-            best_time = new_best_time
-            best_progress_dictionary = new_best_progress_dictionary.copy()
-            best_start_time = earliest_departure_time
+        new_solution_duration = traverser.find_solution_at(start_time)
+        print(start_time, new_solution_duration)
+        if best_time is None or new_solution_duration < best_time:
+            best_time = new_solution_duration
+            best_start_time = start_time
 
-        if earliest_departure_time is None:
-            break
-        assert earliest_departure_time >= start_time
-        start_time = earliest_departure_time + timedelta(seconds=1)
-
-    print('best start time:', best_start_time)
-    print('best time:', best_time)
-    traverser.print_path(best_progress_dictionary)
-    print("finished successfully.")
+        start_time = start_time + timedelta(seconds=1)
