@@ -3,8 +3,13 @@ import math
 
 
 class DataMunger:
-    def __init__(self, end_date, route_types_to_solve, stops_to_solve, data, walk_speed_mph):
+    def __init__(self, end_date, route_types_to_solve, routes_to_solve, stops_to_solve, data, walk_speed_mph):
         self.data = data
+
+        if not route_types_to_solve and not routes_to_solve and not stops_to_solve:
+            raise ValueError("must indicate whether to solve by route types, by routes, or by stops")
+        if routes_to_solve and route_types_to_solve:
+            raise ValueError("cannot solve for both specific routes and route types")
 
         self._buffered_analysis_end_time = None
         self._end_date = end_date
@@ -18,9 +23,18 @@ class DataMunger:
         self._stops_by_route_in_solution_set = None
         self._transfer_stops = None
         self._trip_time_cache = {}
-        self._unique_routes_to_solve = None
+        self._unique_routes_to_solve = routes_to_solve
         self._unique_stops_to_solve = stops_to_solve
         self._walk_speed_mph = walk_speed_mph
+
+        if route_types_to_solve and not stops_to_solve:
+            self._solver_type = "route types"
+        elif routes_to_solve and not stops_to_solve:
+            self._solver_type = "routes"
+        elif stops_to_solve and not (routes_to_solve or route_types_to_solve):
+            self._solver_type = "stops"
+        else:
+            self._solver_type = "mixed"
 
     def first_trip_after(self, earliest_departure_time, route_number, origin_stop_no):
         # hmmm, what is earliest_departure_time, and what if it's after midnight toward the end of the service day?
@@ -69,12 +83,14 @@ class DataMunger:
 
         endpoint_stops = set()
 
-        for stop in self.get_unique_stops_to_solve():
-            for route in [r for r in self.get_routes_at_stop(stop) if r in self.get_unique_routes_to_solve()]:
-                if any(self.get_next_stop_id(stop_number, route) is None
-                       or int(stop_number) == 1
-                       for stop_number in self.get_stop_numbers_for_stop_id(stop, route)):
-                    endpoint_stops.add(stop)
+        # Endpoints don't really make sense to consider when we don't care about routes at all
+        if self._solver_type != "stops":
+            for stop in self.get_unique_stops_to_solve():
+                for route in [r for r in self.get_routes_at_stop(stop) if r in self.get_unique_routes_to_solve()]:
+                    if any(self.get_next_stop_id(stop_number, route) is None
+                           or int(stop_number) == 1
+                           for stop_number in self.get_stop_numbers_for_stop_id(stop, route)):
+                        endpoint_stops.add(stop)
 
         self._endpoint_solution_stops = endpoint_stops
         return self._endpoint_solution_stops
@@ -118,32 +134,37 @@ class DataMunger:
         minimum_stop_times = {}
         # minimum_stop_times is a dictionary where keys are stops and values are half of the minimum amount of time
         #  required to travel either to or from that stop from another solution stop
-        for stop in self.get_unique_stops_to_solve():
-            routes_at_stop = self.get_routes_at_stop(stop)
-            for route in routes_at_stop:
-                if route not in self.get_unique_routes_to_solve():
-                    continue
-                for stop_number in self.get_stop_numbers_for_stop_id(stop, route):
-                    if self.is_last_stop_on_route(stop_number, route):
+        if self._solver_type != "stops":
+            for stop in self.get_unique_stops_to_solve():
+                routes_at_stop = self.get_routes_at_stop(stop)
+                for route in routes_at_stop:
+                    if route not in self.get_unique_routes_to_solve():
                         continue
+                    for stop_number in self.get_stop_numbers_for_stop_id(stop, route):
+                        if self.is_last_stop_on_route(stop_number, route):
+                            continue
 
-                    # Currently, this function assumes that the first trip of the day along each route is the fastest.
-                    best_departure_time, best_trip_id = self.first_trip_after(start_time, route, stop_number)
-                    if best_trip_id is None:
-                        continue
-                    next_stop_number = str(int(stop_number) + 1)
-                    if next_stop_number not in self.get_stops_for_route(route):
-                        continue
-                    stops_on_route = self.get_stops_for_route(route)
-                    next_stop = stops_on_route[next_stop_number].stopId
-                    travel_time_to_next_stop = self.get_travel_time_between_stops_in_seconds(
-                        best_trip_id, stop_number, next_stop_number)
-                    if next_stop not in minimum_stop_times:
-                        minimum_stop_times[next_stop] = 24 * 60 * 60
-                    if stop not in minimum_stop_times:
-                        minimum_stop_times[stop] = 24 * 60 * 60
-                    minimum_stop_times[next_stop] = min(minimum_stop_times[next_stop], travel_time_to_next_stop / 2)
-                    minimum_stop_times[stop] = min(minimum_stop_times[stop], travel_time_to_next_stop / 2)
+                        # Currently, this function assumes the first trip of the day along each route is the fastest.
+                        best_departure_time, best_trip_id = self.first_trip_after(start_time, route, stop_number)
+                        if best_trip_id is None:
+                            continue
+                        next_stop_number = str(int(stop_number) + 1)
+                        if next_stop_number not in self.get_stops_for_route(route):
+                            continue
+                        stops_on_route = self.get_stops_for_route(route)
+                        next_stop = stops_on_route[next_stop_number].stopId
+                        travel_time_to_next_stop = self.get_travel_time_between_stops_in_seconds(
+                            best_trip_id, stop_number, next_stop_number)
+                        if next_stop not in minimum_stop_times:
+                            minimum_stop_times[next_stop] = 24 * 60 * 60
+                        if stop not in minimum_stop_times:
+                            minimum_stop_times[stop] = 24 * 60 * 60
+                        minimum_stop_times[next_stop] = min(minimum_stop_times[next_stop], travel_time_to_next_stop / 2)
+                        minimum_stop_times[stop] = min(minimum_stop_times[stop], travel_time_to_next_stop / 2)
+        else:
+            minimum_stop_times = {
+                stop: 0 for stop in self.get_unique_stops_to_solve()
+            }
 
         self._minimum_stop_times = minimum_stop_times
         return self._minimum_stop_times
@@ -190,7 +211,9 @@ class DataMunger:
         routes_accounted_for = set()
         for stop in unvisited_stops:
             routes_at_stop = self.get_routes_at_stop(stop)
-            solution_routes_at_stop = [s for s in routes_at_stop if s in self.get_unique_routes_to_solve()]
+            solution_routes_at_stop = [s for s in routes_at_stop
+                                       if s in self.get_unique_routes_to_solve()
+                                       or self._solver_type == "stops"]
             if len(solution_routes_at_stop) > 1:
                 continue
             route = solution_routes_at_stop[0]
@@ -209,9 +232,6 @@ class DataMunger:
         next_stop_number = str(int(stop_number) + 1)
         stops_on_route = self.get_stops_for_route(route)
         return stops_on_route[next_stop_number].stopId
-
-    def get_off_course_stop_locations(self):
-        return {s: l for s, l in self.get_all_stop_coordinates().items() if s not in self.get_unique_stops_to_solve()}
 
     def get_route_trips(self):
         return self.data.uniqueRouteTrips
@@ -246,6 +266,8 @@ class DataMunger:
 
     def get_solution_routes_at_stop(self, stop_id):
         routes_at_stop = self.get_routes_at_stop(stop_id)
+        if self._solver_type == "stops":
+            return routes_at_stop
         return {route for route in routes_at_stop if route in self.get_unique_routes_to_solve()}
 
     def get_stop_id_from_stop_number(self, stop_number, route):
@@ -268,28 +290,13 @@ class DataMunger:
 
     def get_stops_at_ends_of_solution_routes(self):
         stops_at_ends_of_solution_routes = set()
+        if self._solver_type == "stops":
+            return stops_at_ends_of_solution_routes
         for r in self.get_unique_routes_to_solve():
             trip_stops = self.get_stops_for_route(r)
             stops_at_ends_of_solution_routes.add(trip_stops['1'].stopId)
             stops_at_ends_of_solution_routes.add(trip_stops[str(len(trip_stops))].stopId)
         return stops_at_ends_of_solution_routes
-
-    def get_stops_by_route_in_solution_set(self):
-        if self._stops_by_route_in_solution_set is not None:
-            return self._stops_by_route_in_solution_set
-
-        route_stops = {}
-
-        for stop in self.get_unique_stops_to_solve():
-            for route in self.get_routes_at_stop(stop):
-                if route not in self.get_unique_routes_to_solve():
-                    continue
-                if route not in route_stops:
-                    route_stops[route] = set()
-                route_stops[route].add(stop)
-
-        self._stops_by_route_in_solution_set = route_stops
-        return self._stops_by_route_in_solution_set
 
     def get_stops_for_route(self, route_id):
         return self.get_stops_for_trip(self.get_trips_for_route(route_id)[0])
@@ -421,9 +428,6 @@ class DataMunger:
 
     def is_last_stop_on_route(self, stop_number, route):
         return str(int(stop_number) + 1) not in self.get_stops_for_route(route)
-
-    def is_solution_route(self, route_id):
-        return route_id in self.get_unique_routes_to_solve()
 
     @staticmethod
     def _to_radians_from_degrees(degrees):
