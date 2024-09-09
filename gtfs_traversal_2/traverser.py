@@ -1,7 +1,7 @@
 from gtfs_traversal_2.expander import Expander
 from gtfs_traversal_2.data_munger import DataMunger
 from gtfs_traversal_2.data_structures import LocationStatusInfo, ProgressInfo
-from gtfs_traversal_2.expansion_queue import ExpansionQueue
+from gtfs_traversal_2.sortable_expansion_queue import SortableExpansionQueue
 
 
 class Traverser(Expander):
@@ -54,7 +54,7 @@ class Traverser(Expander):
 
     def _initialize_progress_dict_and_exp_queue(self):
         self._progress_dict = dict()
-        self._exp_queue = ExpansionQueue(max_size=len(self._data_munger.get_unique_stops_to_solve()))
+        self._exp_queue = SortableExpansionQueue(max_size=len(self._data_munger.get_unique_stops_to_solve()))
         for stop in self._data_munger.get_unique_stops_to_solve():
             for route in self._data_munger.get_solution_routes_at_stop(stop):
                 stop_numbers = self._data_munger.get_stop_numbers_for_stop_id(stop, route)
@@ -88,6 +88,13 @@ class Traverser(Expander):
 
     def _is_solution_route(self, route):
         return route in self._data_munger.get_unique_routes_to_solve()
+
+    def _perform_tasks_after_adding_nodes_to_progress_dict(self):
+        def sort_fn(location_status):
+            return self._progress_dict[location_status].duration
+
+        if self._best_solution_duration is None:
+            self._exp_queue.sort_minimum_queue_level_by_external_function(sort_fn)
 
     def _prune(self):
         pass

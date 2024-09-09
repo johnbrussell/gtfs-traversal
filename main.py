@@ -10,7 +10,7 @@ if __name__ == "__main__":
     STOP_JOIN_STRING = '~~'
     TRANSFER_ROUTE = 'transfer'
     TRANSFER_DURATION_SECONDS = 60
-    WALK_ROUTE = 'walk between stations'
+    WALK_ROUTE = 'walk'
     WALK_SPEED_MPH = 4.5
     MAX_WALK_NODES = 2
     MAX_EXPANSION_QUEUE = 2500000

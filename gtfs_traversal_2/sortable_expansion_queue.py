@@ -1,13 +1,9 @@
-class ExpansionQueue:
+class SortableExpansionQueue:
     def __init__(self, max_size):
         self._length = 0
         self._one_more_than_max_size = max_size + 1
         self._num_remaining_stops_to_pop = self._one_more_than_max_size
         self._queue = dict()
-
-    def add(self, nodes):
-        for node in nodes:
-            self.add_node(node)
 
     def add_node(self, node):
         num_remaining_stops = node.num_unvisited
@@ -51,6 +47,10 @@ class ExpansionQueue:
             self._length -= 1
         self._handle_empty_queue_at_key(bad_key.num_unvisited)
         self._reset_num_remaining_stops_to_pop()
+
+    def sort_minimum_queue_level_by_external_function(self, sort_fn):
+        self._queue[self._num_remaining_stops_to_pop] = (
+            sorted(self._queue[self._num_remaining_stops_to_pop], key=lambda node: sort_fn(node), reverse=True))
 
     def _reset_num_remaining_stops_to_pop(self):
         if self._queue:

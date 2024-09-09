@@ -59,6 +59,8 @@ class Expander:
         if not have_seen_valid_node:
             self._mark_nodes_as_eliminated([parent])
 
+        self._perform_tasks_after_adding_nodes_to_progress_dict()
+
     def _announce_solution(self, new_progress):
         raise NotImplementedError("must be implemented in subclass")
 
@@ -80,7 +82,7 @@ class Expander:
 
         new_nodes = self._get_new_nodes(location_status)
 
-        return self._add_new_nodes_to_progress_dict(new_nodes, location_status)
+        self._add_new_nodes_to_progress_dict(new_nodes, location_status)
 
     def _get_new_minimum_remaining_time(self, prior_minimum_remaining_time, prior_location, location):
         raise NotImplementedError("must be implemented in subclass")
@@ -178,6 +180,7 @@ class Expander:
         new_nodes = [
             self._get_node_after_boarding_route(route, stop_number, old_location_status, old_progress)
             for stop_number in stop_numbers
+            if not self._data_munger.is_last_stop_on_route(stop_number, route)
         ]
         return [n for n in new_nodes if n]
 
@@ -186,7 +189,6 @@ class Expander:
         nodes_for_routes_leaving_location = [
             self._get_nodes_after_boarding_route(location_status, progress, route)
             for route in self._data_munger.get_routes_at_stop(location_status.location)
-            if not self._data_munger.is_last_stop_on_route(location_status.trip_stop_no, route)
         ]
 
         return list(itertools.chain.from_iterable(nodes_for_routes_leaving_location))  # flatten a list
@@ -211,7 +213,7 @@ class Expander:
                 arrival_route=self._transfer_route,
                 unvisited=location_status.unvisited,
                 num_unvisited=location_status.num_unvisited,
-                trip_stop_no=0,
+                trip_stop_no=None,
             ),
             ProgressInfo(
                 duration=new_duration,
@@ -247,7 +249,7 @@ class Expander:
                     progress.duration + walk_time,
                     self._walk_route,
                     location_status,
-                    None,
+                    set(),
                     progress.minimum_remaining_time,
                     False,
                     False,
@@ -270,7 +272,7 @@ class Expander:
 
     def _mark_nodes_as_eliminated(self, nodes_to_eliminate):
         while nodes_to_eliminate:
-            node_to_eliminate = nodes_to_eliminate[0]
+            node_to_eliminate = nodes_to_eliminate.pop()
 
             # Sometimes, you might reasonably try to eliminate an eliminated node.
             if self._progress_dict[node_to_eliminate].eliminated:
@@ -339,6 +341,9 @@ class Expander:
                 return False
 
         return True
+
+    def _perform_tasks_after_adding_nodes_to_progress_dict(self):
+        pass
 
     def _prune(self):
         raise NotImplementedError("must be implemented in subclass")
