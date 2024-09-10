@@ -26,7 +26,7 @@ class Traverser(Expander):
         return earliest_departure_time
 
     def _announce_solution(self, new_progress):
-        print(f"New solution found of duration {new_progress.duration}")
+        print(f"New solution found of duration {new_progress.duration} seconds")
 
     def _determine_stop_join_string(self, multiplier=1):
         potential_strings = ["~", "|", "-", "_", "="]
@@ -62,7 +62,7 @@ class Traverser(Expander):
                     trip = self._data_munger.first_trip_at(self._start_time, route, stop_number)
                     if trip is None:
                         continue
-                    print(f"found trip for {self._start_time}")
+                    print(f"initializing traverser for {self._start_time}")
                     if self._data_munger.is_last_stop_on_route(stop_number, route):
                         continue
                     location_info = LocationStatusInfo(

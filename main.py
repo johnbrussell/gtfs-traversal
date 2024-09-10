@@ -1,3 +1,5 @@
+from gtfs_traversal_2.first_pass_traverser import FirstPassTraverser
+
 if __name__ == "__main__":
     from datetime import datetime, timedelta
 
@@ -51,7 +53,27 @@ if __name__ == "__main__":
 
     data = data._replace(dateTrips=None)
 
-    best_time = None
+    intuition_best_time = None
+    intuition_start_time = start_time
+    while intuition_start_time < end_date_midnight:
+        intuition_traverser = FirstPassTraverser(
+            end_date=analysis.end_date,
+            route_types_to_solve=analysis.route_types,
+            transfer_duration_seconds=TRANSFER_DURATION_SECONDS,
+            transfer_route=TRANSFER_ROUTE,
+            walk_route=WALK_ROUTE,
+            walk_speed_mph=WALK_SPEED_MPH,
+            data=data,
+            known_best_time=None,
+        )
+        intuition_start_time = intuition_traverser.next_worthwhile_departure_time_at_or_after(intuition_start_time)
+        new_solution_duration = intuition_traverser.find_solution_at(intuition_start_time)
+        if not intuition_best_time or new_solution_duration < intuition_best_time:
+            intuition_best_time = new_solution_duration
+
+        intuition_start_time = intuition_start_time + timedelta(seconds=1)
+
+    best_time = intuition_best_time
     best_progress_dictionary = None
     best_start_time = None
     while start_time < end_date_midnight:
