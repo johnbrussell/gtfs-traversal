@@ -138,7 +138,7 @@ class DataMunger:
             return self._minimum_stop_times
 
         minimum_stop_times = {}
-        # minimum_stop_times is a dictionary where keys are stops and values are half of the minimum amount of time
+        # minimum_stop_times is a dictionary where keys are stops and values are the minimum amount of time
         #  required to travel either to or from that stop from another solution stop
         if self._solver_type != "stops":
             for stop in self.get_unique_stops_to_solve():
@@ -165,8 +165,8 @@ class DataMunger:
                             minimum_stop_times[next_stop] = 24 * 60 * 60
                         if stop not in minimum_stop_times:
                             minimum_stop_times[stop] = 24 * 60 * 60
-                        minimum_stop_times[next_stop] = min(minimum_stop_times[next_stop], travel_time_to_next_stop / 2)
-                        minimum_stop_times[stop] = min(minimum_stop_times[stop], travel_time_to_next_stop / 2)
+                        minimum_stop_times[next_stop] = min(minimum_stop_times[next_stop], travel_time_to_next_stop)
+                        minimum_stop_times[stop] = min(minimum_stop_times[stop], travel_time_to_next_stop)
         else:
             minimum_stop_times = {
                 stop: 0 for stop in self.get_unique_stops_to_solve()
