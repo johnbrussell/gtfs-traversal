@@ -36,6 +36,11 @@ class DataMunger:
         else:
             self._solver_type = "mixed"
 
+    @staticmethod
+    def convert_to_seconds_since_midnight(raw_time_string):
+        hours, minutes, seconds = raw_time_string.split(':')
+        return 3600 * float(hours) + 60 * float(minutes) + float(seconds)
+
     def first_trip_after(self, earliest_departure_time, route_number, origin_stop_no):
         # hmmm, what is earliest_departure_time, and what if it's after midnight toward the end of the service day?
 
@@ -397,11 +402,6 @@ class DataMunger:
         except Exception as e:
             print(trip, on_stop_number, off_stop_number, trip_stops)
             raise e
-
-    @staticmethod
-    def convert_to_seconds_since_midnight(raw_time_string):
-        hours, minutes, seconds = raw_time_string.split(':')
-        return 3600 * float(hours) + 60 * float(minutes) + float(seconds)
 
     def get_trip_schedules(self):
         return self.data.tripSchedules
