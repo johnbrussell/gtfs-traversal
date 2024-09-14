@@ -1,13 +1,14 @@
+from datetime import timedelta
+
 from gtfs_traversal_2.expander import Expander
-from gtfs_traversal_2.data_munger import DataMunger
 from gtfs_traversal_2.data_structures import LocationStatusInfo, ProgressInfo
 from gtfs_traversal_2.sortable_expansion_queue import SortableExpansionQueue
 
 
 class Traverser(Expander):
-    def __init__(self, data, end_date, route_types_to_solve, walk_speed_mph, transfer_duration_seconds, transfer_route,
-                 walk_route, known_best_time):
-        self._data_munger = DataMunger(end_date, route_types_to_solve, None, None, data, walk_speed_mph)
+    def __init__(self, walk_speed_mph, transfer_duration_seconds, transfer_route,
+                 walk_route, known_best_time, data_munger):
+        self._data_munger = data_munger
         Expander.__init__(self, self._data_munger, transfer_duration_seconds, transfer_route, walk_route,
                           walk_speed_mph, known_best_time)
 
@@ -20,7 +21,7 @@ class Traverser(Expander):
                 for stop_number in self._data_munger.get_stop_numbers_for_stop_id(stop, route):
                     if self._data_munger.is_last_stop_on_route(stop_number, route):
                         continue
-                    departure_time, _trip = self._data_munger.first_trip_after(start_time, route, stop_number)
+                    departure_time, _trip = self._data_munger.first_departure_after(start_time, route, stop_number)
                     if not earliest_departure_time or departure_time < earliest_departure_time:
                         earliest_departure_time = departure_time
         return earliest_departure_time
@@ -59,10 +60,9 @@ class Traverser(Expander):
         return max(0, sum(unvisited_stop_minimum_times.values()) - sum(max_n_minimum_times) + minimum_transfers * self._transfer_duration_seconds)
 
     def _get_num_unvisited(self, unvisited):
+        if unvisited == "":
+            return 0
         return len(unvisited.split(self._stop_join_string))
-
-    def _get_walking_data(self, location_status):
-        raise NotImplementedError("must be implemented in subclass")
 
     def _get_walking_stations_and_walk_times(self, location_status):
         return [
@@ -78,7 +78,7 @@ class Traverser(Expander):
             for route in self._data_munger.get_solution_routes_at_stop(stop):
                 stop_numbers = self._data_munger.get_stop_numbers_for_stop_id(stop, route)
                 for stop_number in stop_numbers:
-                    trip = self._data_munger.first_trip_at(self._start_time, route, stop_number)
+                    trip = self._data_munger.first_departure_at(self._start_time, route, stop_number)
                     if trip is None:
                         continue
                     if self._data_munger.is_last_stop_on_route(stop_number, route):
@@ -87,7 +87,7 @@ class Traverser(Expander):
                         location=stop,
                         arrival_route=route,
                         trip_stop_no=stop_number,
-                        unvisited=self._stop_join_string.join(self._data_munger.get_unique_stops_to_solve()),
+                        unvisited=self._stop_join_string.join(sorted(self._data_munger.get_unique_stops_to_solve())),
                         num_unvisited=len(self._data_munger.get_unique_stops_to_solve()),
                     )
                     self._progress_dict[location_info] = ProgressInfo(
@@ -100,9 +100,25 @@ class Traverser(Expander):
                         eliminated=False,
                     )
                     self._exp_queue.add_node(location_info)
+        # print(f"Initialized {len(self._progress_dict)} nodes")
+        # print(self._progress_dict)
+        # print(self._progress_dict)
+
+    def _is_impossible_to_reach_all_stations(self, unvisited, duration):
+        if unvisited == "":
+            return False
+
+        earliest_last_trip = self._data_munger.get_earliest_last_trip(self._start_time)
+        current_time = self._start_time + timedelta(seconds=duration)
+        if current_time <= earliest_last_trip:
+            return False
+
+        last_trips = self._data_munger.get_last_solution_trip_times_for_stops(self._start_time)
+        unvisited_list = unvisited.split(self._stop_join_string)
+        return any(last_trips[stop] < current_time for stop in unvisited_list)
 
     def _is_solution(self, location):
-        return location.unvisited == ''
+        return location.unvisited == ""
 
     def _is_solution_route(self, route):
         return route in self._data_munger.get_unique_routes_to_solve()

@@ -2,6 +2,7 @@ import math
 from datetime import timedelta
 import itertools
 
+from gtfs_traversal_2.analysis_data_munger import AnalysisDataMunger
 from gtfs_traversal_2.data_structures import *
 
 
@@ -9,6 +10,7 @@ class Expander:
     def __init__(self, data_munger, transfer_duration_seconds, transfer_route, walk_route, walk_speed_mph,
                  max_solution_duration):
         self._data_munger = data_munger
+        self._analysis_data_munger = AnalysisDataMunger.from_generalized_data_munger(self._data_munger)
         self._transfer_duration_seconds = transfer_duration_seconds
         self._transfer_route = transfer_route
         self._walk_route = walk_route
@@ -23,6 +25,8 @@ class Expander:
         self._all_station_coordinates = self._data_munger.get_all_stop_coordinates()
 
     def find_solution_at(self, start_time):
+        if start_time is None:
+            return self._best_solution_duration
         self._start_time = start_time
         self._initialize_progress_dict_and_exp_queue()
         while not self._exp_queue.is_empty():
@@ -144,7 +148,7 @@ class Expander:
         )
 
     def _get_node_after_boarding_route(self, route, stop_number, old_location_status, old_progress):
-        departure_time, trip_id = self._data_munger.first_trip_after(
+        departure_time, trip_id = self._data_munger.first_departure_after(
             self._start_time + timedelta(seconds=old_progress.duration), route, stop_number)
 
         if trip_id is None:
@@ -260,6 +264,9 @@ class Expander:
     def _initialize_progress_dict_and_exp_queue(self):
         raise NotImplementedError("must be implemented in subclass")
 
+    def _is_impossible_to_reach_all_stations(self, unvisited, duration):
+        raise NotImplementedError("must be implemented in subclass")
+
     def _is_solution(self, location):
         raise NotImplementedError("must be implemented in subclass")
 
@@ -337,6 +344,13 @@ class Expander:
                 # if new_progress.duration < self._best_solution_duration:
                 #     print(new_progress.duration, new_progress.minimum_remaining_time, new_progress.duration + new_progress.minimum_remaining_time)
                 return False
+
+        try:
+            if self._is_impossible_to_reach_all_stations(new_location.unvisited, new_progress.duration):
+                return False
+        except Exception as e:
+            print(new_location, new_progress)
+            raise e
 
         return True
 

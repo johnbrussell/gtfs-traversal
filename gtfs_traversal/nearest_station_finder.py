@@ -39,7 +39,7 @@ class NearestStationFinder(Solver):
             if next_stop is None:
                 continue
 
-            next_route_departure_time, trip = self._data_munger.first_trip_after(earliest_departure_time, route, origin)
+            next_route_departure_time, trip = self._data_munger.first_departure_after(earliest_departure_time, route, origin)
             if trip is None:
                 continue
 
@@ -125,7 +125,7 @@ class NearestStationFinder(Solver):
             if next_stop is None:
                 continue
 
-            route_departure_time, trip = self._data_munger.first_trip_after(earliest_departure_time, route, origin)
+            route_departure_time, trip = self._data_munger.first_departure_after(earliest_departure_time, route, origin)
             if route_departure_time != departure_time or trip is None:
                 continue
 

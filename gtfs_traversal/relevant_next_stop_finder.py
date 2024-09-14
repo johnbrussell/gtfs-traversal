@@ -42,7 +42,7 @@ class RelevantNextStopFinder(Solver):
             self._initialize_progress_dict(departure_time, route, origin_stop)
             self._exp_queue = ExpansionQueue(1, self._stop_join_string)
             self._exp_queue.add(self._progress_dict.keys())
-            departure_time, _ = self._data_munger.first_trip_after(departure_time, route, origin_stop)
+            departure_time, _ = self._data_munger.first_departure_after(departure_time, route, origin_stop)
 
             while not self._exp_queue.is_empty():
                 expandee = self._exp_queue.pop(self._progress_dict, ordered=False)
@@ -70,7 +70,7 @@ class RelevantNextStopFinder(Solver):
     def _initialize_progress_dict(self, begin_time, route, origin):
         progress_dict = dict()
 
-        departure_time, trip = self._data_munger.first_trip_after(begin_time, route, origin)
+        departure_time, trip = self._data_munger.first_departure_after(begin_time, route, origin)
         if trip is None:
             return
         stop_number = self._data_munger.get_stop_number_from_stop_id(origin, route)

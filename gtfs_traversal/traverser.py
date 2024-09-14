@@ -136,7 +136,7 @@ class Traverser(Solver):
         for stop in self._data_munger.get_unique_stops_to_solve():
             for route in self._data_munger.get_solution_routes_at_stop(stop):
                 # This function assumes that each route does not visit any stop multiple times
-                departure_time, trip = self._data_munger.first_trip_after(begin_time, route, stop)
+                departure_time, trip = self._data_munger.first_departure_after(begin_time, route, stop)
                 if trip is None:
                     continue
                 if best_departure_time is None:

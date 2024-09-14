@@ -295,7 +295,7 @@ class Solver:
 
     def _get_node_after_boarding_route(self, location_status, route):
         progress = self._progress_dict[location_status]
-        departure_time, trip_id = self._data_munger.first_trip_after(
+        departure_time, trip_id = self._data_munger.first_departure_after(
             self._start_time + timedelta(seconds=progress.duration), route, location_status.location)
 
         if trip_id is None:
