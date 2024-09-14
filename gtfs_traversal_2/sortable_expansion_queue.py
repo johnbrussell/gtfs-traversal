@@ -12,6 +12,7 @@ class SortableExpansionQueue:
         if num_remaining_stops not in self._queue:
             self._queue[num_remaining_stops] = list()
             if num_remaining_stops < self._num_remaining_stops_to_pop:
+                # print(num_remaining_stops)
                 self._num_remaining_stops_to_pop = num_remaining_stops
         self._queue[num_remaining_stops].append(node)
         self._length += 1
@@ -55,5 +56,6 @@ class SortableExpansionQueue:
     def _reset_num_remaining_stops_to_pop(self):
         if self._queue:
             self._num_remaining_stops_to_pop = min(self._queue.keys())
+            # print(self._num_remaining_stops_to_pop)
         else:
             self._num_remaining_stops_to_pop = self._one_more_than_max_size

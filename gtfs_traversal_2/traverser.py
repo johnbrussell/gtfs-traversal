@@ -37,8 +37,26 @@ class Traverser(Expander):
             return potential_sjs
         return self._determine_stop_join_string(multiplier + 1)
 
-    def _get_new_minimum_remaining_time(self, prior_minimum_remaining_time, prior_location, location):
-        return prior_minimum_remaining_time
+    def _get_new_minimum_remaining_time(self, location):
+        unvisited = location.unvisited.split(self._stop_join_string)
+        unvisited_stop_minimum_times = {k: v for k, v in self._data_munger.get_minimum_stop_times(self._start_time).items() if k in unvisited}
+        minimum_transfers = self._minimum_transfers_to_visit_stops(unvisited, location.arrival_route, location.location)
+        max_n_minimum_times = set()
+        minimum_max_time = 1000000
+        for v in unvisited_stop_minimum_times.values():
+            if len(max_n_minimum_times) < minimum_transfers:
+                max_n_minimum_times.add(v)
+                if v < minimum_max_time:
+                    minimum_max_time = v
+                continue
+            if v > minimum_max_time:
+                max_n_minimum_times.remove(minimum_max_time)
+                while len(max_n_minimum_times) < minimum_transfers - 1:
+                    max_n_minimum_times.add(minimum_max_time)
+                max_n_minimum_times.add(v)
+                minimum_max_time = min(max_n_minimum_times)
+        # print(sum(unvisited_stop_minimum_times.values()), sum(max_n_minimum_times), minimum_transfers)
+        return max(0, sum(unvisited_stop_minimum_times.values()) - sum(max_n_minimum_times) + minimum_transfers * self._transfer_duration_seconds)
 
     def _get_num_unvisited(self, unvisited):
         return len(unvisited.split(self._stop_join_string))
@@ -55,6 +73,7 @@ class Traverser(Expander):
     def _initialize_progress_dict_and_exp_queue(self):
         self._progress_dict = dict()
         self._exp_queue = SortableExpansionQueue(max_size=len(self._data_munger.get_unique_stops_to_solve()))
+        print(f"initializing traverser for {self._start_time}")
         for stop in self._data_munger.get_unique_stops_to_solve():
             for route in self._data_munger.get_solution_routes_at_stop(stop):
                 stop_numbers = self._data_munger.get_stop_numbers_for_stop_id(stop, route)
@@ -62,7 +81,6 @@ class Traverser(Expander):
                     trip = self._data_munger.first_trip_at(self._start_time, route, stop_number)
                     if trip is None:
                         continue
-                    print(f"initializing traverser for {self._start_time}")
                     if self._data_munger.is_last_stop_on_route(stop_number, route):
                         continue
                     location_info = LocationStatusInfo(
@@ -88,6 +106,15 @@ class Traverser(Expander):
 
     def _is_solution_route(self, route):
         return route in self._data_munger.get_unique_routes_to_solve()
+
+    def _minimum_transfers_to_visit_stops(self, stops, current_route, current_stop):
+        routes = self._data_munger.minimum_routes_to_visit_stops(stops, current_route, current_stop)
+        if current_route in routes:
+            return len(routes) - 1
+        if any(r in self._data_munger.get_routes_at_stop(current_stop) for r in routes):
+            if current_route == self._transfer_route:
+                return len(routes) - 1
+        return len(routes)
 
     def _perform_tasks_after_adding_nodes_to_progress_dict(self):
         def sort_fn(location_status):

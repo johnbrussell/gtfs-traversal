@@ -1,5 +1,6 @@
 from datetime import datetime, timedelta
 import math
+import itertools
 
 
 class DataMunger:
@@ -155,7 +156,7 @@ class DataMunger:
                         if self.is_last_stop_on_route(stop_number, route):
                             continue
 
-                        # Currently, this function assumes the first trip of the day along each route is the fastest.
+                        # Currently, this function assumes the first trip after the stated start time each route is the fastest.
                         best_departure_time, best_trip_id = self.first_trip_after(start_time, route, stop_number)
                         if best_trip_id is None:
                             continue
@@ -434,6 +435,31 @@ class DataMunger:
 
     def is_last_stop_on_route(self, stop_number, route):
         return str(int(stop_number) + 1) not in self.get_stops_for_route(route)
+
+    def minimum_routes_to_visit_stops(self, stops, current_route, current_stop):
+        if self._solver_type == "stops":
+            raise NotImplementedError("function not supported for this solver type")
+
+        potential_solution = None
+        solution_for_stop = None
+
+        all_solution_routes = self.get_unique_routes_to_solve()
+        i = 1
+        while i <= len(all_solution_routes) and potential_solution is None:
+            permutations = itertools.permutations(all_solution_routes, r=i)
+            for p in permutations:
+                if all(any(r in self.get_routes_at_stop(stop) for r in p) for stop in stops):
+                    if current_route in p:
+                        return p
+                    potential_solution = p
+                    if not solution_for_stop and any(r in self.get_routes_at_stop(current_stop) for r in p):
+                        solution_for_stop = p
+            i += 1
+
+        if solution_for_stop:
+            return solution_for_stop
+        assert potential_solution is not None
+        return potential_solution
 
     @staticmethod
     def _to_radians_from_degrees(degrees):

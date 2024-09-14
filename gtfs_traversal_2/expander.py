@@ -84,7 +84,7 @@ class Expander:
 
         self._add_new_nodes_to_progress_dict(new_nodes, location_status)
 
-    def _get_new_minimum_remaining_time(self, prior_minimum_remaining_time, prior_location, location):
+    def _get_new_minimum_remaining_time(self, location):
         raise NotImplementedError("must be implemented in subclass")
 
     def _get_new_nodes(self, location_status):
@@ -129,11 +129,7 @@ class Expander:
             trip_stop_no=next_stop_no,
             num_unvisited=new_num_unvisited
         )
-        new_minimum_remaining_time = self._get_new_minimum_remaining_time(
-            progress.minimum_remaining_time,
-            location_status,
-            new_location
-        )
+        new_minimum_remaining_time = self._get_new_minimum_remaining_time(new_location) if not self._is_solution(new_location) else 0
         return (
             new_location,
             ProgressInfo(
@@ -338,6 +334,8 @@ class Expander:
             if self._is_solution(new_location):
                 return new_progress.duration < self._best_solution_duration
             if new_progress.duration + new_progress.minimum_remaining_time >= self._best_solution_duration:
+                # if new_progress.duration < self._best_solution_duration:
+                #     print(new_progress.duration, new_progress.minimum_remaining_time, new_progress.duration + new_progress.minimum_remaining_time)
                 return False
 
         return True

@@ -73,6 +73,8 @@ if __name__ == "__main__":
 
         intuition_start_time = intuition_start_time + timedelta(seconds=1)
 
+    print(f"Best intuition time: {intuition_best_time}")
+
     best_time = intuition_best_time
     best_progress_dictionary = None
     best_start_time = None
