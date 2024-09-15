@@ -134,11 +134,20 @@ class Traverser(Expander):
         return len(routes)
 
     def _perform_tasks_after_adding_nodes_to_progress_dict(self):
+        # for expansion queue with priority
         def get_priority_fn(minimum_duration_in_queue):
             def priority_fn(location_status):
                 return self._progress_dict[location_status].duration < minimum_duration_in_queue + self._seconds_of_priority
             return priority_fn
 
+        # For sortable expansion queue
+        # def sort_fn(location_status):
+        #     return self._progress_dict[location_status].duration
+        #
+        # if self._best_solution_duration is None:
+        #     self._exp_queue.sort_minimum_queue_level_by_external_function(sort_fn)
+
+        # for expansion queue with priority
         if self._should_reprioritize_queue():
             nodes_ready_for_prioritization = self._exp_queue.view_nodes_ready_for_prioritization()
             if nodes_ready_for_prioritization:
