@@ -166,7 +166,7 @@ class DataMunger:  # Can be shared between Expanders
         self._earliest_last_trip = min(self._last_trip_times.values())
         stops_with_earliest_last_trip = [k for k, v in self._last_trip_times.items() if v == self._earliest_last_trip]
         # print(self._last_trip_times)
-        print(stops_with_earliest_last_trip, self._earliest_last_trip)
+        # print(stops_with_earliest_last_trip, self._earliest_last_trip)
         return self._last_trip_times
 
     def get_junction_stations(self):

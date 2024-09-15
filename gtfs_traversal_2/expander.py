@@ -3,6 +3,7 @@ from datetime import timedelta
 import itertools
 
 from gtfs_traversal_2.analysis_data_munger import AnalysisDataMunger
+from gtfs_traversal_2.base_expansion_queue import BaseExpansionQueue
 from gtfs_traversal_2.data_structures import *
 
 
@@ -34,6 +35,9 @@ class Expander:
             if self._should_prune():
                 self._prune()
         return self._best_solution_duration
+
+    def _abort(self):
+        self._exp_queue = BaseExpansionQueue(max_size=1)
 
     def _add_new_node_to_progress_dict(self, node):
         new_location, new_progress = node

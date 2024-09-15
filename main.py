@@ -16,6 +16,7 @@ if __name__ == "__main__":
     MAX_WALK_NODES = 2
     MAX_EXPANSION_QUEUE = 2500000
     MAX_PROGRESS_DICT = 3000000
+    SECONDS_OF_PRIORITY = 60 * 25
 
     analyses = gtfs_analyses.determine_analysis_parameters(load_configuration())
     analysis = analyses[1]
@@ -84,6 +85,7 @@ if __name__ == "__main__":
             walk_speed_mph=WALK_SPEED_MPH,
             data_munger=data_munger,
             known_best_time=None,
+            seconds_of_priority=SECONDS_OF_PRIORITY,
         )
         intuition_start_time = intuition_traverser.next_worthwhile_departure_time_at_or_after(intuition_start_time)
         new_solution_duration = intuition_traverser.find_solution_at(intuition_start_time)
@@ -103,7 +105,8 @@ if __name__ == "__main__":
     while start_time < end_date_midnight:
         traverser = Traverser(transfer_duration_seconds=TRANSFER_DURATION_SECONDS, transfer_route=TRANSFER_ROUTE,
                               walk_route=WALK_ROUTE, walk_speed_mph=WALK_SPEED_MPH,
-                              known_best_time=best_time, data_munger=data_munger)
+                              known_best_time=best_time, data_munger=data_munger,
+                              seconds_of_priority=SECONDS_OF_PRIORITY)
 
         start_time = traverser.next_worthwhile_departure_time_at_or_after(start_time)
 

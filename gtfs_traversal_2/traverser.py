@@ -2,13 +2,14 @@ from datetime import timedelta
 
 from gtfs_traversal_2.expander import Expander
 from gtfs_traversal_2.data_structures import LocationStatusInfo, ProgressInfo
-from gtfs_traversal_2.sortable_expansion_queue import SortableExpansionQueue
+from gtfs_traversal_2.expansion_queue_with_priority import ExpansionQueueWithPriority
 
 
 class Traverser(Expander):
     def __init__(self, walk_speed_mph, transfer_duration_seconds, transfer_route,
-                 walk_route, known_best_time, data_munger):
+                 walk_route, known_best_time, data_munger, seconds_of_priority):
         self._data_munger = data_munger
+        self._seconds_of_priority = seconds_of_priority
         Expander.__init__(self, self._data_munger, transfer_duration_seconds, transfer_route, walk_route,
                           walk_speed_mph, known_best_time)
 
@@ -72,7 +73,7 @@ class Traverser(Expander):
 
     def _initialize_progress_dict_and_exp_queue(self):
         self._progress_dict = dict()
-        self._exp_queue = SortableExpansionQueue(max_size=len(self._data_munger.get_unique_stops_to_solve()))
+        self._exp_queue = ExpansionQueueWithPriority(max_size=len(self._data_munger.get_unique_stops_to_solve()))
         print(f"initializing traverser for {self._start_time}")
         for stop in self._data_munger.get_unique_stops_to_solve():
             for route in self._data_munger.get_solution_routes_at_stop(stop):
@@ -133,11 +134,16 @@ class Traverser(Expander):
         return len(routes)
 
     def _perform_tasks_after_adding_nodes_to_progress_dict(self):
-        def sort_fn(location_status):
-            return self._progress_dict[location_status].duration
+        def get_priority_fn(minimum_duration_in_queue):
+            def priority_fn(location_status):
+                return self._progress_dict[location_status].duration < minimum_duration_in_queue + self._seconds_of_priority
+            return priority_fn
 
-        if self._best_solution_duration is None:
-            self._exp_queue.sort_minimum_queue_level_by_external_function(sort_fn)
+        if self._should_reprioritize_queue():
+            nodes_ready_for_prioritization = self._exp_queue.view_nodes_ready_for_prioritization()
+            if nodes_ready_for_prioritization:
+                minimum_duration = min([self._progress_dict[node].duration for node in nodes_ready_for_prioritization])
+                self._exp_queue.reset_priority_queue(get_priority_fn(minimum_duration))
 
     def _prune(self):
         pass
@@ -148,3 +154,6 @@ class Traverser(Expander):
 
     def _should_prune(self):
         return False
+
+    def _should_reprioritize_queue(self):
+        return self._best_solution_duration is None
