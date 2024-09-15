@@ -2,6 +2,8 @@ import math
 from datetime import timedelta
 import itertools
 
+from sympy.logic.inference import valid
+
 from gtfs_traversal_2.analysis_data_munger import AnalysisDataMunger
 from gtfs_traversal_2.base_expansion_queue import BaseExpansionQueue
 from gtfs_traversal_2.data_structures import *
@@ -57,17 +59,15 @@ class Expander:
         # This function requires the transfer node to occur first
         have_seen_valid_node = False
 
-        for node in new_nodes_list:
-            if self._node_is_valid(node):
-                have_seen_valid_node = True
-                self._add_new_node_to_progress_dict(node)
-            else:
-                continue
+        valid_nodes = [n for n in new_nodes_list if self._node_is_valid(n)]
 
-        if not have_seen_valid_node:
+        for node in valid_nodes:
+            self._add_new_node_to_progress_dict(node)
+
+        if not valid_nodes:
             self._mark_nodes_as_eliminated([parent])
 
-        self._perform_tasks_after_adding_nodes_to_progress_dict()
+        self._perform_tasks_after_adding_nodes_to_progress_dict(valid_nodes)
 
     def _announce_solution(self, new_progress):
         raise NotImplementedError("must be implemented in subclass")
@@ -358,7 +358,7 @@ class Expander:
 
         return True
 
-    def _perform_tasks_after_adding_nodes_to_progress_dict(self):
+    def _perform_tasks_after_adding_nodes_to_progress_dict(self, nodes_added):
         pass
 
     def _prune(self):

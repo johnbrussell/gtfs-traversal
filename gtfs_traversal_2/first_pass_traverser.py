@@ -11,19 +11,19 @@ class FirstPassTraverser(Traverser):
             for station in self._data_munger.get_unique_stops_to_solve()
         ]
 
-    def _perform_tasks_after_adding_nodes_to_progress_dict(self):
+    def _perform_tasks_after_adding_nodes_to_progress_dict(self, nodes_added):
         # for sortable expansion queue
-        # if self._best_solution_duration is not None:
-        #     self._abort()
-        # super()._perform_tasks_after_adding_nodes_to_progress_dict()
+        if self._best_solution_duration is not None:
+            self._abort()
+        super()._perform_tasks_after_adding_nodes_to_progress_dict(nodes_added)
 
         # for expansion queue with priority
-        if self._should_reprioritize_queue():
-            super()._perform_tasks_after_adding_nodes_to_progress_dict()
-        else:
-            print("found solution; aborting")
-            self._abort()
+        # if self._should_reprioritize_queue():
+        #     super()._perform_tasks_after_adding_nodes_to_progress_dict(nodes_added)
+        # else:
+        #     print("found solution; aborting")
+        #     self._abort()
 
     # for expansion queue with priority
-    def _should_reprioritize_queue(self):
-        return self._best_solution_duration is None or self._exp_queue.deeper_nodes_exist()
+    # def _should_reprioritize_queue(self):
+    #     return self._best_solution_duration is None or self._exp_queue.deeper_nodes_exist()

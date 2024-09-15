@@ -52,7 +52,7 @@ class ExpansionQueueWithPriority(BaseExpansionQueue):
             return self._queue[self._num_remaining_stops_to_pop]
         while self._priority_level > self._num_remaining_stops_to_pop:
             self._priority_level -= 1
-            print(self._priority_level)
+            # print(self._priority_level)
             if self._priority_level in self._queue:
                 return self._queue[self._priority_level]
         return self._queue[self._num_remaining_stops_to_pop]

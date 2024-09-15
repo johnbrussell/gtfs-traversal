@@ -16,7 +16,7 @@ if __name__ == "__main__":
     MAX_WALK_NODES = 2
     MAX_EXPANSION_QUEUE = 2500000
     MAX_PROGRESS_DICT = 3000000
-    SECONDS_OF_PRIORITY = 60 * 10
+    SECONDS_OF_PRIORITY = 60 * 3
 
     analyses = gtfs_analyses.determine_analysis_parameters(load_configuration())
     analysis = analyses[1]
