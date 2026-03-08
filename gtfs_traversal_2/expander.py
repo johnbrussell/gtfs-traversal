@@ -16,6 +16,7 @@ class Expander:
         self._analysis_data_munger = AnalysisDataMunger.from_generalized_data_munger(self._data_munger)
         self._transfer_duration_seconds = transfer_duration_seconds
         self._transfer_route = transfer_route
+        self._unvisited_dict = dict()
         self._walk_route = walk_route
         self._walk_speed_mph = walk_speed_mph
 
