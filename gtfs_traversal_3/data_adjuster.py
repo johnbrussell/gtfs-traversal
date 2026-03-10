@@ -1,5 +1,7 @@
 import datetime
 
+import pandas as pd
+
 import gtfs_parsing.data_structures.data_structures as ds
 
 

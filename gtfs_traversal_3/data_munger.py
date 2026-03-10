@@ -4,7 +4,7 @@ import itertools
 
 
 class DataMunger:  # Can be shared between Expanders
-    def __init__(self, end_date, route_types_to_solve, routes_to_solve, stops_to_solve, data, walk_speed_mph):
+    def __init__(self, end_date, route_types_to_solve, routes_to_solve, stops_to_solve, data, walk_speed_mph, stops_df):
         self.data = data
 
         if not route_types_to_solve and not routes_to_solve and not stops_to_solve:
@@ -19,6 +19,7 @@ class DataMunger:  # Can be shared between Expanders
         self._junction_stations = None
         self._last_trip_times = None
         self._location_routes = None
+        self._location_stations = dict(zip(stops_df['stop_id'], stops_df['stop_name']))
         self._minimum_stop_times = None
         self._minimum_remaining_any_path_time_dict = {}
         self._route_list = None
@@ -498,6 +499,9 @@ class DataMunger:  # Can be shared between Expanders
             return solution_for_stop
         assert potential_solution is not None
         return potential_solution
+
+    def station_for_stop(self, stop):
+        return self._location_stations[stop]
 
     @staticmethod
     def _to_radians_from_degrees(degrees):

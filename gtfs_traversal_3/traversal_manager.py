@@ -8,21 +8,17 @@ from gtfs_traversal.read_data import *
 from gtfs_traversal_3.traverser import Traverser
 from gtfs_traversal_3.first_pass_traverser import FirstPassTraverser
 
-def run():
-    STOP_JOIN_STRING = '~~'
-    TRANSFER_ROUTE = 'transfer'
-    TRANSFER_DURATION_SECONDS = 60
-    WALK_ROUTE = 'walk'
-    WALK_SPEED_MPH = 4.5
-    MAX_WALK_NODES = 2
-    MAX_EXPANSION_QUEUE = 2500000
-    MAX_PROGRESS_DICT = 3000000
-    SECONDS_OF_PRIORITY = 60 * 3
-    start_time_dict = dict()
+WALK_SPEED_MPH = 4.5
 
+
+def run():
     analysis = gtfs_analyses.determine_analysis_parameters(load_configuration())[1]
     data = read_data(analysis, "data")
+    stops_df = read_stops(analysis, "data")
     DataAdjuster.adjust_data_set(data, analysis.start_date)
+
+    # desperately needs a re-write
+    data_munger = DataMunger(analysis.end_date, analysis.route_types, None, None, data, WALK_SPEED_MPH, stops_df)
 
     # works through here
 
@@ -38,8 +34,6 @@ def run():
     start_time = start_date_midnight + timedelta(seconds=0)
     # must analyze all start times in completely separate trees because trip durations change throughout the day
     end_date_midnight = datetime.strptime(analysis.end_date, '%Y-%m-%d') + timedelta(days=1)
-
-    data_munger = DataMunger(analysis.end_date, analysis.route_types, None, None, data, WALK_SPEED_MPH)
 
     # routes_at_x70025 = data_munger.get_routes_at_stop('X70025')
     # print(routes_at_x70025)
