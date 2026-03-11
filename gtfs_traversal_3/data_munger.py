@@ -24,6 +24,7 @@ class DataMunger:  # Can be shared between Expanders
         self._minimum_remaining_any_path_time_dict = {}
         self._route_list = None
         self._route_types_to_solve = route_types_to_solve
+        self._speedy_network = None
         self._stops_by_route_in_solution_set = None
         self._transfer_stops = None
         self._unique_routes_to_solve = routes_to_solve
@@ -325,6 +326,16 @@ class DataMunger:  # Can be shared between Expanders
         if self._solver_type == "stops":
             return routes_at_stop
         return {route for route in routes_at_stop if route in self.get_unique_routes_to_solve()}
+
+    def get_speedy_network(self):
+        if not self._speedy_network:
+            self._speedy_network = {k: dict() for k in self.data.stopLocations.keys()}
+            for trip in self.data.tripSchedules.values():
+                departures = list(trip.values())
+                for org, dst in list(zip(departures[:-1], departures[1:])):
+                    self._speedy_network[org.stopId][dst.stopId] = min(self._speedy_network[org.stopId].get(dst.stopId, dst.departureTime - org.departureTime), dst.departureTime - org.departureTime)
+
+        return self._speedy_network
 
     def get_stop_id_from_stop_number(self, stop_number, route):
         return self.get_stops_for_route(route)[stop_number].stopId
