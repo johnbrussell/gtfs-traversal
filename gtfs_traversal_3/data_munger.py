@@ -331,7 +331,7 @@ class DataMunger:  # Can be shared between Expanders
         if not self._speedy_network:
             self._speedy_network = {k: dict() for k in self.data.stopLocations.keys()}
             for trip in self.data.tripSchedules.values():
-                departures = list(trip.values())
+                departures = list(trip.tripStops.values())
                 for org, dst in list(zip(departures[:-1], departures[1:])):
                     self._speedy_network[org.stopId][dst.stopId] = min(self._speedy_network[org.stopId].get(dst.stopId, dst.departureTime - org.departureTime), dst.departureTime - org.departureTime)
 

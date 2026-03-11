@@ -57,10 +57,10 @@ class DataAdjuster:
                 departure_time = new_schedule[idx2].departureTime + datetime.timedelta(seconds=60 * idx3 / num_equal)
                 new_schedule[idx2] = new_schedule[idx2]._replace(departureTime=departure_time)
 
-            data.tripSchedules[trip] = new_schedule
+            data.tripSchedules[trip] = data.tripSchedules[trip]._replace(tripStops=new_schedule)
 
         data = data._replace(
-            uniqueRouteTrips={k: v._replace(tripIds=sorted(v.tripIds, key=lambda x: data.tripSchedules[x][1].departureTime)) for k, v in data.uniqueRouteTrips.items() },
+            uniqueRouteTrips={k: v._replace(tripIds=sorted(v.tripIds, key=lambda x: data.tripSchedules[x].tripStops[1].departureTime)) for k, v in data.uniqueRouteTrips.items() },
             stopLocations={k: v for k, v in data.stopLocations.items() if k in allowable_stop_locations},
         )
         return data
