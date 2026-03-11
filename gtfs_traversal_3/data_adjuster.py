@@ -17,6 +17,8 @@ class DataAdjuster:
         trips = set.union(*[v for k, v in data.dateTrips.items() if analysis_date == k.date()])
         data = data._replace(tripSchedules={ k: v for k, v in data.tripSchedules.items() if k in trips }, dateTrips=None)
 
+        allowable_stop_locations = set()
+
         for trip, schedule in data.tripSchedules.items():
             new_schedule = dict()
             idx = 0
@@ -30,6 +32,7 @@ class DataAdjuster:
                     datetime.datetime(analysis_date.year, analysis_date.month, analysis_date.day) +
                         datetime.timedelta(hours=h, minutes=m, seconds=s)
                 )
+                allowable_stop_locations.add(stop_departure.stopId)
 
             # Add seconds so no trip stops at the multiple stops at the same time
             for idx2, stop_departure in new_schedule.items():
@@ -56,7 +59,10 @@ class DataAdjuster:
 
             data.tripSchedules[trip] = new_schedule
 
-        data = data._replace(uniqueRouteTrips={k: v._replace(tripIds=sorted(v.tripIds, key=lambda x: data.tripSchedules[x][1].departureTime)) for k, v in data.uniqueRouteTrips.items() })
+        data = data._replace(
+            uniqueRouteTrips={k: v._replace(tripIds=sorted(v.tripIds, key=lambda x: data.tripSchedules[x][1].departureTime)) for k, v in data.uniqueRouteTrips.items() },
+            stopLocations={k: v for k, v in data.stopLocations.items() if k in allowable_stop_locations},
+        )
 
         # print(list(data.tripSchedules.keys())[0])
         # print(data.tripSchedules[list(data.tripSchedules.keys())[0]])
