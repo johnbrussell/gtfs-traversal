@@ -15,10 +15,13 @@ def run():
     analysis = gtfs_analyses.determine_analysis_parameters(load_configuration())[1]
     data = read_data(analysis, "data")
     stops_df = read_stops(analysis, "data")
-    DataAdjuster.adjust_data_set(data, analysis.start_date)
+    data = DataAdjuster.adjust_data_set(data, analysis.start_date)
 
     # desperately needs a re-write
     data_munger = DataMunger(analysis.end_date, analysis.route_types, None, None, data, WALK_SPEED_MPH, stops_df)
+
+    data_munger.get_speedy_network()
+    print(len(data_munger.get_speedy_network()))
 
     # works through here
 

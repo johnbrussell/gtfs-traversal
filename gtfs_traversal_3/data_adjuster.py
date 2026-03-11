@@ -63,6 +63,7 @@ class DataAdjuster:
             uniqueRouteTrips={k: v._replace(tripIds=sorted(v.tripIds, key=lambda x: data.tripSchedules[x][1].departureTime)) for k, v in data.uniqueRouteTrips.items() },
             stopLocations={k: v for k, v in data.stopLocations.items() if k in allowable_stop_locations},
         )
+        return data
 
         # print(list(data.tripSchedules.keys())[0])
         # print(data.tripSchedules[list(data.tripSchedules.keys())[0]])
