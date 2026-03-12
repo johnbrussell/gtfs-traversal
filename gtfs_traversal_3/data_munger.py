@@ -16,6 +16,7 @@ class DataMunger:  # Can be shared between Expanders
         self._earliest_last_trip = None
         self._end_date = end_date
         self._endpoint_solution_stops = None
+        self._in_progress_speedy_travel_dicts = dict()
         self._junction_stations = None
         self._last_trip_times = None
         self._location_routes = None
@@ -524,6 +525,8 @@ class DataMunger:  # Can be shared between Expanders
         if origin not in self._speedy_travel_times:
             self._speedy_travel_times[origin] = dict()
             self._speedy_travel_times[origin][origin] = timedelta(seconds=0)
+            self._in_progress_speedy_travel_dicts[origin] = dict()
+            self._in_progress_speedy_travel_dicts[origin][origin] = timedelta(seconds=0)
 
         if origin not in self._unexpanded_speedy_travel_stops:
             self._unexpanded_speedy_travel_stops[origin] = set(self.data.stopLocations.keys())
@@ -531,16 +534,26 @@ class DataMunger:  # Can be shared between Expanders
         if destination not in self._unexpanded_speedy_travel_stops[origin]:
             return self._speedy_travel_times[origin][destination]
 
+        if destination not in self.get_unique_stops_to_solve():
+            print("unexpected use of _set_speedy_travel_times: destination should be in solution set. Function may not work properly.")
+
         unexpanded_wotp = self._unexpanded_speedy_travel_stops[origin].copy()
         unexpanded_wtp = self._unexpanded_speedy_travel_stops[origin].copy()
         result_wotp = self._speedy_travel_times[origin].copy()
         result_wtp = self._speedy_travel_times[origin].copy()
 
         result_wotp = self._determine_speedy_travel_times(unexpanded_wotp, self._speedy_travel_times[origin].copy(), destination, 0)
-        result_wtp = self._determine_speedy_travel_times(unexpanded_wtp, self._speedy_travel_times[origin].copy(), destination, self._transfer_penalty)
+        # With transfer penalty > 0, calculation can underestimate when using cached data. _in_progress_speedy_travel_dicts is a cache just for the speedy travel times with transfer penalties
+        result_wtp = self._determine_speedy_travel_times(unexpanded_wtp, self._in_progress_speedy_travel_dicts[origin], destination, self._transfer_penalty)
 
         self._unexpanded_speedy_travel_stops[origin] = unexpanded_wotp.union(unexpanded_wtp)
         self._speedy_travel_times[origin] = {k: max(result_wotp[k], result_wotp[k]) for k in self.data.stopLocations.keys()}
+        self._in_progress_speedy_travel_dicts[origin] = {k: result_wtp[k] + timedelta(seconds=2 * self._transfer_penalty) for k in result_wtp.keys()}
+
+        if all(stop not in self.get_unique_stops_to_solve() for stop in self._unexpanded_speedy_travel_stops[origin]):
+            self._unexpanded_speedy_travel_stops[origin] = set()
+            self._speedy_travel_times[origin] = {k: v for k, v in self._speedy_travel_times[origin] if k in self.get_unique_stops_to_solve()}
+            self._in_progress_speedy_travel_dicts[origin] = dict()
 
     def _determine_speedy_travel_times(self, unexpanded, travel_time_dict, destination, transfer_penalty_in_use):
         stop = None
