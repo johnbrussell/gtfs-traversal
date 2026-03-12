@@ -341,8 +341,8 @@ class DataMunger:  # Can be shared between Expanders
         return self._speedy_network
 
     def get_speedy_travel_time(self, origin, destination):
-        if origin not in self._speedy_travel_times:
-            self._set_speedy_travel_times(origin)
+        if origin not in self._speedy_travel_times or destination in self._unexpanded_speedy_travel_stops.get(origin, set()):
+            self._set_speedy_travel_times(origin, destination)
 
         return self._speedy_travel_times[origin].get(destination, 0)
 
@@ -520,19 +520,39 @@ class DataMunger:  # Can be shared between Expanders
         assert potential_solution is not None
         return potential_solution
 
-    def _set_speedy_travel_times(self, origin):
-        self._speedy_travel_times[origin] = dict()
-        self._speedy_travel_times[origin][origin] = timedelta(seconds=0)
+    def _set_speedy_travel_times(self, origin, destination):
+        if origin not in self._speedy_travel_times:
+            self._speedy_travel_times[origin] = dict()
+            self._speedy_travel_times[origin][origin] = timedelta(seconds=0)
 
-        unexpanded = list(self.data.stopLocations.keys())
-        while unexpanded:
-            stop = min(unexpanded, key=lambda x: self._speedy_travel_times[origin].get(x, timedelta(seconds=1)))
-            unexpanded = [u for u in unexpanded if u != stop]
+        if origin not in self._unexpanded_speedy_travel_stops:
+            self._unexpanded_speedy_travel_stops[origin] = set(self.data.stopLocations.keys())
+
+        if destination not in self._unexpanded_speedy_travel_stops[origin]:
+            return self._speedy_travel_times[origin][destination]
+
+        unexpanded_wotp = self._unexpanded_speedy_travel_stops[origin].copy()
+        unexpanded_wtp = self._unexpanded_speedy_travel_stops[origin].copy()
+        result_wotp = self._speedy_travel_times[origin].copy()
+        result_wtp = self._speedy_travel_times[origin].copy()
+
+        result_wotp = self._determine_speedy_travel_times(unexpanded_wotp, self._speedy_travel_times[origin].copy(), destination, 0)
+        result_wtp = self._determine_speedy_travel_times(unexpanded_wtp, self._speedy_travel_times[origin].copy(), destination, self._transfer_penalty)
+
+        self._unexpanded_speedy_travel_stops[origin] = unexpanded_wotp.union(unexpanded_wtp)
+        self._speedy_travel_times[origin] = {k: max(result_wotp[k], result_wotp[k]) for k in self.data.stopLocations.keys()}
+
+    def _determine_speedy_travel_times(self, unexpanded, travel_time_dict, destination, transfer_penalty_in_use):
+        stop = None
+        while stop != destination:
+            stop = min(unexpanded, key=lambda x: travel_time_dict.get(x, timedelta(seconds=1)))
+            unexpanded.remove(stop)
 
             travel_times_from_stop = self.get_speedy_network()[stop]
-            walk_times_from_stop = { k: self.walk_time_seconds(self.data.stopLocations[stop].lat, self.data.stopLocations[k].lat, self.data.stopLocations[stop].long, self.data.stopLocations[k].long) for k in self.data.stopLocations.keys() }
+            walk_times_from_stop = { k: self.walk_time_seconds(self.data.stopLocations[stop].lat, self.data.stopLocations[k].lat, self.data.stopLocations[stop].long, self.data.stopLocations[k].long) + timedelta(seconds=2 * transfer_penalty_in_use) for k in self.data.stopLocations.keys() }
 
-            self._speedy_travel_times[origin] = {k: min(self._speedy_travel_times[origin].get(k, v), self._speedy_travel_times[origin].get(stop, v) + min(v, travel_times_from_stop.get(k, v))) for k, v in walk_times_from_stop.items()}
+            travel_time_dict = {k: min(travel_time_dict.get(k, v), travel_time_dict.get(stop, v) + min(v, travel_times_from_stop.get(k, v))) for k, v in walk_times_from_stop.items()}
+        return {k: v - timedelta(seconds=2 * transfer_penalty_in_use) for k, v in travel_time_dict.items()}
 
     def station_for_stop(self, stop):
         return self._location_stations[stop]

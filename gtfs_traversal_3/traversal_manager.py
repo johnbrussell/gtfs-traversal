@@ -21,10 +21,8 @@ def run():
     # desperately needs a re-write
     data_munger = DataMunger(analysis.end_date, analysis.route_types, None, None, data, WALK_SPEED_MPH, stops_df, TRANSFER_DURATION_SECONDS)
 
-    data_munger.get_speedy_network()
-    # print(data_munger.get_speedy_network())
-    print(len(data_munger._speedy_travel_times))
     print(data_munger.get_speedy_travel_time("X02390", "X70079"))
+    print(data_munger.get_speedy_travel_time("X02390", "X14365"))
 
     # works through here
 
