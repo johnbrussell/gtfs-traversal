@@ -8,6 +8,7 @@ from gtfs_traversal.read_data import *
 from gtfs_traversal_3.traverser import Traverser
 from gtfs_traversal_3.first_pass_traverser import FirstPassTraverser
 
+TRANSFER_DURATION_SECONDS = 60
 WALK_SPEED_MPH = 4.5
 
 
@@ -18,10 +19,12 @@ def run():
     data = DataAdjuster.adjust_data_set(data, analysis.start_date)
 
     # desperately needs a re-write
-    data_munger = DataMunger(analysis.end_date, analysis.route_types, None, None, data, WALK_SPEED_MPH, stops_df)
+    data_munger = DataMunger(analysis.end_date, analysis.route_types, None, None, data, WALK_SPEED_MPH, stops_df, TRANSFER_DURATION_SECONDS)
 
     data_munger.get_speedy_network()
-    print(len(data_munger.get_speedy_network()))
+    # print(data_munger.get_speedy_network())
+    print(len(data_munger._speedy_travel_times))
+    print(data_munger.get_speedy_travel_time("X02390", "X70079"))
 
     # works through here
 

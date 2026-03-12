@@ -4,7 +4,7 @@ import itertools
 
 
 class DataMunger:  # Can be shared between Expanders
-    def __init__(self, end_date, route_types_to_solve, routes_to_solve, stops_to_solve, data, walk_speed_mph, stops_df):
+    def __init__(self, end_date, route_types_to_solve, routes_to_solve, stops_to_solve, data, walk_speed_mph, stops_df, transfer_penalty_seconds):
         self.data = data
 
         if not route_types_to_solve and not routes_to_solve and not stops_to_solve:
@@ -25,8 +25,11 @@ class DataMunger:  # Can be shared between Expanders
         self._route_list = None
         self._route_types_to_solve = route_types_to_solve
         self._speedy_network = None
+        self._speedy_travel_times = dict()
         self._stops_by_route_in_solution_set = None
+        self._transfer_penalty = transfer_penalty_seconds
         self._transfer_stops = None
+        self._unexpanded_speedy_travel_stops = dict()
         self._unique_routes_to_solve = routes_to_solve
         self._unique_stops_to_solve = stops_to_solve
         self._walk_speed_mph = walk_speed_mph
@@ -337,6 +340,12 @@ class DataMunger:  # Can be shared between Expanders
 
         return self._speedy_network
 
+    def get_speedy_travel_time(self, origin, destination):
+        if origin not in self._speedy_travel_times:
+            self._set_speedy_travel_times(origin)
+
+        return self._speedy_travel_times[origin].get(destination, 0)
+
     def get_stop_id_from_stop_number(self, stop_number, route):
         return self.get_stops_for_route(route)[stop_number].stopId
 
@@ -511,6 +520,20 @@ class DataMunger:  # Can be shared between Expanders
         assert potential_solution is not None
         return potential_solution
 
+    def _set_speedy_travel_times(self, origin):
+        self._speedy_travel_times[origin] = dict()
+        self._speedy_travel_times[origin][origin] = timedelta(seconds=0)
+
+        unexpanded = list(self.data.stopLocations.keys())
+        while unexpanded:
+            stop = min(unexpanded, key=lambda x: self._speedy_travel_times[origin].get(x, timedelta(seconds=1)))
+            unexpanded = [u for u in unexpanded if u != stop]
+
+            travel_times_from_stop = self.get_speedy_network()[stop]
+            walk_times_from_stop = { k: self.walk_time_seconds(self.data.stopLocations[stop].lat, self.data.stopLocations[k].lat, self.data.stopLocations[stop].long, self.data.stopLocations[k].long) for k in self.data.stopLocations.keys() }
+
+            self._speedy_travel_times[origin] = {k: min(self._speedy_travel_times[origin].get(k, v), self._speedy_travel_times[origin].get(stop, v) + min(v, travel_times_from_stop.get(k, v))) for k, v in walk_times_from_stop.items()}
+
     def station_for_stop(self, stop):
         return self._location_stations[stop]
 
@@ -532,4 +555,4 @@ class DataMunger:  # Can be shared between Expanders
         dest_lat = math.cos(dest_lat)
         haversine = delta_lat + origin_lat * dest_lat * delta_long
         haversine = 2 * 3959 * math.asin(math.sqrt(haversine))
-        return haversine * 3600 / self._walk_speed_mph
+        return timedelta(seconds=haversine * 3600 / self._walk_speed_mph)
