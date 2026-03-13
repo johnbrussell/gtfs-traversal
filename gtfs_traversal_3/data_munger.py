@@ -547,7 +547,7 @@ class DataMunger:  # Can be shared between Expanders
         result_wtp = self._determine_speedy_travel_times(unexpanded_wtp, self._in_progress_speedy_travel_dicts[origin], destination, self._transfer_penalty)
 
         self._unexpanded_speedy_travel_stops[origin] = unexpanded_wotp.union(unexpanded_wtp)
-        self._speedy_travel_times[origin] = {k: max(result_wotp[k], result_wotp[k]) for k in self.data.stopLocations.keys()}
+        self._speedy_travel_times[origin] = {k: max(result_wtp[k], result_wotp[k]) for k in self.data.stopLocations.keys()}
         self._in_progress_speedy_travel_dicts[origin] = {k: result_wtp[k] + timedelta(seconds=2 * self._transfer_penalty) for k in result_wtp.keys()}
 
         if all(stop not in self.get_unique_stops_to_solve() for stop in self._unexpanded_speedy_travel_stops[origin]):
@@ -562,10 +562,10 @@ class DataMunger:  # Can be shared between Expanders
             unexpanded.remove(stop)
 
             travel_times_from_stop = self.get_speedy_network()[stop]
-            walk_times_from_stop = { k: self.walk_time_seconds(self.data.stopLocations[stop].lat, self.data.stopLocations[k].lat, self.data.stopLocations[stop].long, self.data.stopLocations[k].long) + timedelta(seconds=2 * transfer_penalty_in_use) for k in self.data.stopLocations.keys() }
+            walk_times_from_stop = { k: self.walk_time_seconds(self.data.stopLocations[stop].lat, self.data.stopLocations[k].lat, self.data.stopLocations[stop].long, self.data.stopLocations[k].long) + timedelta(seconds=2 * transfer_penalty_in_use) if travel_time_dict.get(k, timedelta(seconds=1)) >= travel_time_dict.get(stop, timedelta(seconds=1)) else timedelta(seconds=0) for k in self.data.stopLocations.keys() }
 
             travel_time_dict = {k: min(travel_time_dict.get(k, v), travel_time_dict.get(stop, v) + min(v, travel_times_from_stop.get(k, v))) for k, v in walk_times_from_stop.items()}
-        return {k: v - timedelta(seconds=2 * transfer_penalty_in_use) for k, v in travel_time_dict.items()}
+        return {k: v - timedelta(seconds=2 * transfer_penalty_in_use) for k, v in travel_time_dict.items()} if transfer_penalty_in_use > 0 else travel_time_dict
 
     def station_for_stop(self, stop):
         return self._location_stations[stop]
