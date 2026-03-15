@@ -21,8 +21,6 @@ def run():
     # desperately needs a re-write
     data_munger = DataMunger(analysis.end_date, analysis.route_types, None, None, data, WALK_SPEED_MPH, stops_df, TRANSFER_DURATION_SECONDS)
 
-    print(data_munger.get_speedy_travel_time("X02390", "X70079"))
-    print(data_munger.get_speedy_travel_time("X02390", "X14365"))
 
     # works through here
 
@@ -69,7 +67,6 @@ def run():
             walk_speed_mph=WALK_SPEED_MPH,
             data_munger=data_munger,
             known_best_time=None,
-            seconds_of_priority=SECONDS_OF_PRIORITY,
         )
         intuition_start_time = intuition_traverser.next_worthwhile_departure_time_at_or_after(intuition_start_time)
         new_solution_duration = intuition_traverser.find_solution_at(intuition_start_time)

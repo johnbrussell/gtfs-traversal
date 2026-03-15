@@ -8,9 +8,8 @@ from gtfs_traversal_2.sortable_expansion_queue import SortableExpansionQueue
 
 class Traverser(Expander):
     def __init__(self, walk_speed_mph, transfer_duration_seconds, transfer_route,
-                 walk_route, known_best_time, data_munger, seconds_of_priority):
+                 walk_route, known_best_time, data_munger):
         self._data_munger = data_munger
-        self._seconds_of_priority = seconds_of_priority
         Expander.__init__(self, self._data_munger, transfer_duration_seconds, transfer_route, walk_route,
                           walk_speed_mph, known_best_time)
 

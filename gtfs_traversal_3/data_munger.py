@@ -3,6 +3,7 @@ import math
 import itertools
 
 
+# Ideally, the DataMunger should be expander-agnostic and should not cache data other than general network data
 class DataMunger:  # Can be shared between Expanders
     def __init__(self, end_date, route_types_to_solve, routes_to_solve, stops_to_solve, data, walk_speed_mph, stops_df, transfer_penalty_seconds):
         self.data = data
@@ -204,6 +205,7 @@ class DataMunger:  # Can be shared between Expanders
 
         return self._junction_stations
 
+    # analysis
     def get_minimum_stop_times(self, start_time):
         if self._minimum_stop_times is not None:
             return self._minimum_stop_times
@@ -246,6 +248,7 @@ class DataMunger:  # Can be shared between Expanders
         self._minimum_stop_times = minimum_stop_times
         return self._minimum_stop_times
 
+    # analysis
     def get_minimum_remaining_any_path_time(self, unvisited_stops, start_time, nearest_station_finder):
         total_minimum_remaining_time = 0
         max_1 = 0
@@ -283,6 +286,7 @@ class DataMunger:  # Can be shared between Expanders
 
         return total_minimum_remaining_time - max_1 - max_2 - max_3
 
+    # analysis
     def get_minimum_remaining_transfers(self, current_route, unvisited_stops):
         minimum_remaining_transfers = 0
         routes_accounted_for = set()
@@ -325,6 +329,7 @@ class DataMunger:  # Can be shared between Expanders
     def get_routes_at_stop(self, stop_id):
         return self.get_all_routes_for_stops()[stop_id]
 
+    # analysis
     def get_solution_routes_at_stop(self, stop_id):
         routes_at_stop = self.get_routes_at_stop(stop_id)
         if self._solver_type == "stops":
@@ -365,6 +370,7 @@ class DataMunger:  # Can be shared between Expanders
             raise ValueError(f"route_id and origin_stop_id mismatch: stop {stop_id}, route {route_id}")
         return stop_numbers_for_stop_id
 
+    # analysis
     def get_stops_at_ends_of_solution_routes(self):
         stops_at_ends_of_solution_routes = set()
         if self._solver_type == "stops":
@@ -521,6 +527,7 @@ class DataMunger:  # Can be shared between Expanders
         assert potential_solution is not None
         return potential_solution
 
+    # analysis unless get_unique_stops_to_solve call is removed
     def _set_speedy_travel_times(self, origin, destination):
         if origin not in self._speedy_travel_times:
             self._speedy_travel_times[origin] = dict()
