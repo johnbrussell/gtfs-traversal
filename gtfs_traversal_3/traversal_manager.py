@@ -85,8 +85,7 @@ def run():
     while start_time < end_date_midnight:
         traverser = Traverser(transfer_duration_seconds=TRANSFER_DURATION_SECONDS, transfer_route=TRANSFER_ROUTE,
                               walk_route=WALK_ROUTE, walk_speed_mph=WALK_SPEED_MPH,
-                              known_best_time=best_time, data_munger=data_munger,
-                              seconds_of_priority=SECONDS_OF_PRIORITY)
+                              known_best_time=best_time, data_munger=data_munger)
 
         start_time = traverser.next_worthwhile_departure_time_at_or_after(start_time)
 

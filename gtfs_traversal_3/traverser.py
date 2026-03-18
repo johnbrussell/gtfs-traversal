@@ -1,9 +1,8 @@
 from datetime import timedelta
 
 from gtfs_traversal_3.expander import Expander
-from gtfs_traversal_2.data_structures import LocationStatusInfo, ProgressInfo
-# from gtfs_traversal_2.expansion_queue_with_priority import ExpansionQueueWithPriority
-from gtfs_traversal_2.sortable_expansion_queue import SortableExpansionQueue
+from gtfs_traversal_3.data_structures import LocationStatusInfo, ProgressInfo
+from gtfs_traversal_3.sortable_expansion_queue import SortableExpansionQueue
 
 
 class Traverser(Expander):

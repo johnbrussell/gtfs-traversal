@@ -4,9 +4,9 @@ import itertools
 
 # from sympy.logic.inference import valid
 
-from gtfs_traversal_2.analysis_data_munger import AnalysisDataMunger
-from gtfs_traversal_2.base_expansion_queue import BaseExpansionQueue
-from gtfs_traversal_2.data_structures import *
+from gtfs_traversal_3.analysis_data_munger import AnalysisDataMunger
+from gtfs_traversal_3.base_expansion_queue import BaseExpansionQueue
+from gtfs_traversal_3.data_structures import *
 
 
 class Expander:
