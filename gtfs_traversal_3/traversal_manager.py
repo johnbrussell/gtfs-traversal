@@ -1,7 +1,6 @@
 from datetime import datetime, timedelta
 
 import gtfs_parsing.analyses.analyses as gtfs_analyses
-from gtfs_parsing.data_structures.data_structures import gtfsSchedules, uniqueRouteInfo
 from gtfs_traversal_3.data_munger import DataMunger
 from gtfs_traversal_3.data_adjuster import DataAdjuster
 from gtfs_traversal.read_data import *

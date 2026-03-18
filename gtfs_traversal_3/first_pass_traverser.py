@@ -1,4 +1,4 @@
-from gtfs_traversal_2.traverser import Traverser
+from gtfs_traversal_3.traverser import Traverser
 
 
 class FirstPassTraverser(Traverser):

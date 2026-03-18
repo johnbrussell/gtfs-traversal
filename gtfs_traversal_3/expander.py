@@ -2,7 +2,7 @@ import math
 from datetime import timedelta
 import itertools
 
-from sympy.logic.inference import valid
+# from sympy.logic.inference import valid
 
 from gtfs_traversal_2.analysis_data_munger import AnalysisDataMunger
 from gtfs_traversal_2.base_expansion_queue import BaseExpansionQueue
