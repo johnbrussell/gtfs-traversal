@@ -1,6 +1,9 @@
 from collections import namedtuple
 
 
+TRANSFER_ROUTE = 'transfer'
+WALK_ROUTE = 'walk'
+
 EarthLocation = namedtuple('EarthLocation', ['lat', 'long'])
 LocationStatusInfo = namedtuple(
     'LocationStatusInfo',

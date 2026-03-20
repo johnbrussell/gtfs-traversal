@@ -1,4 +1,3 @@
-import math
 from datetime import timedelta
 import itertools
 
@@ -8,13 +7,10 @@ from gtfs_traversal_3.data_structures import *
 
 # noinspection PyProtectedMember
 class Expander:
-    def __init__(self, data_munger, transfer_duration_seconds, transfer_route, walk_route, walk_speed_mph,
-                 max_solution_duration):
+    def __init__(self, data_munger, transfer_duration_seconds, walk_speed_mph, max_solution_duration):
         self._data_munger = data_munger
         self._transfer_duration_seconds = transfer_duration_seconds
-        self._transfer_route = transfer_route
         self._unvisited_dict = dict()
-        self._walk_route = walk_route
         self._walk_speed_mph = walk_speed_mph
 
         self._exp_queue = None
@@ -90,12 +86,12 @@ class Expander:
         raise NotImplementedError("must be implemented in subclass")
 
     def _get_new_nodes(self, location_status):
-        if location_status.arrival_route == self._transfer_route:
+        if location_status.arrival_route == TRANSFER_ROUTE:
             return self._get_nodes_after_transfer(location_status)
 
         transfer_node = self._get_transfer_data(location_status)
 
-        if location_status.arrival_route == self._walk_route:
+        if location_status.arrival_route == WALK_ROUTE:
             return [transfer_node]
 
         if self._data_munger.is_last_stop_on_route(location_status.trip_stop_no, location_status.arrival_route):
@@ -203,7 +199,7 @@ class Expander:
         return (
             LocationStatusInfo(
                 location=location_status.location,
-                arrival_trip=self._transfer_route,
+                arrival_trip=TRANSFER_ROUTE,
                 unvisited=location_status.unvisited,
                 trip_stop_no=None,
             ),
@@ -223,7 +219,7 @@ class Expander:
             (
                 station,
                 walk_time,
-                self._get_new_unvisited(location_status.location, location_status.unvisited, self._walk_route, station),
+                self._get_new_unvisited(location_status.location, location_status.unvisited, WALK_ROUTE, station),
             )
             for station, walk_time in self._get_walking_stations_and_walk_times(location_status)
         ]
@@ -231,17 +227,17 @@ class Expander:
             (
                 LocationStatusInfo(
                     location=station,
-                    arrival_trip=self._walk_route,
+                    arrival_trip=WALK_ROUTE,
                     trip_stop_no=None,
                     unvisited=unvisited,
                 ),
                 ProgressInfo(
-                    progress.duration + walk_time,
-                    location_status,
-                    set(),
-                    progress.minimum_remaining_time,
-                    False,
-                    False,
+                    duration=progress.duration + walk_time,
+                    parent=location_status,
+                    children=set(),
+                    minimum_remaining_time=progress.minimum_remaining_time,
+                    expanded=False,
+                    eliminated=False,
                 )
             )
             for station, walk_time, unvisited in stations_times_unvisiteds

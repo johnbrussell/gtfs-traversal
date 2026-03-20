@@ -1,16 +1,15 @@
 import datetime
 
-import pandas as pd
-
 import gtfs_parsing.data_structures.data_structures as ds
 
 
+# noinspection PyProtectedMember
 class DataAdjuster:
-    def __init__():
+    def __init__(self):
         pass
 
     @classmethod
-    def adjust_data_set(self, data, analysis_date):
+    def adjust_data_set(cls, data, analysis_date):
         analysis_date = datetime.date(*list(map(int, analysis_date.split('-'))))
 
         # Filter for only trips on the analysis date

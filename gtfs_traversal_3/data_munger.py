@@ -1,6 +1,5 @@
 from datetime import datetime, timedelta
 import math
-import itertools
 
 
 # Ideally, the DataMunger should be expander-agnostic and should not cache data other than general network data

@@ -2,17 +2,15 @@ from datetime import timedelta
 
 from gtfs_traversal_3.analysis_data_munger import AnalysisDataMunger
 from gtfs_traversal_3.expander import Expander
-from gtfs_traversal_3.data_structures import ProgressInfo
+from gtfs_traversal_3.data_structures import ProgressInfo, TRANSFER_ROUTE
 from gtfs_traversal_3.sortable_expansion_queue import SortableExpansionQueue
 
 
 class Traverser(Expander):
-    def __init__(self, walk_speed_mph, transfer_duration_seconds, transfer_route,
-                 walk_route, known_best_time, data_munger, analysis):
+    def __init__(self, walk_speed_mph, transfer_duration_seconds, known_best_time, data_munger, analysis):
         self._data_munger = data_munger
         self._analysis_data_munger = AnalysisDataMunger(data_munger, analysis)
-        Expander.__init__(self, self._data_munger, transfer_duration_seconds, transfer_route, walk_route,
-                          walk_speed_mph, known_best_time)
+        Expander.__init__(self, self._data_munger, transfer_duration_seconds, walk_speed_mph, known_best_time)
 
         self._stop_join_string = self._determine_stop_join_string()
 
@@ -114,7 +112,7 @@ class Traverser(Expander):
         if current_route in routes:
             return len(routes) - 1
         if any(r in self._data_munger.get_routes_at_stop(current_stop) for r in routes):
-            if current_route == self._transfer_route:
+            if current_route == TRANSFER_ROUTE:
                 return len(routes) - 1
         return len(routes)
 
