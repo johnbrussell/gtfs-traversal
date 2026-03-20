@@ -20,7 +20,7 @@ class Expander:
 
         self._all_station_coordinates = self._data_munger.get_all_stop_coordinates()
 
-    def find_solution_at(self, starting_nodes):
+    def find_solution_for(self, starting_nodes):
         self._initialize_progress_dict_and_exp_queue(starting_nodes)
         while not self._exp_queue.is_empty():
             self._expand()
@@ -97,7 +97,7 @@ class Expander:
         if self._data_munger.is_last_stop_on_route(location_status.trip_stop_no, location_status.arrival_route):
             return [transfer_node]
 
-        return [transfer_node] + [self._get_next_stop_data_for_trip(location_status)]
+        return [transfer_node, self._get_next_stop_data_for_trip(location_status)]
 
     def _get_new_unvisited(self, location, unvisited, route, next_stop_id):
         if not self._is_solution_route(route):

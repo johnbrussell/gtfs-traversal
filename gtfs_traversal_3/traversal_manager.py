@@ -69,7 +69,7 @@ def run():
             analysis=analysis,
         )
         intuition_start_time = intuition_traverser.next_worthwhile_departure_time_at_or_after(intuition_start_time)
-        new_solution_duration = intuition_traverser.find_solution_at(intuition_start_time)
+        new_solution_duration = intuition_traverser.find_solution_for(intuition_start_time)
         if new_solution_duration is not None:
             if not intuition_best_time or new_solution_duration < intuition_best_time:
                 intuition_best_time = new_solution_duration
@@ -89,7 +89,7 @@ def run():
 
         start_time = traverser.next_worthwhile_departure_time_at_or_after(start_time)
 
-        new_solution_duration = traverser.find_solution_at(start_time)
+        new_solution_duration = traverser.find_solution_for(start_time)
         print(start_time, new_solution_duration)
         if best_time is None or new_solution_duration < best_time:
             best_time = new_solution_duration
