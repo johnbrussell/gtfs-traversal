@@ -1,6 +1,8 @@
 from datetime import datetime, timedelta
 
 import gtfs_parsing.analyses.analyses as gtfs_analyses
+
+from gtfs_traversal_3.analysis_data_munger import AnalysisDataMunger
 from gtfs_traversal_3.data_munger import DataMunger
 from gtfs_traversal_3.data_adjuster import DataAdjuster
 from gtfs_traversal.read_data import *
@@ -17,8 +19,8 @@ def run():
     stops_df = read_stops(analysis, "data")
     data = DataAdjuster.adjust_data_set(data, analysis.start_date)
 
-    # desperately needs a re-write
     data_munger = DataMunger(analysis.end_date, analysis.route_types, None, None, data, WALK_SPEED_MPH, stops_df, TRANSFER_DURATION_SECONDS)
+    analysis_data_munger = AnalysisDataMunger(data_munger, analysis)
 
 
     # works through here

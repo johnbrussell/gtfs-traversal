@@ -56,7 +56,6 @@ class Traverser(Expander):
                     max_n_minimum_times.add(minimum_max_time)
                 max_n_minimum_times.add(v)
                 minimum_max_time = min(max_n_minimum_times)
-        # print(sum(unvisited_stop_minimum_times.values()), sum(max_n_minimum_times), minimum_transfers)
         return max(0, sum(unvisited_stop_minimum_times.values()) - sum(max_n_minimum_times) + minimum_transfers * self._transfer_duration_seconds)
 
     def _get_num_unvisited(self, unvisited):
@@ -70,11 +69,10 @@ class Traverser(Expander):
             for station in self._all_station_coordinates.keys()
         ]
 
-    def _initialize_progress_dict_and_exp_queue(self):
+    def _initialize_progress_dict_and_exp_queue(self, starting_nodes):
         self._progress_dict = dict()
         # self._exp_queue = ExpansionQueueWithPriority(max_size=len(self._data_munger.get_unique_stops_to_solve()))
         self._exp_queue = SortableExpansionQueue(max_size=len(self._data_munger.get_unique_stops_to_solve()))
-        print(f"initializing traverser for {self._start_time}")
         for stop in self._data_munger.get_unique_stops_to_solve():
             for route in self._data_munger.get_solution_routes_at_stop(stop):
                 stop_numbers = self._data_munger.get_stop_numbers_for_stop_id(stop, route)
@@ -86,14 +84,12 @@ class Traverser(Expander):
                         continue
                     location_info = LocationStatusInfo(
                         location=stop,
-                        arrival_route=route,
+                        arrival_trip=trip,
                         trip_stop_no=stop_number,
                         unvisited=self._stop_join_string.join(sorted(self._data_munger.get_unique_stops_to_solve())),
-                        num_unvisited=len(self._data_munger.get_unique_stops_to_solve()),
                     )
                     self._progress_dict[location_info] = ProgressInfo(
                         duration=0,
-                        arrival_trip=trip,
                         parent=None,
                         children=set(),
                         minimum_remaining_time=0,

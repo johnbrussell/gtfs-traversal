@@ -2,18 +2,15 @@ import math
 from datetime import timedelta
 import itertools
 
-# from sympy.logic.inference import valid
-
-from gtfs_traversal_3.analysis_data_munger import AnalysisDataMunger
 from gtfs_traversal_3.base_expansion_queue import BaseExpansionQueue
 from gtfs_traversal_3.data_structures import *
 
 
+# noinspection PyProtectedMember
 class Expander:
     def __init__(self, data_munger, transfer_duration_seconds, transfer_route, walk_route, walk_speed_mph,
                  max_solution_duration):
         self._data_munger = data_munger
-        self._analysis_data_munger = AnalysisDataMunger.from_generalized_data_munger(self._data_munger)
         self._transfer_duration_seconds = transfer_duration_seconds
         self._transfer_route = transfer_route
         self._unvisited_dict = dict()
@@ -22,17 +19,13 @@ class Expander:
 
         self._exp_queue = None
         self._progress_dict = None
-        self._start_time = None
 
         self._best_solution_duration = max_solution_duration
 
         self._all_station_coordinates = self._data_munger.get_all_stop_coordinates()
 
-    def find_solution_at(self, start_time):
-        if start_time is None:
-            return self._best_solution_duration
-        self._start_time = start_time
-        self._initialize_progress_dict_and_exp_queue()
+    def find_solution_at(self, starting_nodes):
+        self._initialize_progress_dict_and_exp_queue(starting_nodes)
         while not self._exp_queue.is_empty():
             self._expand()
             if self._should_prune():
@@ -127,28 +120,25 @@ class Expander:
             location_status.arrival_route,
             next_stop_id
         )
-        new_num_unvisited = self._get_num_unvisited(new_unvisited)
         new_duration = progress.duration + self._data_munger.get_travel_time_between_stops_in_seconds(
                 progress.arrival_trip, location_status.trip_stop_no, next_stop_no)
 
         new_location = LocationStatusInfo(
             location=next_stop_id,
-            arrival_route=location_status.arrival_route,
+            arrival_trip=progress.arrival_trip,
             unvisited=new_unvisited,
             trip_stop_no=next_stop_no,
-            num_unvisited=new_num_unvisited
         )
         new_minimum_remaining_time = self._get_new_minimum_remaining_time(new_location) if not self._is_solution(new_location) else 0
         return (
             new_location,
             ProgressInfo(
                 duration=new_duration,
-                arrival_trip=progress.arrival_trip,
                 parent=location_status,
                 children=set(),
                 minimum_remaining_time=new_minimum_remaining_time,
                 expanded=False,
-                eliminated=False
+                eliminated=False,
             )
         )
 
@@ -164,14 +154,12 @@ class Expander:
         return (
             LocationStatusInfo(
                 location=old_location_status.location,
-                arrival_route=route,
+                arrival_trip=trip_id,
                 trip_stop_no=stop_number,
                 unvisited=old_location_status.unvisited,
-                num_unvisited=old_location_status.num_unvisited,
             ),
             ProgressInfo(
                 duration=new_duration,
-                arrival_trip=trip_id,
                 parent=old_location_status,
                 children=set(),
                 minimum_remaining_time=old_progress.minimum_remaining_time,
@@ -215,14 +203,12 @@ class Expander:
         return (
             LocationStatusInfo(
                 location=location_status.location,
-                arrival_route=self._transfer_route,
+                arrival_trip=self._transfer_route,
                 unvisited=location_status.unvisited,
-                num_unvisited=location_status.num_unvisited,
                 trip_stop_no=None,
             ),
             ProgressInfo(
                 duration=new_duration,
-                arrival_trip=self._transfer_route,
                 parent=location_status,
                 minimum_remaining_time=minimum_remaining_time,
                 children=set(),
@@ -245,14 +231,12 @@ class Expander:
             (
                 LocationStatusInfo(
                     location=station,
-                    arrival_route=self._walk_route,
+                    arrival_trip=self._walk_route,
                     trip_stop_no=None,
                     unvisited=unvisited,
-                    num_unvisited=self._get_num_unvisited(unvisited),
                 ),
                 ProgressInfo(
                     progress.duration + walk_time,
-                    self._walk_route,
                     location_status,
                     set(),
                     progress.minimum_remaining_time,
@@ -266,7 +250,7 @@ class Expander:
     def _get_walking_stations_and_walk_times(self, location_status):
         raise NotImplementedError("must be implemented in subclass")
 
-    def _initialize_progress_dict_and_exp_queue(self):
+    def _initialize_progress_dict_and_exp_queue(self, starting_nodes):
         raise NotImplementedError("must be implemented in subclass")
 
     def _is_impossible_to_reach_all_stations(self, unvisited, duration):
@@ -371,24 +355,8 @@ class Expander:
     def _should_prune(self):
         raise NotImplementedError("must be implemented in subclass")
 
-    def _walk_time_seconds(self, lat1, lat2, long1, long2):
-        origin_lat = lat1 * math.pi / 180  # self._to_radians_from_degrees(lat1)
-        origin_long = long1 * math.pi / 180  # self._to_radians_from_degrees(long1)
-        dest_lat = lat2 * math.pi / 180  # self._to_radians_from_degrees(lat2)
-        dest_long = long2 * math.pi / 180  # self._to_radians_from_degrees(long2)
-
-        delta_lat = (origin_lat - dest_lat) / 2
-        delta_long = (origin_long - dest_long) / 2
-        delta_lat = math.pow(math.sin(delta_lat), 2)
-        delta_long = math.pow(math.sin(delta_long), 2)
-        origin_lat = math.cos(origin_lat)
-        dest_lat = math.cos(dest_lat)
-        haversine = delta_lat + origin_lat * dest_lat * delta_long
-        haversine = 2 * 3959 * math.asin(math.sqrt(haversine))
-        return haversine * 3600 / self._walk_speed_mph
-
     def _walk_time_seconds_between_stations(self, station_1, station_2):
-        return self._walk_time_seconds(
+        return self._data_munger.walk_time_seconds(
             self._all_station_coordinates[station_1].lat,
             self._all_station_coordinates[station_2].lat,
             self._all_station_coordinates[station_1].long,

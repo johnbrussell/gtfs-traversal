@@ -6,7 +6,8 @@ LocationStatusInfo = namedtuple(
     'LocationStatusInfo',
     [
         'location',
-        'arrival_route',
+        'arrival_trip',
+        'trip_stop_no',
         'unvisited',
      ],
 )
@@ -14,9 +15,8 @@ ProgressInfo = namedtuple(
     'ProgressInfo',
     [
         'duration',
-        'arrival_trip',
-        'trip_stop_no',
         'parent',
+        'children',
         'minimum_remaining_time',
         'expanded',
         'eliminated',

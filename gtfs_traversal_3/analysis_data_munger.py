@@ -19,10 +19,6 @@ class AnalysisDataMunger:  # Cannot be shared between Expanders
         self._unique_routes_to_solve = None
         self._unique_stops_to_solve = None
 
-    @classmethod
-    def from_generalized_data_munger(cls, data_munger, analysis):
-        return AnalysisDataMunger(data_munger, analysis)
-
     def get_earliest_last_trip(self, start_time):
         if self._earliest_last_trip is None:
             self.get_last_solution_trip_times_for_stops(start_time)
@@ -169,6 +165,7 @@ class AnalysisDataMunger:  # Cannot be shared between Expanders
             minimum_remaining_transfers -= 1
         return max(0, minimum_remaining_transfers)
 
+    # TODO this needs to be re-written using the fastest travel time graph
     def get_minimum_stop_times(self, start_time):
         if self._minimum_stop_times is not None:
             return self._minimum_stop_times
@@ -185,7 +182,6 @@ class AnalysisDataMunger:  # Cannot be shared between Expanders
                     if self._data_munger.is_last_stop_on_route(stop_number, route):
                         continue
 
-                    # TODO this function assumes the first trip after the stated start time each route is the fastest.
                     best_departure_time, best_trip_id = self._data_munger.first_departure_after(start_time, route, stop_number)
                     if best_trip_id is None:
                         continue
