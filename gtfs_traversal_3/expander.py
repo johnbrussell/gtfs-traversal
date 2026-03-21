@@ -230,7 +230,7 @@ class Expander:
                     unvisited=unvisited,
                 ),
                 ProgressInfo(
-                    duration=progress.duration + walk_time,
+                    duration=progress.duration + timedelta(seconds=walk_time),
                     parent=location_status,
                     children=set(),
                     minimum_remaining_time=progress.minimum_remaining_time,
