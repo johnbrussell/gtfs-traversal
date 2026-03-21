@@ -19,7 +19,7 @@ class Traverser(Expander):
 
     def next_worthwhile_departure_time_at_or_after(self, start_time):
         earliest_departure_time = None
-        for stop in self._data_munger.get_unique_stops_to_solve():
+        for stop in self._analysis_data_munger.get_unique_stops_to_solve():
             for route in self._data_munger.get_routes_at_stop(stop):
                 for stop_number in self._data_munger.get_stop_numbers_for_stop_id(stop, route):
                     if self._data_munger.is_last_stop_on_route(stop_number, route):
@@ -36,14 +36,14 @@ class Traverser(Expander):
         potential_strings = ["~", "|", "-", "_", "="]
         potential_strings = [s * multiplier for s in potential_strings]
         for potential_sjs in potential_strings:
-            if any(potential_sjs in stop for stop in self._data_munger.get_unique_stops_to_solve()):
+            if any(potential_sjs in stop for stop in self._analysis_data_munger.get_unique_stops_to_solve()):
                 continue
             return potential_sjs
         return self._determine_stop_join_string(multiplier + 1)
 
     def _get_new_minimum_remaining_time(self, location):
         unvisited = location.unvisited.split(self._stop_join_string)
-        unvisited_stop_minimum_times = {k: v for k, v in self._data_munger.get_minimum_stop_times(self._start_time).items() if k in unvisited}
+        unvisited_stop_minimum_times = {k: v for k, v in self._analysis_data_munger.get_minimum_stop_times(self._start_time).items() if k in unvisited}
         minimum_transfers = self._minimum_transfers_to_visit_stops(unvisited, location.arrival_trip, location.location)
         max_n_minimum_times = set()
         minimum_max_time = 1000000
@@ -100,7 +100,7 @@ class Traverser(Expander):
         if current_time <= earliest_last_trip:
             return False
 
-        last_trips = self._data_munger.get_last_solution_trip_times_for_stops(self._start_time)
+        last_trips = self._analysis_data_munger.get_last_solution_trip_times_for_stops(self._start_time)
         unvisited_list = unvisited.split(self._stop_join_string)
         return any(last_trips[stop] < current_time for stop in unvisited_list)
 
@@ -108,10 +108,10 @@ class Traverser(Expander):
         return location.unvisited == ""
 
     def _is_solution_route(self, route):
-        return route in self._data_munger.get_unique_routes_to_solve()
+        return route in self._analysis_data_munger.get_unique_routes_to_solve()
 
     def _minimum_transfers_to_visit_stops(self, stops, current_route, current_stop):
-        routes = self._data_munger.minimum_routes_to_visit_stops(stops, current_route, current_stop)
+        routes = self._analysis_data_munger.minimum_routes_to_visit_stops(stops, current_route, current_stop)
         if current_route in routes:
             return len(routes) - 1
         if any(r in self._data_munger.get_routes_at_stop(current_stop) for r in routes):
