@@ -58,30 +58,17 @@ class DataMunger:  # Can be shared between Expanders
             travel_time_dict = {k: min(travel_time_dict.get(k, v), travel_time_dict.get(stop, v) + min(v, travel_times_from_stop.get(k, v))) for k, v in walk_times_from_stop.items()}
         return {k: v - timedelta(seconds=2 * transfer_penalty_in_use) for k, v in travel_time_dict.items()} if transfer_penalty_in_use > 0 else travel_time_dict
 
-    def first_departure_after(self, earliest_departure_time, route_number, origin_stop_no):
-        if self.is_last_stop_on_route(origin_stop_no, route_number):
-            return None, None
+    def first_departure_after(self, earliest_departure_time, route, origin_stop_id):
+        origin_stop_numbers = self.get_stop_numbers_for_stop_id(origin_stop_id, route)
 
-        # GTFS uses days longer than 24 hours, so need to add a buffer to the end date to allow 25+ hour trips
-        latest_departure_time = self.get_buffered_analysis_end_time()
+        solution_trips = []
+        for trip in self.data.uniqueRouteTrips[route]: # this is sorted by departure time already
+            for s in origin_stop_numbers:
+                if self.data.tripSchedules[trip].tripStops[s].departureTime >= earliest_departure_time:
+                    solution_trips.append((trip, s))
+            origin_stop_numbers = [n for n in origin_stop_numbers if not any(no == n for _, no in solution_trips)]
 
-        # TODO This looks unable to support trips leaving after midnight
-        date_at_midnight = datetime(year=earliest_departure_time.year, month=earliest_departure_time.month,
-                                    day=earliest_departure_time.day)
-
-        solution_trip_id = None
-        for trip_id in self.get_trips_for_route(route_number):
-            raw_departure_time = self.get_stops_for_trip(trip_id)[origin_stop_no].departureTime
-            time = self.get_datetime_from_raw_string_time(date_at_midnight, raw_departure_time)
-            if time == earliest_departure_time:
-                return time, trip_id
-            if earliest_departure_time <= time < latest_departure_time:
-                latest_departure_time = time
-                solution_trip_id = trip_id
-
-        if solution_trip_id is None:
-            return None, None
-        return latest_departure_time, solution_trip_id
+        return solution_trips
 
     def first_departure_at(self, departure_time, route_number, origin_stop_no):
         earliest_departure_time, solution_trip_id = self.first_departure_after(departure_time, route_number, origin_stop_no)
