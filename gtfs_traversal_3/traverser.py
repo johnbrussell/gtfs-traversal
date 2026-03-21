@@ -29,6 +29,20 @@ class Traverser(Expander):
                         earliest_departure_time = departure_time
         return earliest_departure_time
 
+    def _add_to_unvisited(self, stop, unvisited):
+        remaining_stops = {s for s in self._unvisited[unvisited] if s != stop}
+        child_keys = [k for k, v in self._unvisited.items() if remaining_stops == v]
+        if child_keys:
+            new_unvisited = child_keys[0]
+        else:
+            new_unvisited = len(self._unvisited)
+            self._unvisited[new_unvisited] = remaining_stops
+        self._unvisited_children[unvisited][stop] = new_unvisited
+        if new_unvisited not in self._unvisited_parents:
+            self._unvisited_parents[new_unvisited] = dict()
+        self._unvisited_parents[new_unvisited][stop] = unvisited
+        return new_unvisited
+
     def _announce_solution(self, new_progress):
         print(f"New solution found of duration {new_progress.duration} seconds")
 
@@ -148,7 +162,6 @@ class Traverser(Expander):
         pass
 
     def _remove_stations_from_unvisited(self, unvisited, stops_to_remove):
-        stops_in_unvisited = self._unvisited[unvisited].copy()
         removal_stops_in_children = [s for s in stops_to_remove if s in self._unvisited_children[unvisited]]
         removal_stops_not_in_children = [s for s in stops_to_remove if s not in self._unvisited_children[unvisited]]
         stops_to_remove = removal_stops_in_children + removal_stops_not_in_children
@@ -157,18 +170,7 @@ class Traverser(Expander):
             if stop in self._unvisited_children[unvisited]:
                 unvisited = self._unvisited_children[unvisited][stop]
             else:
-                stops_in_unvisited.remove(stop)
-                child_keys = [k for k, v in self._unvisited.items() if tuple(stops_in_unvisited) == v]
-                if child_keys:
-                    new_unvisited = child_keys[0]
-                else:
-                    new_unvisited = len(self._unvisited)
-                    self._unvisited[new_unvisited] = tuple(stops_in_unvisited)
-                self._unvisited_children[unvisited][stop] = new_unvisited
-                if new_unvisited not in self._unvisited_parents:
-                    self._unvisited_parents[new_unvisited] = dict()
-                self._unvisited_parents[new_unvisited][stop] = unvisited
-                unvisited = new_unvisited
+                unvisited = self._add_to_unvisited(stop, unvisited)
 
         return unvisited
 
