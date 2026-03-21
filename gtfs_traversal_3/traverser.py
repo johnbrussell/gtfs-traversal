@@ -10,6 +10,9 @@ class Traverser(Expander):
     def __init__(self, walk_speed_mph, transfer_duration_seconds, known_best_time, data_munger, analysis):
         self._data_munger = data_munger
         self._analysis_data_munger = AnalysisDataMunger(data_munger, analysis)
+        self._unvisited = dict()
+        self._unvisited_children = dict()
+        self._unvisited_parents = dict()
         Expander.__init__(self, self._data_munger, transfer_duration_seconds, walk_speed_mph, known_best_time)
 
         self._stop_join_string = self._determine_stop_join_string()
