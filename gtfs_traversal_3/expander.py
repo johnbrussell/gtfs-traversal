@@ -86,15 +86,15 @@ class Expander:
         raise NotImplementedError("must be implemented in subclass")
 
     def _get_new_nodes(self, location_status):
-        if location_status.arrival_route == TRANSFER_ROUTE:
+        if location_status.arrival_trip == TRANSFER_ROUTE:
             return self._get_nodes_after_transfer(location_status)
 
         transfer_node = self._get_transfer_data(location_status)
 
-        if location_status.arrival_route == WALK_ROUTE:
+        if location_status.arrival_trip == WALK_ROUTE:
             return [transfer_node]
 
-        if self._data_munger.is_last_stop_on_route(location_status.trip_stop_no, location_status.arrival_route):
+        if self._data_munger.is_last_stop_on_route(location_status.trip_stop_no, location_status.arrival_trip):
             return [transfer_node]
 
         return [transfer_node, self._get_next_stop_data_for_trip(location_status)]
@@ -108,12 +108,12 @@ class Expander:
         progress = self._progress_dict[location_status]
 
         next_stop_no = str(int(location_status.trip_stop_no) + 1)
-        next_stop_id = self._data_munger.get_stop_id_from_stop_number(next_stop_no, location_status.arrival_route)
+        next_stop_id = self._data_munger.get_stop_id_from_stop_number(next_stop_no, location_status.arrival_trip)
 
         new_unvisited = self._get_new_unvisited(
             location_status.location,
             location_status.unvisited,
-            location_status.arrival_route,
+            location_status.arrival_trip,
             next_stop_id
         )
         new_duration = progress.duration + self._data_munger.get_travel_time_between_stops_in_seconds(
