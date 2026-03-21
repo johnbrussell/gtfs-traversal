@@ -99,21 +99,17 @@ class Expander:
 
         return [transfer_node, self._get_next_stop_data_for_trip(location_status)]
 
-    def _get_new_unvisited(self, location, unvisited, route, next_stop_id):
+    def _get_new_unvisited(self, stop_id, unvisited, route, next_stop_id):
         if not self._is_solution_route(route):
             return unvisited
-        return self._remove_stops_from_unvisited(unvisited, {next_stop_id, location})
+        return self._remove_stations_from_unvisited(unvisited, {self._data_munger.station_for_stop(stop_id), self._data_munger.station_for_stop(next_stop_id)})
 
     def _get_next_stop_data_for_trip(self, location_status):
         progress = self._progress_dict[location_status]
 
         next_stop_no = location_status.trip_stop_no + 1
-        new_unvisited = self._get_new_unvisited(
-            location_status.location,
-            location_status.unvisited,
-            location_status.arrival_trip,
-            next_stop_no,
-        )
+        new_unvisited = self._get_new_unvisited(location_status.location, location_status.unvisited,
+                                                location_status.arrival_trip, next_stop_no)
         new_duration = progress.duration + self._data_munger.get_travel_duration(
                 progress.arrival_trip, location_status.trip_stop_no, next_stop_no)
 
@@ -343,7 +339,7 @@ class Expander:
     def _prune(self):
         raise NotImplementedError("must be implemented in subclass")
 
-    def _remove_stops_from_unvisited(self, unvisited, stops_to_remove):
+    def _remove_stations_from_unvisited(self, unvisited, stops_to_remove):
         raise NotImplementedError("must be implemented in subclass")
 
     def _should_prune(self):

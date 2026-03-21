@@ -147,9 +147,24 @@ class Traverser(Expander):
     def _prune(self):
         pass
 
-    def _remove_stops_from_unvisited(self, unvisited, stops_to_remove):
-        return self._stop_join_string.join([s for s in unvisited.split(self._stop_join_string)
-                                            if s not in stops_to_remove])
+    def _remove_stations_from_unvisited(self, unvisited, stops_to_remove):
+        stops_in_unvisited = self._unvisited[unvisited].copy()
+        removal_stops_in_children = [s for s in stops_to_remove if s in self._unvisited_children[unvisited]]
+        removal_stops_not_in_children = [s for s in stops_to_remove if s not in self._unvisited_children[unvisited]]
+        stops_to_remove = removal_stops_in_children + removal_stops_not_in_children
+        while stops_to_remove:
+            stop = stops_to_remove.pop(0)
+            if stop in self._unvisited_children[unvisited]:
+                unvisited = self._unvisited_children[unvisited][stop]
+            else:
+                stops_in_unvisited.remove(stop)
+                new_unvisited = len(self._unvisited)
+                self._unvisited[new_unvisited] = stops_in_unvisited.copy()
+                self._unvisited_children[unvisited][stop] = new_unvisited
+                self._unvisited_parents[new_unvisited] = {stop: unvisited}
+                unvisited = new_unvisited
+
+        return unvisited
 
     def _should_prune(self):
         return False
