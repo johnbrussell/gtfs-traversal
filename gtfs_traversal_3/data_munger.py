@@ -120,7 +120,7 @@ class DataMunger:  # Can be shared between Expanders
     def get_first_stop_on_route(self, route_id):
         return self.get_stops_for_route(route_id)["1"].stopId
 
-    def get_next_stop_id(self, stop_number, route):
+    def get_next_stop_id_from_stop_number_and_route(self, stop_number, route):
         if self.is_last_stop_on_route(stop_number, route):
             return None
 
@@ -150,8 +150,8 @@ class DataMunger:  # Can be shared between Expanders
 
         return self._speedy_network
 
-    def get_stop_id_from_stop_number(self, stop_number, route):
-        return self.get_stops_for_route(route)[stop_number].stopId
+    def get_stop_id_from_trip_stop_number(self, trip, stop_no):
+        return self.data.tripSchedules[trip].tripStops[stop_no].stopId
 
     def get_stop_numbers_for_stop_id(self, stop_id, route_id):
         stops_on_route = self.get_stops_for_route(route_id)
@@ -172,18 +172,10 @@ class DataMunger:  # Can be shared between Expanders
     def get_stops_for_trip(self, trip_id):
         return self.get_trip_schedules()[trip_id].tripStops
 
-    def get_travel_time_between_stops_in_seconds(self, trip, on_stop_number, off_stop_number):
-        assert float(off_stop_number) >= float(on_stop_number), 'cannot travel backwards along trip'
+    def get_travel_duration(self, trip, on_stop_number, off_stop_number):
+        assert off_stop_number >= on_stop_number, 'cannot travel backwards along trip'
         trip_stops = self.get_stops_for_trip(trip)
-        try:
-            on_time_raw = trip_stops[on_stop_number].departureTime
-            on_time_seconds_since_midnight = self.convert_to_seconds_since_midnight(on_time_raw)
-            off_time_raw = trip_stops[off_stop_number].departureTime
-            off_time_seconds_since_midnight = self.convert_to_seconds_since_midnight(off_time_raw)
-            return off_time_seconds_since_midnight - on_time_seconds_since_midnight
-        except Exception as e:
-            print(trip, on_stop_number, off_stop_number, trip_stops)
-            raise e
+        return trip_stops[off_stop_number].departureTime - trip_stops[on_stop_number].departureTime
 
     def get_trip_schedules(self):
         return self.data.tripSchedules

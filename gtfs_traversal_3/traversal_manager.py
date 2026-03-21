@@ -5,7 +5,7 @@ import gtfs_parsing.analyses.analyses as gtfs_analyses
 from gtfs_traversal_3.analysis_data_munger import AnalysisDataMunger
 from gtfs_traversal_3.data_munger import DataMunger
 from gtfs_traversal_3.data_adjuster import DataAdjuster
-from gtfs_traversal.read_data import *
+from gtfs_traversal_3.read_data import *
 from gtfs_traversal_3.traverser import Traverser
 from gtfs_traversal_3.first_pass_traverser import FirstPassTraverser
 

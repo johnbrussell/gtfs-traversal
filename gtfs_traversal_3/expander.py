@@ -107,20 +107,18 @@ class Expander:
     def _get_next_stop_data_for_trip(self, location_status):
         progress = self._progress_dict[location_status]
 
-        next_stop_no = str(int(location_status.trip_stop_no) + 1)
-        next_stop_id = self._data_munger.get_stop_id_from_stop_number(next_stop_no, location_status.arrival_trip)
-
+        next_stop_no = location_status.trip_stop_no + 1
         new_unvisited = self._get_new_unvisited(
             location_status.location,
             location_status.unvisited,
             location_status.arrival_trip,
-            next_stop_id
+            next_stop_no,
         )
-        new_duration = progress.duration + self._data_munger.get_travel_time_between_stops_in_seconds(
+        new_duration = progress.duration + self._data_munger.get_travel_duration(
                 progress.arrival_trip, location_status.trip_stop_no, next_stop_no)
 
         new_location = LocationStatusInfo(
-            location=next_stop_id,
+            location=self._data_munger.get_stop_id_from_trip_stop_number(location_status.arrival_trip, next_stop_no),
             arrival_trip=progress.arrival_trip,
             unvisited=new_unvisited,
             trip_stop_no=next_stop_no,

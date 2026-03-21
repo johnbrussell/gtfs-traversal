@@ -32,7 +32,7 @@ class AnalysisDataMunger:  # Cannot be shared between Expanders
 
         for stop in self.get_unique_stops_to_solve():
             for route in [r for r in self._data_munger.get_routes_at_stop(stop) if r in self.get_unique_routes_to_solve()]:
-                if any(self._data_munger.get_next_stop_id(stop_number, route) is None
+                if any(self._data_munger.get_next_stop_id_from_stop_number_and_route(stop_number, route) is None
                        or int(stop_number) == 1
                        for stop_number in self._data_munger.get_stop_numbers_for_stop_id(stop, route)):
                     endpoint_stops.add(stop)
@@ -211,7 +211,7 @@ class AnalysisDataMunger:  # Cannot be shared between Expanders
 
     def get_speedy_travel_time(self, origin, destination):
         if origin not in self._speedy_travel_times or destination in self._unexpanded_speedy_travel_stops.get(origin, set()):
-            self._set_speedy_travel_times(origin, destination)
+            self._set_speedy_travel_times_to_destinations_in_solution_set(origin, destination)
 
         return self._speedy_travel_times[origin].get(destination, 0)
 
@@ -340,7 +340,8 @@ class AnalysisDataMunger:  # Cannot be shared between Expanders
         assert potential_solution is not None
         return potential_solution
 
-    def _set_speedy_travel_times(self, origin, destination):
+    # TODO a generic implementation could be great
+    def _set_speedy_travel_times_to_destinations_in_solution_set(self, origin, destination):
         if origin not in self._speedy_travel_times:
             self._speedy_travel_times[origin] = dict()
             self._speedy_travel_times[origin][origin] = timedelta(seconds=0)
