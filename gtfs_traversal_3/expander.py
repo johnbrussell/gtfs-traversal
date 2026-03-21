@@ -20,7 +20,7 @@ class Expander:
 
         self._all_station_coordinates = self._data_munger.get_all_stop_coordinates()
 
-    def find_solution_for(self, starting_nodes):
+    def find_solution(self, starting_nodes):
         self._initialize_progress_dict_and_exp_queue(starting_nodes)
         while not self._exp_queue.is_empty():
             self._expand()
