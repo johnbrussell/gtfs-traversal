@@ -80,7 +80,7 @@ class Traverser(Expander):
     def _initialize_progress_dict_and_exp_queue(self, starting_nodes):
         initial_progresses = [
             ProgressInfo(
-                duration=timedelta(seconds=0),
+                time=timedelta(seconds=0),
                 parent=None,
                 children=set(),
                 minimum_remaining_time=self._get_new_minimum_remaining_time(node),

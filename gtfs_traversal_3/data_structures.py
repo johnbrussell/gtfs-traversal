@@ -17,7 +17,7 @@ LocationStatusInfo = namedtuple(
 ProgressInfo = namedtuple(
     'ProgressInfo',
     [
-        'duration',
+        'time',
         'parent',
         'children',
         'minimum_remaining_time',

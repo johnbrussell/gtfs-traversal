@@ -110,7 +110,7 @@ class Expander:
         next_stop_no = location_status.trip_stop_no + 1
         new_unvisited = self._get_new_unvisited(location_status.location, location_status.unvisited,
                                                 location_status.arrival_trip, next_stop_no)
-        new_duration = progress.duration + self._data_munger.get_travel_duration(
+        new_time = progress.time + self._data_munger.get_travel_duration(
                 progress.arrival_trip, location_status.trip_stop_no, next_stop_no)
 
         new_location = LocationStatusInfo(
@@ -123,7 +123,7 @@ class Expander:
         return (
             new_location,
             ProgressInfo(
-                duration=new_duration,
+                time=new_time,
                 parent=location_status,
                 children=set(),
                 minimum_remaining_time=new_minimum_remaining_time,
@@ -139,8 +139,6 @@ class Expander:
         if trip_id is None:
             return None
 
-        new_duration = (departure_time - self._start_time).total_seconds()
-
         return (
             LocationStatusInfo(
                 location=old_location_status.location,
@@ -149,7 +147,7 @@ class Expander:
                 unvisited=old_location_status.unvisited,
             ),
             ProgressInfo(
-                duration=new_duration,
+                time=departure_time,
                 parent=old_location_status,
                 children=set(),
                 minimum_remaining_time=old_progress.minimum_remaining_time,
@@ -189,7 +187,7 @@ class Expander:
         progress = self._progress_dict[location_status]
         minimum_remaining_time = max(
             0, progress.minimum_remaining_time - self._transfer_duration_seconds)
-        new_duration = progress.duration + self._transfer_duration_seconds
+        new_time = progress.time + self._transfer_duration_seconds
         return (
             LocationStatusInfo(
                 location=location_status.location,
@@ -198,7 +196,7 @@ class Expander:
                 trip_stop_no=None,
             ),
             ProgressInfo(
-                duration=new_duration,
+                time=new_time,
                 parent=location_status,
                 minimum_remaining_time=minimum_remaining_time,
                 children=set(),
@@ -226,7 +224,7 @@ class Expander:
                     unvisited=unvisited,
                 ),
                 ProgressInfo(
-                    duration=progress.duration + timedelta(seconds=walk_time),
+                    time=progress.time + timedelta(seconds=walk_time),
                     parent=location_status,
                     children=set(),
                     minimum_remaining_time=progress.minimum_remaining_time,
