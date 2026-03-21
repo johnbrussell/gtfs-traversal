@@ -10,6 +10,7 @@ class Traverser(Expander):
     def __init__(self, walk_speed_mph, transfer_duration_seconds, known_best_time, data_munger, analysis):
         self._data_munger = data_munger
         self._analysis_data_munger = AnalysisDataMunger(data_munger, analysis)
+        self._solution_unvisited = None
         self._unvisited = dict()
         self._unvisited_children = dict()
         self._unvisited_parents = dict()
@@ -119,7 +120,7 @@ class Traverser(Expander):
         return any(last_trips[stop] < current_time for stop in unvisited_list)
 
     def _is_solution(self, location):
-        return location.unvisited == ""
+        return location.unvisited == self._solution_unvisited
 
     def _is_solution_route(self, route):
         return route in self._analysis_data_munger.get_unique_routes_to_solve()
@@ -172,6 +173,8 @@ class Traverser(Expander):
             else:
                 unvisited = self._add_to_unvisited(stop, unvisited)
 
+        if not self._unvisited[unvisited]:
+            self._solution_unvisited = unvisited
         return unvisited
 
     def _should_prune(self):
