@@ -158,10 +158,16 @@ class Traverser(Expander):
                 unvisited = self._unvisited_children[unvisited][stop]
             else:
                 stops_in_unvisited.remove(stop)
-                new_unvisited = len(self._unvisited)
-                self._unvisited[new_unvisited] = stops_in_unvisited.copy()
+                child_keys = [k for k, v in self._unvisited.items() if tuple(stops_in_unvisited) == v]
+                if child_keys:
+                    new_unvisited = child_keys[0]
+                else:
+                    new_unvisited = len(self._unvisited)
+                    self._unvisited[new_unvisited] = tuple(stops_in_unvisited)
                 self._unvisited_children[unvisited][stop] = new_unvisited
-                self._unvisited_parents[new_unvisited] = {stop: unvisited}
+                if new_unvisited not in self._unvisited_parents:
+                    self._unvisited_parents[new_unvisited] = dict()
+                self._unvisited_parents[new_unvisited][stop] = unvisited
                 unvisited = new_unvisited
 
         return unvisited
