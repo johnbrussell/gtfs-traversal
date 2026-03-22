@@ -76,11 +76,6 @@ class Traverser(Expander):
                 minimum_max_time = min(max_n_minimum_times)
         return max(0, sum(unvisited_stop_minimum_times.values()) - sum(max_n_minimum_times) + minimum_transfers * self._transfer_duration_seconds)
 
-    def _get_num_unvisited(self, unvisited):
-        if unvisited == "":
-            return 0
-        return len(unvisited.split(self._stop_join_string))
-
     def _get_walking_stations_and_walk_times(self, location_status):
         return [
             (station, self._walk_time_seconds_between_stations(location_status.location, station))

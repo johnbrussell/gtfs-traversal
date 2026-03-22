@@ -97,11 +97,6 @@ class Expander:
 
         return [transfer_node, self._get_next_stop_data_for_trip(location_status)]
 
-    def _get_new_unvisited(self, stop_id, unvisited, route, next_stop_id):
-        if not self._is_solution_route(route):
-            return unvisited
-        return self._remove_stations_from_unvisited(unvisited, {self._data_munger.station_for_stop(stop_id), self._data_munger.station_for_stop(next_stop_id)})
-
     def _get_next_stop_data_for_trip(self, location_status):
         progress = self._progress_dict[location_status]
 
