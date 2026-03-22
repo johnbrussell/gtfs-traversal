@@ -47,23 +47,25 @@ class Traverser(Expander):
 
     def _get_new_minimum_remaining_time(self, location):
         unvisited = self._unvisited[location.unvisited]
-        unvisited_stop_minimum_times = {k: v for k, v in self._analysis_data_munger.get_minimum_stop_times().items() if k in unvisited}
-        minimum_transfers = self._minimum_transfers_to_visit_stops(unvisited, location.arrival_trip, location.location)
-        max_n_minimum_times = set()
-        minimum_max_time = 1000000
-        for v in unvisited_stop_minimum_times.values():
-            if len(max_n_minimum_times) < minimum_transfers:
-                max_n_minimum_times.add(v)
-                if v < minimum_max_time:
-                    minimum_max_time = v
-                continue
-            if v > minimum_max_time:
-                max_n_minimum_times.remove(minimum_max_time)
-                while len(max_n_minimum_times) < minimum_transfers - 1:
-                    max_n_minimum_times.add(minimum_max_time)
-                max_n_minimum_times.add(v)
-                minimum_max_time = min(max_n_minimum_times)
-        return max(0, sum(unvisited_stop_minimum_times.values()) - sum(max_n_minimum_times) + minimum_transfers * self._transfer_duration_seconds)
+        minimum_stop_times = self._analysis_data_munger.get_minimum_stop_times()
+        return sum(minimum_stop_times[s] for s in unvisited)
+        # unvisited_stop_minimum_times = {k: v for k, v in self._analysis_data_munger.get_minimum_stop_times().items() if k in unvisited}
+        # minimum_transfers = self._minimum_transfers_to_visit_stops(unvisited, location.arrival_trip, location.location)
+        # max_n_minimum_times = set()
+        # minimum_max_time = 1000000
+        # for v in unvisited_stop_minimum_times.values():
+        #     if len(max_n_minimum_times) < minimum_transfers:
+        #         max_n_minimum_times.add(v)
+        #         if v < minimum_max_time:
+        #             minimum_max_time = v
+        #         continue
+        #     if v > minimum_max_time:
+        #         max_n_minimum_times.remove(minimum_max_time)
+        #         while len(max_n_minimum_times) < minimum_transfers - 1:
+        #             max_n_minimum_times.add(minimum_max_time)
+        #         max_n_minimum_times.add(v)
+        #         minimum_max_time = min(max_n_minimum_times)
+        # return max(0, sum(unvisited_stop_minimum_times.values()) - sum(max_n_minimum_times) + minimum_transfers * self._transfer_duration_seconds)
 
     def _get_new_unvisited(self, unvisited, origin, destination, trip):
         if self._data_munger.get_trip_routes()[trip] not in self._analysis_data_munger.get_unique_routes_to_solve():
@@ -92,9 +94,7 @@ class Traverser(Expander):
     def _is_solution(self, location):
         return location.unvisited == self._solution_unvisited
 
-    def _is_solution_route(self, route):
-        return route in self._analysis_data_munger.get_unique_routes_to_solve()
-
+    # TODO needs to handle solution locations, not stops
     def _minimum_transfers_to_visit_stops(self, stops, current_trip, current_stop):
         current_route = self._data_munger.get_trip_routes().get(current_trip, current_trip)
         routes = self._analysis_data_munger.minimum_routes_to_visit_stops(stops, current_route, current_stop)
@@ -104,9 +104,6 @@ class Traverser(Expander):
             if current_route == TRANSFER_ROUTE:
                 return len(routes) - 1
         return len(routes)
-
-    def _prune(self):
-        pass
 
     def _remove_stations_from_unvisited(self, unvisited, stops_to_remove):
         removal_stops_in_children = [s for s in stops_to_remove if s in self._unvisited_children[unvisited]]
@@ -122,9 +119,3 @@ class Traverser(Expander):
         if not self._unvisited[unvisited]:
             self._solution_unvisited = unvisited
         return unvisited
-
-    def _should_prune(self):
-        return False
-
-    def _should_reprioritize_queue(self):
-        return self._best_solution_duration is None
