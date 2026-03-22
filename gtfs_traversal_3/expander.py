@@ -175,7 +175,11 @@ class Expander:
         return list(itertools.chain.from_iterable(nodes_for_routes_leaving_location))  # flatten a list
 
     def _get_nodes_after_transfer(self, location_status):
-        walking_data = self._get_walking_nodes(location_status)
+        parent_trip = self._progress_dict[location_status].parent.arrival_trip
+        if parent_trip != WALK_ROUTE:
+            walking_data = self._get_walking_nodes(location_status)
+        else:
+            walking_data = []
         new_route_data = self._get_nodes_after_boarding_routes(location_status)
 
         return walking_data + new_route_data
