@@ -12,6 +12,7 @@ class AnalysisDataMunger:  # Cannot be shared between Expanders
         self._last_trip_times = None
         self._minimum_remaining_any_path_time_dict = dict()
         self._minimum_stop_times = None
+        self._network_speedy_network = dict()
         self._route_types_to_solve = analysis.route_types
         self._speedy_travel_times = dict()
         self._transfer_stops = None
@@ -165,42 +166,31 @@ class AnalysisDataMunger:  # Cannot be shared between Expanders
             minimum_remaining_transfers -= 1
         return max(0, minimum_remaining_transfers)
 
-    # TODO this needs to be re-written using the fastest travel time graph
     def get_minimum_stop_times(self, start_time):
         if self._minimum_stop_times is not None:
             return self._minimum_stop_times
 
-        minimum_stop_times = {}
+        minimum_stop_times = {k: timedelta(days=366) for k in self.get_unique_stops_to_solve()}
         # minimum_stop_times is a dictionary where keys are stops and values are the minimum amount of time
         #  required to travel either to or from that stop from another solution stop
-        for stop in self.get_unique_stops_to_solve():
-            routes_at_stop = self._data_munger.get_routes_at_stop(stop)
-            for route in routes_at_stop:
-                if route not in self.get_unique_routes_to_solve():
-                    continue
-                for stop_number in self._data_munger.get_stop_numbers_for_stop_id(stop, route):
-                    if self._data_munger.is_last_stop_on_route(stop_number, route):
-                        continue
-
-                    best_departure_time, best_trip_id = self._data_munger.first_departure_after(start_time, route, stop_number)
-                    if best_trip_id is None:
-                        continue
-                    next_stop_number = str(int(stop_number) + 1)
-                    stops_on_route = self._data_munger.get_stops_for_route(route)
-                    if next_stop_number not in stops_on_route:
-                        continue
-                    next_stop = stops_on_route[next_stop_number].stopId
-                    travel_time_to_next_stop = self._data_munger.get_travel_time_between_stops_in_seconds(
-                        best_trip_id, stop_number, next_stop_number)
-                    if next_stop not in minimum_stop_times:
-                        minimum_stop_times[next_stop] = 24 * 60 * 60
-                    if stop not in minimum_stop_times:
-                        minimum_stop_times[stop] = 24 * 60 * 60
-                    minimum_stop_times[next_stop] = min(minimum_stop_times[next_stop], travel_time_to_next_stop)
-                    minimum_stop_times[stop] = min(minimum_stop_times[stop], travel_time_to_next_stop)
+        for origin, destinations in self.get_network_speedy_network().items():
+            for destination, duration in destinations.items():
+                minimum_stop_times[origin] = min(minimum_stop_times[origin], duration / 2)
+                minimum_stop_times[destination] = min(minimum_stop_times[destination], duration / 2)
 
         self._minimum_stop_times = minimum_stop_times
         return self._minimum_stop_times
+
+    def get_network_speedy_network(self):
+        if not self._network_speedy_network:
+            trips_to_consider = list(itertools.chain.from_iterable([self._data_munger.get_trips_for_route(r) for r in self.get_unique_routes_to_solve()]))
+            self._network_speedy_network = {k: dict() for k in self.data.stopLocations.keys()}
+            for trip in trips_to_consider:
+                departures = list(trip.tripStops.values())
+                for org, dst in list(zip(departures[:-1], departures[1:])):
+                    self._network_speedy_network.get(org.stopId, dict())[dst.stopId] = min(self._network_speedy_network.get(org.stopId, dict()).get(dst.stopId, dst.departureTime - org.departureTime), dst.departureTime - org.departureTime)
+
+        return self._network_speedy_network
 
     def get_route_types_to_solve(self):
         return [str(r) for r in self._route_types_to_solve]

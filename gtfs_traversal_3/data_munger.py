@@ -24,7 +24,6 @@ class DataMunger:  # Can be shared between Expanders
         self._route_list = None
         self._route_types_to_solve = route_types_to_solve
         self._speedy_network = None
-        self._speedy_travel_times = dict()
         self._stops_by_route_in_solution_set = None
         self.transfer_penalty = transfer_penalty_seconds
         self._transfer_stops = None
