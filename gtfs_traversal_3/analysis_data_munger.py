@@ -166,7 +166,7 @@ class AnalysisDataMunger:  # Cannot be shared between Expanders
             minimum_remaining_transfers -= 1
         return max(0, minimum_remaining_transfers)
 
-    def get_minimum_stop_times(self, start_time):
+    def get_minimum_stop_times(self):
         if self._minimum_stop_times is not None:
             return self._minimum_stop_times
 

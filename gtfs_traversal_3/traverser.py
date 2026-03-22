@@ -46,8 +46,8 @@ class Traverser(Expander):
         print(f"New solution found of duration {new_progress.duration} seconds")
 
     def _get_new_minimum_remaining_time(self, location):
-        unvisited = location.unvisited.split(self._stop_join_string)
-        unvisited_stop_minimum_times = {k: v for k, v in self._analysis_data_munger.get_minimum_stop_times(self._start_time).items() if k in unvisited}
+        unvisited = self._unvisited[location.unvisited]
+        unvisited_stop_minimum_times = {k: v for k, v in self._analysis_data_munger.get_minimum_stop_times().items() if k in unvisited}
         minimum_transfers = self._minimum_transfers_to_visit_stops(unvisited, location.arrival_trip, location.location)
         max_n_minimum_times = set()
         minimum_max_time = 1000000
@@ -95,7 +95,8 @@ class Traverser(Expander):
     def _is_solution_route(self, route):
         return route in self._analysis_data_munger.get_unique_routes_to_solve()
 
-    def _minimum_transfers_to_visit_stops(self, stops, current_route, current_stop):
+    def _minimum_transfers_to_visit_stops(self, stops, current_trip, current_stop):
+        current_route = self._data_munger.get_trip_routes().get(current_trip, current_trip)
         routes = self._analysis_data_munger.minimum_routes_to_visit_stops(stops, current_route, current_stop)
         if current_route in routes:
             return len(routes) - 1
