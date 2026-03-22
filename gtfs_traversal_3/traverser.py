@@ -45,15 +45,6 @@ class Traverser(Expander):
     def _announce_solution(self, new_progress):
         print(f"New solution found of duration {new_progress.duration} seconds")
 
-    def _determine_stop_join_string(self, multiplier=1):
-        potential_strings = ["~", "|", "-", "_", "="]
-        potential_strings = [s * multiplier for s in potential_strings]
-        for potential_sjs in potential_strings:
-            if any(potential_sjs in stop for stop in self._analysis_data_munger.get_unique_stops_to_solve()):
-                continue
-            return potential_sjs
-        return self._determine_stop_join_string(multiplier + 1)
-
     def _get_new_minimum_remaining_time(self, location):
         unvisited = location.unvisited.split(self._stop_join_string)
         unvisited_stop_minimum_times = {k: v for k, v in self._analysis_data_munger.get_minimum_stop_times(self._start_time).items() if k in unvisited}
