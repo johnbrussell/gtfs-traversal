@@ -70,12 +70,6 @@ class DataMunger:  # Can be shared between Expanders
 
         return solution_trips
 
-    def first_departure_at(self, departure_time, route_number, origin_stop_no):
-        earliest_departure_time, solution_trip_id = self.first_departure_after(departure_time, route_number, origin_stop_no)
-        if earliest_departure_time == departure_time:
-            return solution_trip_id
-        return None
-
     def get_all_routes_for_stops(self):
         if self._location_routes is not None:
             return self._location_routes

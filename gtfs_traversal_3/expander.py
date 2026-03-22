@@ -7,16 +7,15 @@ from gtfs_traversal_3.data_structures import *
 
 # noinspection PyProtectedMember
 class Expander:
-    def __init__(self, data_munger, transfer_duration_seconds, walk_speed_mph, max_solution_duration):
+    def __init__(self, data_munger, transfer_duration_seconds):
         self._data_munger = data_munger
         self._transfer_duration_seconds = transfer_duration_seconds
         self._unvisited_dict = dict()
-        self._walk_speed_mph = walk_speed_mph
 
         self._exp_queue = None
         self._progress_dict = None
 
-        self._best_solution_duration = max_solution_duration
+        self._best_solution_duration = timedelta(days=366)
 
         self._all_station_coordinates = self._data_munger.get_all_stop_coordinates()
 
@@ -27,6 +26,10 @@ class Expander:
             if self._should_prune():
                 self._prune()
         return self._best_solution_duration
+
+    def find_solution_faster_than_time(self, starting_nodes, max_time):
+        self._best_solution_duration = max_time
+        self.find_solution(starting_nodes)
 
     def _abort(self):
         self._exp_queue = BaseExpansionQueue(max_size=1)
@@ -46,9 +49,6 @@ class Expander:
         self._exp_queue.add_node(new_location)
 
     def _add_new_nodes_to_progress_dict(self, new_nodes_list, parent):
-        # This function requires the transfer node to occur first
-        have_seen_valid_node = False
-
         valid_nodes = [n for n in new_nodes_list if self._node_is_valid(n)]
 
         for node in valid_nodes:
@@ -56,8 +56,6 @@ class Expander:
 
         if not valid_nodes:
             self._mark_nodes_as_eliminated([parent])
-
-        self._perform_tasks_after_adding_nodes_to_progress_dict(valid_nodes)
 
     def _announce_solution(self, new_progress):
         raise NotImplementedError("must be implemented in subclass")
@@ -133,8 +131,7 @@ class Expander:
         )
 
     def _get_node_after_boarding_route(self, route, stop_number, old_location_status, old_progress):
-        departure_time, trip_id = self._data_munger.first_departure_after(
-            self._start_time + timedelta(seconds=old_progress.duration), route, stop_number)
+        departure_time, trip_id = self._data_munger.first_departure_after(old_progress.time, route, stop_number)
 
         if trip_id is None:
             return None
@@ -334,9 +331,6 @@ class Expander:
             raise e
 
         return True
-
-    def _perform_tasks_after_adding_nodes_to_progress_dict(self, nodes_added):
-        pass
 
     def _prune(self):
         raise NotImplementedError("must be implemented in subclass")

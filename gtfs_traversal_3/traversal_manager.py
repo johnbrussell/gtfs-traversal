@@ -63,9 +63,7 @@ def run():
            intuition_best_estimated_finish_time <= analysis_data_munger.get_earliest_last_trip(start_time)):
         intuition_traverser = FirstPassTraverser(
             transfer_duration_seconds=TRANSFER_DURATION_SECONDS,
-            walk_speed_mph=WALK_SPEED_MPH,
             data_munger=data_munger,
-            known_best_time=None,
             analysis=analysis,
         )
         intuition_start_time = intuition_traverser.next_worthwhile_departure_time_at_or_after(intuition_start_time)
@@ -84,8 +82,7 @@ def run():
     best_progress_dictionary = None
     best_start_time = None
     while start_time < end_date_midnight:
-        traverser = Traverser(transfer_duration_seconds=TRANSFER_DURATION_SECONDS, walk_speed_mph=WALK_SPEED_MPH,
-                              known_best_time=best_time, data_munger=data_munger, analysis=analysis)
+        traverser = Traverser(transfer_duration_seconds=TRANSFER_DURATION_SECONDS, data_munger=data_munger, analysis=analysis)
 
         start_time = traverser.next_worthwhile_departure_time_at_or_after(start_time)
 
