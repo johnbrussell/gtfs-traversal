@@ -74,6 +74,11 @@ class Traverser(Expander):
                 minimum_max_time = min(max_n_minimum_times)
         return max(0, sum(unvisited_stop_minimum_times.values()) - sum(max_n_minimum_times) + minimum_transfers * self._transfer_duration_seconds)
 
+    def _get_new_unvisited(self, unvisited, origin, destination, trip):
+        if self._data_munger.get_trip_routes()[trip] not in self._analysis_data_munger.get_unique_routes_to_solve():
+            return unvisited
+        return self._remove_stations_from_unvisited(unvisited, self._data_munger.stations_for_stops([origin, destination]))
+
     def _initialize_exp_queue(self, initial_locations):
         self._exp_queue = SortableExpansionQueue(max_size=len(self._analysis_data_munger.get_unique_stops_to_solve()))
         for node in initial_locations:

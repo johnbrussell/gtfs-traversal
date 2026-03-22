@@ -27,6 +27,7 @@ class DataMunger:  # Can be shared between Expanders
         self._stops_by_route_in_solution_set = None
         self.transfer_penalty = transfer_penalty_seconds
         self._transfer_stops = None
+        self._trip_routes = dict()
         self._unique_routes_to_solve = routes_to_solve
         self._unique_stops_to_solve = stops_to_solve
         self._walk_speed_mph = walk_speed_mph
@@ -157,6 +158,14 @@ class DataMunger:  # Can be shared between Expanders
         trip_stops = self.get_stops_for_trip(trip)
         return trip_stops[off_stop_number].departureTime - trip_stops[on_stop_number].departureTime
 
+    def get_trip_routes(self):
+        if not self._trip_routes:
+            for route, trips in self.get_route_trips():
+                for trip in trips:
+                    self._trip_routes[trip] = route
+
+        return self._trip_routes
+
     def get_trip_schedules(self):
         return self.data.tripSchedules
 
@@ -168,6 +177,9 @@ class DataMunger:  # Can be shared between Expanders
 
     def station_for_stop(self, stop):
         return self._location_stations[stop]
+
+    def stations_for_stops(self, stops):
+        return [self.station_for_stop(s) for s in stops]
 
     @staticmethod
     def _to_radians_from_degrees(degrees):
