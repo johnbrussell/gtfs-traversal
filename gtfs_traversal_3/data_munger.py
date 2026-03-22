@@ -1,20 +1,14 @@
-from datetime import datetime, timedelta
+from datetime import timedelta
 import math
 
 
 # Ideally, the DataMunger should be expander-agnostic and should not cache data other than general network data
 class DataMunger:  # Can be shared between Expanders
-    def __init__(self, end_date, route_types_to_solve, routes_to_solve, stops_to_solve, data, walk_speed_mph, stops_df, transfer_penalty_seconds):
+    def __init__(self, data, walk_speed_mph, stops_df):
         self.data = data
-
-        if not route_types_to_solve and not routes_to_solve and not stops_to_solve:
-            raise ValueError("must indicate whether to solve by route types, by routes, or by stops")
-        if routes_to_solve and route_types_to_solve:
-            raise ValueError("cannot solve for both specific routes and route types")
 
         self._buffered_analysis_end_time = None
         self._earliest_last_trip = None
-        self._end_date = end_date
         self._endpoint_solution_stops = None
         self._junction_stations = None
         self._last_trip_times = None
@@ -22,24 +16,11 @@ class DataMunger:  # Can be shared between Expanders
         self._location_stations = dict(zip(stops_df['stop_id'], stops_df['stop_name']))
         self._minimum_stop_times = None
         self._route_list = None
-        self._route_types_to_solve = route_types_to_solve
         self._speedy_network = None
         self._stops_by_route_in_solution_set = None
-        self.transfer_penalty = transfer_penalty_seconds
         self._transfer_stops = None
         self._trip_routes = dict()
-        self._unique_routes_to_solve = routes_to_solve
-        self._unique_stops_to_solve = stops_to_solve
         self._walk_speed_mph = walk_speed_mph
-
-        if route_types_to_solve and not stops_to_solve:
-            self._solver_type = "route types"
-        elif routes_to_solve and not stops_to_solve:
-            self._solver_type = "routes"
-        elif stops_to_solve and not (routes_to_solve or route_types_to_solve):
-            self._solver_type = "stops"
-        else:
-            self._solver_type = "mixed"
 
     @staticmethod
     def convert_to_seconds_since_midnight(raw_time_string):
@@ -88,12 +69,6 @@ class DataMunger:  # Can be shared between Expanders
 
     def get_all_stop_coordinates(self):
         return self.data.stopLocations
-
-    def get_buffered_analysis_end_time(self):
-        if self._buffered_analysis_end_time is None:
-            self._buffered_analysis_end_time = datetime.strptime(self._end_date, '%Y-%m-%d') + timedelta(days=1)
-
-        return self._buffered_analysis_end_time
 
     def get_datetime_from_raw_string_time(self, date_at_midnight, time_string):
         return date_at_midnight + timedelta(seconds=self.convert_to_seconds_since_midnight(time_string))

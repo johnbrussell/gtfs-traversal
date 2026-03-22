@@ -184,7 +184,7 @@ class AnalysisDataMunger:  # Cannot be shared between Expanders
     def get_network_speedy_network(self):
         if not self._network_speedy_network:
             trips_to_consider = list(itertools.chain.from_iterable([self._data_munger.get_trips_for_route(r) for r in self.get_unique_routes_to_solve()]))
-            self._network_speedy_network = {k: dict() for k in self.data.stopLocations.keys()}
+            self._network_speedy_network = {k: dict() for k in self._data_munger.get_all_stop_coordinates.keys()}
             for trip in trips_to_consider:
                 departures = list(trip.tripStops.values())
                 for org, dst in list(zip(departures[:-1], departures[1:])):
