@@ -232,7 +232,10 @@ class Expander:
         ]
 
     def _get_walking_stations_and_walk_times(self, location_status):
-        raise NotImplementedError("must be implemented in subclass")
+        return [
+            (station, self._walk_time_seconds_between_stations(location_status.location, station))
+            for station in self._all_station_coordinates.keys()
+        ]
 
     def _initialize_progress_dict_and_exp_queue(self, starting_nodes):
         raise NotImplementedError("must be implemented in subclass")
@@ -317,13 +320,6 @@ class Expander:
                 # if new_progress.duration < self._best_solution_duration:
                 #     print(new_progress.duration, new_progress.minimum_remaining_time, new_progress.duration + new_progress.minimum_remaining_time)
                 return False
-
-        try:
-            if self._is_impossible_to_reach_all_stations(new_location.unvisited, new_progress.duration):
-                return False
-        except Exception as e:
-            print(new_location, new_progress)
-            raise e
 
         return True
 

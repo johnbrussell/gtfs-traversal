@@ -16,8 +16,6 @@ class Traverser(Expander):
         self._unvisited_parents = dict()
         Expander.__init__(self, self._data_munger, transfer_duration_seconds)
 
-        self._stop_join_string = self._determine_stop_join_string()
-
     def next_worthwhile_departure_time_at_or_after(self, start_time):
         earliest_departure_time = None
         for stop in self._analysis_data_munger.get_unique_stops_to_solve():
@@ -76,12 +74,6 @@ class Traverser(Expander):
                 minimum_max_time = min(max_n_minimum_times)
         return max(0, sum(unvisited_stop_minimum_times.values()) - sum(max_n_minimum_times) + minimum_transfers * self._transfer_duration_seconds)
 
-    def _get_walking_stations_and_walk_times(self, location_status):
-        return [
-            (station, self._walk_time_seconds_between_stations(location_status.location, station))
-            for station in self._all_station_coordinates.keys()
-        ]
-
     def _initialize_exp_queue(self, initial_locations):
         self._exp_queue = SortableExpansionQueue(max_size=len(self._analysis_data_munger.get_unique_stops_to_solve()))
         for node in initial_locations:
@@ -100,19 +92,6 @@ class Traverser(Expander):
         ]
         self._progress_dict = dict(zip(starting_nodes, initial_progresses))
         self._initialize_exp_queue(starting_nodes)
-
-    def _is_impossible_to_reach_all_stations(self, unvisited, duration):
-        if unvisited == "":
-            return False
-
-        earliest_last_trip = self._data_munger.get_earliest_last_trip(self._start_time)
-        current_time = self._start_time + timedelta(seconds=duration)
-        if current_time <= earliest_last_trip:
-            return False
-
-        last_trips = self._analysis_data_munger.get_last_solution_trip_times_for_stops(self._start_time)
-        unvisited_list = unvisited.split(self._stop_join_string)
-        return any(last_trips[stop] < current_time for stop in unvisited_list)
 
     def _is_solution(self, location):
         return location.unvisited == self._solution_unvisited
