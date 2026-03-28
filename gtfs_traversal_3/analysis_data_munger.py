@@ -70,11 +70,12 @@ class AnalysisDataMunger:  # Cannot be shared between Expanders
 
         return self._junction_stations
 
+    #  this function is obviously broken as written; do not use.
     def get_last_solution_trip_times_for_stops(self, start_time):
         if self._last_trip_times is not None:
             return self._last_trip_times
 
-        # TODO This looks unable to support trips leaving after midnight
+        #  This looks unable to support trips leaving after midnight
         date_at_midnight = datetime(year=start_time.year, month=start_time.month, day=start_time.day)
 
         self._last_trip_times = {stop: start_time for stop in self.get_unique_stops_to_solve()}

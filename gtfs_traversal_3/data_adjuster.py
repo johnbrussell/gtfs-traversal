@@ -9,7 +9,7 @@ class DataAdjuster:
         pass
 
     @classmethod
-    def adjust_data_set(cls, data, analysis_date):
+    def filter_and_adjust_data_set_for_date(cls, data, analysis_date):
         analysis_date = datetime.date(*list(map(int, analysis_date.split('-'))))
 
         # Filter for only trips on the analysis date
@@ -63,6 +63,3 @@ class DataAdjuster:
             stopLocations={k: v for k, v in data.stopLocations.items() if k in allowable_stop_locations},
         )
         return data
-
-        # print(list(data.tripSchedules.keys())[0])
-        # print(data.tripSchedules[list(data.tripSchedules.keys())[0]])
