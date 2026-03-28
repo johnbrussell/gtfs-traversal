@@ -47,6 +47,9 @@ class Traverser(Expander):
     def _announce_solution(self, new_progress):
         print(f"New solution found of duration {new_progress.duration} seconds")
 
+    def _create_exp_queue(self, num_levels):
+        self._exp_queue = BreadthAndDepthExpansionQueue(max_size=num_levels)
+
     def _get_new_minimum_remaining_time(self, location):
         unvisited = self._unvisited[location.unvisited]
         minimum_stop_times = self._analysis_data_munger.get_minimum_stop_times()
@@ -78,9 +81,9 @@ class Traverser(Expander):
         return self._unvisited_lengths[unvisited_key]
 
     def _initialize_exp_queue(self, initial_locations):
-        self._exp_queue = BreadthAndDepthExpansionQueue(
-            max_size=len(self._analysis_data_munger.get_unique_stops_to_solve()))
-        self._exp_queue.add_nodes(initial_locations, len(self._analysis_data_munger.get_unique_stops_to_solve()))
+        num_solution_stations = len({ self._data_munger.station_for_stop(s) for s in self._analysis_data_munger.get_unique_stops_to_solve() })
+        self._create_exp_queue(num_solution_stations)
+        self._exp_queue.add_nodes(initial_locations, num_solution_stations)
 
     def _initialize_progress_dict_and_exp_queue(self, starting_nodes):
         self._unvisited = { 0: { self._data_munger.station_for_stop(s) for s in self._analysis_data_munger.get_unique_stops_to_solve() } }
