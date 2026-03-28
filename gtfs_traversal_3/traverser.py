@@ -1,9 +1,9 @@
 from datetime import timedelta
 
 from gtfs_traversal_3.analysis_data_munger import AnalysisDataMunger
+from gtfs_traversal_3.breadth_and_depth_expansion_queue import BreadthAndDepthExpansionQueue
 from gtfs_traversal_3.expander import Expander
 from gtfs_traversal_3.data_structures import ProgressInfo, TRANSFER_ROUTE
-from gtfs_traversal_3.sortable_expansion_queue import SortableExpansionQueue
 
 
 class Traverser(Expander):
@@ -78,9 +78,9 @@ class Traverser(Expander):
         return self._unvisited_lengths[unvisited_key]
 
     def _initialize_exp_queue(self, initial_locations):
-        self._exp_queue = SortableExpansionQueue(max_size=len(self._analysis_data_munger.get_unique_stops_to_solve()), progress_dict=self._progress_dict)
-        for node in initial_locations:
-            self._exp_queue.add_node(node)
+        self._exp_queue = BreadthAndDepthExpansionQueue(
+            max_size=len(self._analysis_data_munger.get_unique_stops_to_solve()))
+        self._exp_queue.add_nodes(initial_locations, len(self._analysis_data_munger.get_unique_stops_to_solve()))
 
     def _initialize_progress_dict_and_exp_queue(self, starting_nodes):
         self._unvisited = { 0: { self._data_munger.station_for_stop(s) for s in self._analysis_data_munger.get_unique_stops_to_solve() } }

@@ -31,7 +31,7 @@ class Expander:
         self.find_solution(starting_nodes)
 
     def _abort(self):
-        self._exp_queue = BaseExpansionQueue(max_size=1, progress_dict=dict())
+        self._exp_queue = BaseExpansionQueue(max_size=1)
 
     def _add_new_node_to_progress_dict(self, node):
         new_location, new_progress = node
