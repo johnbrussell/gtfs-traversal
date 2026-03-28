@@ -53,7 +53,7 @@ class Traverser(Expander):
     def _get_new_minimum_remaining_time(self, location):
         unvisited = self._unvisited[location.unvisited]
         minimum_stop_times = self._analysis_data_munger.get_minimum_stop_times()
-        return sum(minimum_stop_times[s] for s in unvisited)
+        return sum([minimum_stop_times[s] for s in unvisited], start=timedelta(seconds=0))
         # unvisited_stop_minimum_times = {k: v for k, v in self._analysis_data_munger.get_minimum_stop_times().items() if k in unvisited}
         # minimum_transfers = self._minimum_transfers_to_visit_stops(unvisited, location.arrival_trip, location.location)
         # max_n_minimum_times = set()

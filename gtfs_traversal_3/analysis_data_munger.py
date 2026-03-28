@@ -20,6 +20,7 @@ class AnalysisDataMunger:  # Cannot be shared between Expanders
         self._unique_routes_to_solve = None
         self._unique_stops_to_solve = None
 
+    # confirmed unused in traversal 3
     def get_earliest_last_trip(self, start_time):
         if self._earliest_last_trip is None:
             self.get_last_solution_trip_times_for_stops(start_time)
@@ -68,6 +69,7 @@ class AnalysisDataMunger:  # Cannot be shared between Expanders
         return self._junction_stations
 
     #  this function is obviously broken as written; do not use.
+    #  confirmed unused in traversal 3
     def get_last_solution_trip_times_for_stops(self, start_time):
         if self._last_trip_times is not None:
             return self._last_trip_times
@@ -109,6 +111,7 @@ class AnalysisDataMunger:  # Cannot be shared between Expanders
         # print(stops_with_earliest_last_trip, self._earliest_last_trip)
         return self._last_trip_times
 
+    # confirmed unused in traversal 3
     def get_minimum_remaining_any_path_time(self, unvisited_stops, start_time, nearest_station_finder):
         total_minimum_remaining_time = 0
         max_1 = 0
@@ -146,6 +149,7 @@ class AnalysisDataMunger:  # Cannot be shared between Expanders
 
         return total_minimum_remaining_time - max_1 - max_2 - max_3
 
+    # confirmed unused in traversal 3
     def get_minimum_remaining_transfers(self, current_route, unvisited_stops):
         minimum_remaining_transfers = 0
         routes_accounted_for = set()
@@ -176,7 +180,13 @@ class AnalysisDataMunger:  # Cannot be shared between Expanders
                 minimum_stop_times[origin] = min(minimum_stop_times[origin], duration / 2)
                 minimum_stop_times[destination] = min(minimum_stop_times[destination], duration / 2)
 
-        self._minimum_stop_times = minimum_stop_times
+        self._minimum_stop_times = dict()
+        for stop, duration in minimum_stop_times.items():
+            station = self._data_munger.station_for_stop(stop)
+            if station not in self._minimum_stop_times:
+                self._minimum_stop_times[station] = duration
+            else:
+                self._minimum_stop_times[station] = min(self._minimum_stop_times.get(station, 0), duration)
         return self._minimum_stop_times
 
     def get_network_speedy_network(self):
@@ -296,16 +306,16 @@ class AnalysisDataMunger:  # Cannot be shared between Expanders
         if self._unique_stops_to_solve is not None:
             return self._unique_stops_to_solve
 
-        unique_stops_to_solve = set()
+        self._unique_stops_to_solve = set()
         for r in self.get_unique_routes_to_solve():
             trip_id = self._data_munger.get_route_trips()[r].tripIds[0]
             trip_stops = self._data_munger.get_trip_schedules()[trip_id].tripStops
             for stop in trip_stops.values():
-                unique_stops_to_solve.add(stop.stopId)
+                self._unique_stops_to_solve.add(stop.stopId)
 
-        self._unique_stops_to_solve = unique_stops_to_solve
-        return unique_stops_to_solve
+        return self._unique_stops_to_solve
 
+    # TODO needs to handle stations, not stops
     def minimum_routes_to_visit_stops(self, stops, current_route, current_stop):
         potential_solution = None
         solution_for_stop = None

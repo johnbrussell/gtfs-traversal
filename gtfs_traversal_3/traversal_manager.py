@@ -28,8 +28,6 @@ def first_pass_durations(starting_point, analysis, data_munger, analysis_data_mu
         LocationStatusInfo(location=starting_point, arrival_trip=trip, trip_stop_no=stop_no, unvisited=0) for trip, stop_no in first_trips
     ]
 
-    print(initial_locations)
-
     return [FirstPassTraverser(transfer_duration_seconds=TRANSFER_DURATION_SECONDS, data_munger=data_munger, analysis=analysis).find_solution([location]) for location in initial_locations]
 
 def run():
