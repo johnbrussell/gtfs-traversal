@@ -38,9 +38,9 @@ class Traverser(Expander):
             new_unvisited = len(self._unvisited)
             self._unvisited[new_unvisited] = remaining_stops
             self._unvisited_lengths[new_unvisited] = len(remaining_stops)
-        self._unvisited_children[unvisited][stop] = new_unvisited
-        if new_unvisited not in self._unvisited_parents:
+            self._unvisited_children[new_unvisited] = dict()
             self._unvisited_parents[new_unvisited] = dict()
+        self._unvisited_children[unvisited][stop] = new_unvisited
         self._unvisited_parents[new_unvisited][stop] = unvisited
         return new_unvisited
 

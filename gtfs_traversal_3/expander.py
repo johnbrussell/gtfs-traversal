@@ -99,17 +99,14 @@ class Expander:
         raise NotImplementedError("Must be implemented in subclass")
 
     def _get_next_stop_data_for_trip(self, location_status):
-        progress = self._progress_dict[location_status]
-
         next_stop_no = location_status.trip_stop_no + 1
         next_stop = self._data_munger.get_stop_id_from_trip_stop_number(location_status.arrival_trip, next_stop_no)
         new_unvisited = self._get_new_unvisited(location_status.unvisited, location_status.location, next_stop, location_status.arrival_trip)
-        new_time = progress.time + self._data_munger.get_travel_duration(
-                progress.arrival_trip, location_status.trip_stop_no, next_stop_no)
+        new_time = self._progress_dict[location_status].time + self._data_munger.get_travel_duration(location_status.arrival_trip, location_status.trip_stop_no, next_stop_no)
 
         new_location = LocationStatusInfo(
             location=next_stop,
-            arrival_trip=progress.arrival_trip,
+            arrival_trip=location_status.arrival_trip,
             unvisited=new_unvisited,
             trip_stop_no=next_stop_no,
         )
