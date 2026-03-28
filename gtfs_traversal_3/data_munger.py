@@ -129,8 +129,8 @@ class DataMunger:  # Can be shared between Expanders
 
     def get_trip_routes(self):
         if not self._trip_routes:
-            for route, trips in self.get_route_trips():
-                for trip in trips:
+            for route, trips in self.get_route_trips().items():
+                for trip in trips.tripIds:
                     self._trip_routes[trip] = route
 
         return self._trip_routes
@@ -143,6 +143,9 @@ class DataMunger:  # Can be shared between Expanders
 
     def is_last_stop_on_route(self, stop_number, route):
         return stop_number + 1 not in self.get_stops_for_route(route)
+
+    def is_last_stop_on_trip(self, stop_number, trip):
+        return stop_number + 1 not in self.get_stops_for_trip(trip)
 
     def station_for_stop(self, stop):
         return self._location_stations[stop]

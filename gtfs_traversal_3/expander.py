@@ -90,7 +90,7 @@ class Expander:
         if location_status.arrival_trip == WALK_ROUTE:
             return [transfer_node]
 
-        if self._data_munger.is_last_stop_on_route(location_status.trip_stop_no, location_status.arrival_trip):
+        if self._data_munger.is_last_stop_on_trip(location_status.trip_stop_no, location_status.arrival_trip):
             return [transfer_node]
 
         return [transfer_node, self._get_next_stop_data_for_trip(location_status)]
