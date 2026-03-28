@@ -1,7 +1,7 @@
 from gtfs_traversal_3.base_expansion_queue import BaseExpansionQueue
 
 
-class ExpansionQueueWithPriority(BaseExpansionQueue):
+class BreadthAndDepthExpansionQueue(BaseExpansionQueue):
     def __init__(self, max_size, progress_dict):
         BaseExpansionQueue.__init__(self, max_size, progress_dict)
         self._priority_fn = None

@@ -78,11 +78,14 @@ class Traverser(Expander):
         return self._unvisited_lengths[unvisited_key]
 
     def _initialize_exp_queue(self, initial_locations):
-        self._exp_queue = SortableExpansionQueue(max_size=len(self._analysis_data_munger.get_unique_stops_to_solve()))
+        self._exp_queue = SortableExpansionQueue(max_size=len(self._analysis_data_munger.get_unique_stops_to_solve()), progress_dict=self._progress_dict)
         for node in initial_locations:
             self._exp_queue.add_node(node)
 
     def _initialize_progress_dict_and_exp_queue(self, starting_nodes):
+        self._unvisited = { 0: { self._data_munger.station_for_stop(s) for s in self._analysis_data_munger.get_unique_stops_to_solve() } }
+        self._unvisited_children[0] = dict()
+        self._unvisited_lengths[0] = len(self._unvisited[0])
         initial_progresses = [
             ProgressInfo(
                 time=timedelta(seconds=0),
