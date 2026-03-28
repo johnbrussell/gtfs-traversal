@@ -1,15 +1,15 @@
-from gtfs_traversal_2.base_expansion_queue import BaseExpansionQueue
+from gtfs_traversal_3.base_expansion_queue import BaseExpansionQueue
 
 
 class ExpansionQueueWithPriority(BaseExpansionQueue):
-    def __init__(self, max_size):
-        BaseExpansionQueue.__init__(self, max_size)
+    def __init__(self, max_size, progress_dict):
+        BaseExpansionQueue.__init__(self, max_size, progress_dict)
         self._priority_fn = None
         self._priority_level = self._one_more_than_max_size
         self._priority_queue = list()
 
     def add_node(self, node):
-        num_remaining_stops = node.num_unvisited
+        num_remaining_stops = self._progress_dict[node].num_unvisited
         if num_remaining_stops == 0:
             return
         if num_remaining_stops not in self._queue:

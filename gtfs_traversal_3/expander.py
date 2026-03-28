@@ -10,7 +10,6 @@ class Expander:
     def __init__(self, data_munger, transfer_duration_seconds):
         self._data_munger = data_munger
         self._transfer_duration_seconds = transfer_duration_seconds
-        self._unvisited_dict = dict()
 
         self._exp_queue = None
         self._progress_dict = None
@@ -32,7 +31,7 @@ class Expander:
         self.find_solution(starting_nodes)
 
     def _abort(self):
-        self._exp_queue = BaseExpansionQueue(max_size=1)
+        self._exp_queue = BaseExpansionQueue(max_size=1, progress_dict=dict())
 
     def _add_new_node_to_progress_dict(self, node):
         new_location, new_progress = node
@@ -123,6 +122,7 @@ class Expander:
                 parent=location_status,
                 children=set(),
                 minimum_remaining_time=new_minimum_remaining_time,
+                num_unvisited=self._get_unvisited_count(new_unvisited),
                 expanded=False,
                 eliminated=False,
             )
@@ -146,6 +146,7 @@ class Expander:
                 parent=old_location_status,
                 children=set(),
                 minimum_remaining_time=old_progress.minimum_remaining_time,
+                num_unvisited=old_progress.num_unvisited,
                 expanded=False,
                 eliminated=False
             )
@@ -199,10 +200,14 @@ class Expander:
                 parent=location_status,
                 minimum_remaining_time=minimum_remaining_time,
                 children=set(),
+                num_unvisited=progress.num_unvisited,
                 expanded=False,
                 eliminated=False,
             )
         )
+
+    def _get_unvisited_count(self, unvisited_key):
+        raise NotImplementedError("must be implemented in subclass")
 
     def _get_walking_nodes(self, location_status):
         progress = self._progress_dict[location_status]
@@ -227,6 +232,7 @@ class Expander:
                     parent=location_status,
                     children=set(),
                     minimum_remaining_time=progress.minimum_remaining_time,
+                    num_unvisited=self._get_unvisited_count(unvisited),
                     expanded=False,
                     eliminated=False,
                 )

@@ -14,6 +14,7 @@ class Traverser(Expander):
         self._unvisited = dict()
         self._unvisited_children = dict()
         self._unvisited_parents = dict()
+        self._unvisited_lengths = dict()
         Expander.__init__(self, self._data_munger, transfer_duration_seconds)
 
     def next_worthwhile_departure_time_at_or_after(self, start_time):
@@ -36,6 +37,7 @@ class Traverser(Expander):
         else:
             new_unvisited = len(self._unvisited)
             self._unvisited[new_unvisited] = remaining_stops
+            self._unvisited_lengths[new_unvisited] = len(remaining_stops)
         self._unvisited_children[unvisited][stop] = new_unvisited
         if new_unvisited not in self._unvisited_parents:
             self._unvisited_parents[new_unvisited] = dict()
@@ -72,6 +74,9 @@ class Traverser(Expander):
             return unvisited
         return self._remove_stations_from_unvisited(unvisited, self._data_munger.stations_for_stops([origin, destination]))
 
+    def _get_unvisited_count(self, unvisited_key):
+        return self._unvisited_lengths[unvisited_key]
+
     def _initialize_exp_queue(self, initial_locations):
         self._exp_queue = SortableExpansionQueue(max_size=len(self._analysis_data_munger.get_unique_stops_to_solve()))
         for node in initial_locations:
@@ -84,6 +89,7 @@ class Traverser(Expander):
                 parent=None,
                 children=set(),
                 minimum_remaining_time=self._get_new_minimum_remaining_time(node),
+                num_unvisited=self._unvisited_lengths[node.unvisited],
                 expanded=False,
                 eliminated=False,
             ) for node in starting_nodes

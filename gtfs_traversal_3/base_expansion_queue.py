@@ -1,11 +1,12 @@
 class BaseExpansionQueue:
-    def __init__(self, max_size):
+    def __init__(self, max_size, progress_dict):
         self._one_more_than_max_size = max_size + 1
         self._num_remaining_stops_to_pop = self._one_more_than_max_size
         self._queue = dict()
+        self._progress_dict = progress_dict
 
     def add_node(self, node):
-        num_remaining_stops = node.num_unvisited
+        num_remaining_stops = self._progress_dict[node].num_unvisited
         if num_remaining_stops == 0:
             return
         if num_remaining_stops not in self._queue:

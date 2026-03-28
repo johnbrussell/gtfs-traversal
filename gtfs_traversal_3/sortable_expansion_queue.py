@@ -1,4 +1,4 @@
-from gtfs_traversal_2.base_expansion_queue import BaseExpansionQueue
+from gtfs_traversal_3.base_expansion_queue import BaseExpansionQueue
 
 
 class SortableExpansionQueue(BaseExpansionQueue):
