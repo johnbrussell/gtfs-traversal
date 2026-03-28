@@ -137,3 +137,6 @@ class Traverser(Expander):
         if not self._unvisited[unvisited]:
             self._solution_unvisited = unvisited
         return unvisited
+
+    def _should_prune(self):
+        return False
