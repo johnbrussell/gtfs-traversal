@@ -1,3 +1,4 @@
+import itertools
 from datetime import timedelta
 import math
 
@@ -39,17 +40,21 @@ class DataMunger:  # Can be shared between Expanders
             travel_time_dict = {k: min(travel_time_dict.get(k, v), travel_time_dict.get(stop, v) + min(v, travel_times_from_stop.get(k, v))) for k, v in walk_times_from_stop.items()}
         return {k: v - timedelta(seconds=2 * transfer_penalty_in_use) for k, v in travel_time_dict.items()} if transfer_penalty_in_use > 0 else travel_time_dict
 
-    def first_departure_after(self, earliest_departure_time, route, origin_stop_id):
-        origin_stop_numbers = self.get_stop_numbers_for_stop_id(origin_stop_id, route)
+    def first_departures_after(self, earliest_departure_time, route, origin):
+        origin_stop_numbers = self.get_stop_numbers_for_stop_id(origin, route)
 
         solution_trips = []
-        for trip in self.data.uniqueRouteTrips[route]: # this is sorted by departure time already
+        for trip in self.data.uniqueRouteTrips[route].tripIds: # this is sorted by departure time already
             for s in origin_stop_numbers:
                 if self.data.tripSchedules[trip].tripStops[s].departureTime >= earliest_departure_time:
-                    solution_trips.append((trip, s))
-            origin_stop_numbers = [n for n in origin_stop_numbers if not any(no == n for _, no in solution_trips)]
+                    solution_trips.append((trip, s, self.data.tripSchedules[trip].tripStops[s].departureTime))
+            origin_stop_numbers = [n for n in origin_stop_numbers if not any(no == n for _, no, _ in solution_trips)]
 
         return solution_trips
+
+    @staticmethod
+    def flatten(lst):
+        return list(itertools.chain.from_iterable(lst))
 
     def get_all_routes_for_stops(self):
         if self._location_routes is not None:
@@ -72,17 +77,6 @@ class DataMunger:  # Can be shared between Expanders
 
     def get_datetime_from_raw_string_time(self, date_at_midnight, time_string):
         return date_at_midnight + timedelta(seconds=self.convert_to_seconds_since_midnight(time_string))
-
-    def get_first_stop_on_route(self, route_id):
-        return self.get_stops_for_route(route_id)["1"].stopId
-
-    def get_next_stop_id_from_stop_number_and_route(self, stop_number, route):
-        if self.is_last_stop_on_route(stop_number, route):
-            return None
-
-        next_stop_number = str(int(stop_number) + 1)
-        stops_on_route = self.get_stops_for_route(route)
-        return stops_on_route[next_stop_number].stopId
 
     def get_route_trips(self):
         return self.data.uniqueRouteTrips
@@ -148,7 +142,7 @@ class DataMunger:  # Can be shared between Expanders
         return self.get_route_trips()[route_id].tripIds
 
     def is_last_stop_on_route(self, stop_number, route):
-        return str(int(stop_number) + 1) not in self.get_stops_for_route(route)
+        return stop_number + 1 not in self.get_stops_for_route(route)
 
     def station_for_stop(self, stop):
         return self._location_stations[stop]

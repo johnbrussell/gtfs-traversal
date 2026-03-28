@@ -24,7 +24,7 @@ class Traverser(Expander):
                 for stop_number in self._data_munger.get_stop_numbers_for_stop_id(stop, route):
                     if self._data_munger.is_last_stop_on_route(stop_number, route):
                         continue
-                    departure_time, _trip = self._data_munger.first_departure_after(start_time, route, stop_number)
+                    _trip, stop_number, departure_time = self._data_munger.first_departures_after(start_time, route, stop_number)[0]
                     if not earliest_departure_time or departure_time < earliest_departure_time:
                         earliest_departure_time = departure_time
         return earliest_departure_time
@@ -86,6 +86,8 @@ class Traverser(Expander):
         self._exp_queue.add_nodes(initial_locations, num_solution_stations)
 
     def _initialize_progress_dict_and_exp_queue(self, starting_nodes):
+        if len({n.unvisited for n in starting_nodes}) > 1 or any(n.unvisited != 0 for n in starting_nodes):
+            raise ValueError("passed invalid initial unvisited key to traverser")
         self._unvisited = { 0: { self._data_munger.station_for_stop(s) for s in self._analysis_data_munger.get_unique_stops_to_solve() } }
         self._unvisited_children[0] = dict()
         self._unvisited_lengths[0] = len(self._unvisited[0])

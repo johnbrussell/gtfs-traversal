@@ -19,6 +19,7 @@ class Expander:
         self._all_station_coordinates = self._data_munger.get_all_stop_coordinates()
 
     def find_solution(self, starting_nodes):
+        print(starting_nodes)
         self._initialize_progress_dict_and_exp_queue(starting_nodes)
         while not self._exp_queue.is_empty():
             self._expand()
@@ -128,38 +129,28 @@ class Expander:
             )
         )
 
-    def _get_node_after_boarding_route(self, route, stop_number, old_location_status, old_progress):
-        departure_time, trip_id = self._data_munger.first_departure_after(old_progress.time, route, stop_number)
-
-        if trip_id is None:
-            return None
-
-        return (
-            LocationStatusInfo(
-                location=old_location_status.location,
-                arrival_trip=trip_id,
-                trip_stop_no=stop_number,
-                unvisited=old_location_status.unvisited,
-            ),
-            ProgressInfo(
-                time=departure_time,
-                parent=old_location_status,
-                children=set(),
-                minimum_remaining_time=old_progress.minimum_remaining_time,
-                num_unvisited=old_progress.num_unvisited,
-                expanded=False,
-                eliminated=False
-            )
-        )
-
     def _get_nodes_after_boarding_route(self, old_location_status, old_progress, route):
-        stop_numbers = self._data_munger.get_stop_numbers_for_stop_id(old_location_status.location, route)
-        new_nodes = [
-            self._get_node_after_boarding_route(route, stop_number, old_location_status, old_progress)
-            for stop_number in stop_numbers
+        return [
+            (
+                LocationStatusInfo(
+                    location=old_location_status.location,
+                    arrival_trip=trip_id,
+                    trip_stop_no=stop_number,
+                    unvisited=old_location_status.unvisited,
+                ),
+                ProgressInfo(
+                    time=departure_time,
+                    parent=old_location_status,
+                    children=set(),
+                    minimum_remaining_time=old_progress.minimum_remaining_time,
+                    num_unvisited=old_progress.num_unvisited,
+                    expanded=False,
+                    eliminated=False
+                )
+            )
+            for trip_id, stop_number, departure_time in self._data_munger.first_departures_after(old_progress.time, route, old_location_status.location)
             if not self._data_munger.is_last_stop_on_route(stop_number, route)
         ]
-        return [n for n in new_nodes if n]
 
     def _get_nodes_after_boarding_routes(self, location_status):
         progress = self._progress_dict[location_status]
@@ -168,7 +159,7 @@ class Expander:
             for route in self._data_munger.get_routes_at_stop(location_status.location)
         ]
 
-        return list(itertools.chain.from_iterable(nodes_for_routes_leaving_location))  # flatten a list
+        return self._data_munger.flatten(nodes_for_routes_leaving_location)
 
     def _get_nodes_after_transfer(self, location_status):
         parent_trip = self._progress_dict[location_status].parent.arrival_trip

@@ -30,13 +30,10 @@ class AnalysisDataMunger:  # Cannot be shared between Expanders
             return self._endpoint_solution_stops
 
         endpoint_stops = set()
-
-        for stop in self.get_unique_stops_to_solve():
-            for route in [r for r in self._data_munger.get_routes_at_stop(stop) if r in self.get_unique_routes_to_solve()]:
-                if any(self._data_munger.get_next_stop_id_from_stop_number_and_route(stop_number, route) is None
-                       or int(stop_number) == 1
-                       for stop_number in self._data_munger.get_stop_numbers_for_stop_id(stop, route)):
-                    endpoint_stops.add(stop)
+        for route in self.get_unique_routes_to_solve():
+            stops = self._data_munger.get_stops_for_route(route)
+            endpoint_stops.add(stops[1].stopId)
+            endpoint_stops.add(stops[max(stops.keys())].stopId)
 
         self._endpoint_solution_stops = endpoint_stops
         return self._endpoint_solution_stops
@@ -90,7 +87,7 @@ class AnalysisDataMunger:  # Cannot be shared between Expanders
                         continue
                     for stop_number in self._data_munger.get_stop_numbers_for_stop_id(stop, route):
                         # memoization takes care of this, but could microoptimize by using last or any departure after here
-                        best_departure_time, best_trip_id = self._data_munger.first_departure_after(start_time, route, stop_number)
+                        best_trip_id, stop_number, best_departure_time  = self._data_munger.first_departures_after(start_time, route, stop_number)[0]
                         if best_trip_id is None:
                             continue
 
@@ -184,11 +181,11 @@ class AnalysisDataMunger:  # Cannot be shared between Expanders
 
     def get_network_speedy_network(self):
         if not self._network_speedy_network:
-            trips_to_consider = list(itertools.chain.from_iterable([self._data_munger.get_trips_for_route(r) for r in self.get_unique_routes_to_solve()]))
-            self._network_speedy_network = {k: dict() for k in self._data_munger.get_all_stop_coordinates.keys()}
+            trips_to_consider = self._data_munger.flatten([self._data_munger.get_trips_for_route(r) for r in self.get_unique_routes_to_solve()])
+            self._network_speedy_network = {k: dict() for k in self._data_munger.get_all_stop_coordinates().keys()}
             for trip in trips_to_consider:
-                departures = list(trip.tripStops.values())
-                for org, dst in list(zip(departures[:-1], departures[1:])):
+                stops = list(self._data_munger.get_trip_schedules()[trip].tripStops.values())
+                for org, dst in list(zip(stops[:-1], stops[1:])):
                     self._network_speedy_network.get(org.stopId, dict())[dst.stopId] = min(self._network_speedy_network.get(org.stopId, dict()).get(dst.stopId, dst.departureTime - org.departureTime), dst.departureTime - org.departureTime)
 
         return self._network_speedy_network
@@ -234,7 +231,7 @@ class AnalysisDataMunger:  # Cannot be shared between Expanders
                     if stop_number == '1':
                         endpoint_stops.add(stop)
 
-                    best_departure_time, best_trip_id = self._data_munger.first_departure_after(start_time, route, stop_number)
+                    best_trip_id, _, _  = self._data_munger.first_departures_after(start_time, route, stop_number)[0]
 
                     if best_trip_id is None:
                         endpoint_stops.add(stop)
