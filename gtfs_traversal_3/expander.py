@@ -44,7 +44,7 @@ class Expander:
         self._progress_dict[new_location] = new_progress
         self._progress_dict[new_progress.parent].children.add(new_location)
 
-        self._exp_queue.add_node(new_location)
+        self._exp_queue.add_node(new_location, self._queue_level(new_location))
 
     def _add_new_nodes_to_progress_dict(self, new_nodes_list, parent):
         valid_nodes = [n for n in new_nodes_list if self._node_is_valid(n)]
@@ -102,7 +102,8 @@ class Expander:
         next_stop_no = location_status.trip_stop_no + 1
         next_stop = self._data_munger.get_stop_id_from_trip_stop_number(location_status.arrival_trip, next_stop_no)
         new_unvisited = self._get_new_unvisited(location_status.unvisited, location_status.location, next_stop, location_status.arrival_trip)
-        new_time = self._progress_dict[location_status].time + self._data_munger.get_travel_duration(location_status.arrival_trip, location_status.trip_stop_no, next_stop_no)
+        duration = self._data_munger.get_travel_duration(location_status.arrival_trip, location_status.trip_stop_no, next_stop_no)
+        new_time = self._progress_dict[location_status].time + duration
 
         new_location = LocationStatusInfo(
             location=next_stop,
@@ -115,6 +116,7 @@ class Expander:
             new_location,
             ProgressInfo(
                 time=new_time,
+                duration=self._progress_dict[location_status].duration + duration,
                 parent=location_status,
                 children=set(),
                 minimum_remaining_time=new_minimum_remaining_time,
@@ -136,6 +138,7 @@ class Expander:
                 ),
                 ProgressInfo(
                     time=departure_time,
+                    duration=old_progress.duration + departure_time - old_progress.time,
                     parent=old_location_status,
                     children=set(),
                     minimum_remaining_time=old_progress.minimum_remaining_time,
@@ -180,6 +183,7 @@ class Expander:
             ),
             ProgressInfo(
                 time=new_time,
+                duration=progress.duration + self._transfer_duration_seconds,
                 parent=location_status,
                 minimum_remaining_time=minimum_remaining_time,
                 children=set(),
@@ -202,7 +206,8 @@ class Expander:
                     unvisited=self._get_new_unvisited(location_status.unvisited, location_status.location, station, WALK_ROUTE),
                 ),
                 ProgressInfo(
-                    time=self._progress_dict[location_status].time + timedelta(seconds=self._walk_time_seconds_between_stations(location_status.location, station)),
+                    time=self._progress_dict[location_status].time + walk_duration,
+                    duration=self._progress_dict[location_status].duration + walk_duration,
                     parent=location_status,
                     children=set(),
                     minimum_remaining_time=self._progress_dict[location_status].minimum_remaining_time,
@@ -211,7 +216,9 @@ class Expander:
                     eliminated=False,
                 )
             )
-            for station in self._all_station_coordinates.keys()
+            for station, walk_duration in [
+                timedelta(seconds=self._walk_time_seconds_between_stations(location_status.location, stat)) for stat in self._all_station_coordinates.keys()
+            ]
         ]
 
     def _initialize_progress_dict_and_exp_queue(self, starting_nodes):
@@ -301,6 +308,9 @@ class Expander:
         return True
 
     def _prune(self):
+        raise NotImplementedError("must be implemented in subclass")
+
+    def _queue_level(self, location):
         raise NotImplementedError("must be implemented in subclass")
 
     def _remove_stations_from_unvisited(self, unvisited, stops_to_remove):

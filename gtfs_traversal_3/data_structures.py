@@ -18,6 +18,7 @@ ProgressInfo = namedtuple(
     'ProgressInfo',
     [
         'time',
+        'duration',
         'parent',
         'children',
         'minimum_remaining_time',

@@ -47,7 +47,7 @@ class DataMunger:  # Can be shared between Expanders
         for trip in self.data.uniqueRouteTrips[route].tripIds: # this is sorted by departure time already
             for s in origin_stop_numbers:
                 if self.data.tripSchedules[trip].tripStops[s].departureTime >= earliest_departure_time:
-                    solution_trips.append((trip, s, self.data.tripSchedules[trip].tripStops[s].departureTime))
+                    solution_trips.append((trip, s, self.get_trip_departure_time(trip, s)))
             origin_stop_numbers = [n for n in origin_stop_numbers if not any(no == n for _, no, _ in solution_trips)]
 
         return solution_trips
@@ -126,6 +126,9 @@ class DataMunger:  # Can be shared between Expanders
         assert off_stop_number >= on_stop_number, 'cannot travel backwards along trip'
         trip_stops = self.get_stops_for_trip(trip)
         return trip_stops[off_stop_number].departureTime - trip_stops[on_stop_number].departureTime
+
+    def get_trip_departure_time(self, trip, stop_no):
+        return self.data.tripSchedules[trip].tripStops[stop_no].departureTime
 
     def get_trip_routes(self):
         if not self._trip_routes:

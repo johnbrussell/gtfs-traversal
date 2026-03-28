@@ -93,7 +93,8 @@ class Traverser(Expander):
         self._unvisited_lengths[0] = len(self._unvisited[0])
         initial_progresses = [
             ProgressInfo(
-                time=timedelta(seconds=0),
+                time=self._data_munger.get_trip_departure_time(node.arrival_trip, node.trip_stop_no),
+                duration=timedelta(seconds=0),
                 parent=None,
                 children=set(),
                 minimum_remaining_time=self._get_new_minimum_remaining_time(node),
@@ -118,6 +119,9 @@ class Traverser(Expander):
             if current_route == TRANSFER_ROUTE:
                 return len(routes) - 1
         return len(routes)
+
+    def _queue_level(self, location):
+        return len(self._unvisited[location.unvisited])
 
     def _remove_stations_from_unvisited(self, unvisited, stops_to_remove):
         removal_stops_in_children = [s for s in stops_to_remove if s in self._unvisited_children[unvisited]]
