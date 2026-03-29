@@ -17,18 +17,6 @@ class Traverser(Expander):
         self._unvisited_lengths = dict()
         Expander.__init__(self, self._data_munger, transfer_duration_seconds)
 
-    def next_worthwhile_departure_time_at_or_after(self, start_time):
-        earliest_departure_time = None
-        for stop in self._analysis_data_munger.get_unique_stops_to_solve():
-            for route in self._data_munger.get_routes_at_stop(stop):
-                for stop_number in self._data_munger.get_stop_numbers_for_stop_id(stop, route):
-                    if self._data_munger.is_last_stop_on_route(stop_number, route):
-                        continue
-                    _trip, stop_number, departure_time = self._data_munger.first_departures_after(start_time, route, stop_number)[0]
-                    if not earliest_departure_time or departure_time < earliest_departure_time:
-                        earliest_departure_time = departure_time
-        return earliest_departure_time
-
     def _add_to_unvisited(self, stop, unvisited):
         remaining_stops = {s for s in self._unvisited[unvisited] if s != stop}
         child_keys = [k for k, v in self._unvisited.items() if remaining_stops == v]

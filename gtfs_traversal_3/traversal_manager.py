@@ -33,7 +33,10 @@ def first_pass_durations(starting_point, analysis, data_munger, analysis_data_mu
 def traverser_start_points(analysis_data_munger, data_munger):
     return [
         LocationStatusInfo(location=stop_id, arrival_trip=trip, trip_stop_no=stop_no, unvisited=0) for trip, stop_no, stop_id in
-        data_munger.flatten([(trip, stop_no, stop_departure.stopId) for stop_no, stop_departure in data_munger.get_stops_for_trip(trip).items()] for trip in analysis_data_munger.get_valid_solution_trips())
+        data_munger.flatten(
+            [(trip, stop_no, stop_departure.stopId) for stop_no, stop_departure in data_munger.get_stops_for_trip(trip).items()
+             if not data_munger.is_last_stop_on_trip(stop_no, trip)] for trip in analysis_data_munger.get_valid_solution_trips()
+        )
     ]
 
 def run():
@@ -49,7 +52,8 @@ def run():
 
     solution_route_endpoints = analysis_data_munger.get_endpoint_solution_stops()
 
-    intuition_best_time = min(data_munger.flatten([first_pass_durations(starting_point, analysis, data_munger, analysis_data_munger) for starting_point in solution_route_endpoints]))
+    # intuition_best_time = min(data_munger.flatten([first_pass_durations(starting_point, analysis, data_munger, analysis_data_munger) for starting_point in solution_route_endpoints]))
+    intuition_best_time = timedelta(hours=2, minutes=34)
 
     traverser = Traverser(transfer_duration_seconds=TRANSFER_DURATION_SECONDS, data_munger=data_munger, analysis=analysis)
     traverser.find_solution_faster_than_time(traverser_start_points(analysis_data_munger, data_munger), intuition_best_time + timedelta(seconds=1))

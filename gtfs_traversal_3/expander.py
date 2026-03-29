@@ -21,8 +21,6 @@ class Expander:
         self._initialize_progress_dict_and_exp_queue(starting_nodes)
         while not self._exp_queue.is_empty():
             self._expand()
-            if self._should_prune():
-                self._prune()
         return self._best_solution_duration
 
     def find_solution_faster_than_time(self, starting_nodes, max_time):
