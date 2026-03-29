@@ -35,7 +35,7 @@ class DataMunger:  # Can be shared between Expanders
             unexpanded.remove(stop)
 
             travel_times_from_stop = self.get_speedy_network()[stop]
-            walk_times_from_stop = { k: self.walk_time_seconds(self.data.stopLocations[stop].lat, self.data.stopLocations[k].lat, self.data.stopLocations[stop].long, self.data.stopLocations[k].long) + timedelta(seconds=2 * transfer_penalty_in_use) if travel_time_dict.get(k, timedelta(seconds=1)) >= travel_time_dict.get(stop, timedelta(seconds=1)) else timedelta(seconds=0) for k in self.data.stopLocations.keys() }
+            walk_times_from_stop = {k: self.walk_time(self.data.stopLocations[stop].lat, self.data.stopLocations[k].lat, self.data.stopLocations[stop].long, self.data.stopLocations[k].long) + timedelta(seconds=2 * transfer_penalty_in_use) if travel_time_dict.get(k, timedelta(seconds=1)) >= travel_time_dict.get(stop, timedelta(seconds=1)) else timedelta(seconds=0) for k in self.data.stopLocations.keys()}
 
             travel_time_dict = {k: min(travel_time_dict.get(k, v), travel_time_dict.get(stop, v) + min(v, travel_times_from_stop.get(k, v))) for k, v in walk_times_from_stop.items()}
         return {k: v - timedelta(seconds=2 * transfer_penalty_in_use) for k, v in travel_time_dict.items()} if transfer_penalty_in_use > 0 else travel_time_dict
@@ -160,7 +160,7 @@ class DataMunger:  # Can be shared between Expanders
     def _to_radians_from_degrees(degrees):
         return degrees * math.pi / 180
 
-    def walk_time_seconds(self, lat1, lat2, long1, long2):
+    def walk_time(self, lat1, lat2, long1, long2):
         origin_lat = self._to_radians_from_degrees(lat1)
         origin_long = self._to_radians_from_degrees(long1)
         dest_lat = self._to_radians_from_degrees(lat2)

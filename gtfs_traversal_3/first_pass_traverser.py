@@ -8,7 +8,7 @@ class FirstPassTraverser(Traverser):
 
         self._exp_queue.sort_deepest_queue_level(self._sort_queue_fn)
 
-        if any(self._is_solution(location) for location, _ in nodes_added) is not None:
+        if any(self._is_solution(location) for location, _ in nodes_added):
             self._abort()
 
     def _announce_solution(self, new_progress):
@@ -19,7 +19,7 @@ class FirstPassTraverser(Traverser):
 
     def _get_walking_stations_and_walk_times(self, location_status):
         return [
-            (station, self._walk_time_seconds_between_stations(location_status.location, station))
+            (station, self._walk_time_between_stations(location_status.location, station))
             for station in self._data_munger.get_unique_stops_to_solve()
         ]
 

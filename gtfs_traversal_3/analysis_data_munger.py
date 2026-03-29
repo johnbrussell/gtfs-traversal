@@ -19,6 +19,7 @@ class AnalysisDataMunger:  # Cannot be shared between Expanders
         self._unexpanded_speedy_travel_stops = dict()
         self._unique_routes_to_solve = None
         self._unique_stops_to_solve = None
+        self._valid_solution_trips = None
 
     # confirmed unused in traversal 3
     def get_earliest_last_trip(self, start_time):
@@ -314,6 +315,11 @@ class AnalysisDataMunger:  # Cannot be shared between Expanders
                 self._unique_stops_to_solve.add(stop.stopId)
 
         return self._unique_stops_to_solve
+
+    def get_valid_solution_trips(self):
+        if not self._valid_solution_trips:
+            self._valid_solution_trips = set(self._data_munger.flatten([t for t in [self._data_munger.get_trips_for_route(r) for r in self.get_unique_routes_to_solve()]]))
+        return self._valid_solution_trips
 
     # TODO needs to handle stations, not stops
     def minimum_routes_to_visit_stops(self, stops, current_route, current_stop):

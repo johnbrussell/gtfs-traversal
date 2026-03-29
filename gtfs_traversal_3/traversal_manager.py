@@ -49,14 +49,7 @@ def run():
     print(solution_route_endpoints)
 
     intuition_best_time = min(data_munger.flatten([first_pass_durations(starting_point, analysis, data_munger, analysis_data_munger) for starting_point in solution_route_endpoints]))
-    print(intuition_best_time)
 
-
-
-
-
-
-    intuition_best_time = None
     intuition_start_time = datetime(*list(map(int, analysis.start_date.split('-'))))
     print(intuition_start_time)
     while intuition_start_time:
