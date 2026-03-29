@@ -34,7 +34,7 @@ class AnalysisDataMunger:  # Cannot be shared between Expanders
         endpoint_stops = set()
         for route in self.get_unique_routes_to_solve():
             stops = self._data_munger.get_stops_for_route(route)
-            endpoint_stops.add(stops[1].stopId)
+            endpoint_stops.add(stops[min(stops.keys())].stopId)
             endpoint_stops.add(stops[max(stops.keys())].stopId)
 
         self._endpoint_solution_stops = endpoint_stops

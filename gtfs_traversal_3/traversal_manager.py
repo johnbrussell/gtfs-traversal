@@ -7,7 +7,7 @@ from gtfs_traversal_3.analysis_data_munger import AnalysisDataMunger
 from gtfs_traversal_3.data_munger import DataMunger
 from gtfs_traversal_3.data_adjuster import DataAdjuster
 from gtfs_traversal_3.read_data import *
-# from gtfs_traversal_3.traverser import Traverser
+from gtfs_traversal_3.traverser import Traverser
 from gtfs_traversal_3.first_pass_traverser import FirstPassTraverser
 
 TRANSFER_DURATION_SECONDS = 60
@@ -30,6 +30,12 @@ def first_pass_durations(starting_point, analysis, data_munger, analysis_data_mu
 
     return [FirstPassTraverser(transfer_duration_seconds=TRANSFER_DURATION_SECONDS, data_munger=data_munger, analysis=analysis).find_solution([location]) for location in initial_locations]
 
+def traverser_start_points(analysis_data_munger, data_munger):
+    return [
+        LocationStatusInfo(location=stop_id, arrival_trip=trip, trip_stop_no=stop_no, unvisited=0) for trip, stop_no, stop_id in
+        data_munger.flatten([(trip, stop_no, stop_departure.stopId) for stop_no, stop_departure in data_munger.get_stops_for_trip(trip).items()] for trip in analysis_data_munger.get_valid_solution_trips())
+    ]
+
 def run():
     analysis = gtfs_analyses.determine_analysis_parameters(load_configuration())[1]
     data = read_data(analysis, "data")
@@ -41,46 +47,9 @@ def run():
     data_munger = DataMunger(data, WALK_SPEED_MPH, stops_df)
     analysis_data_munger = AnalysisDataMunger(data_munger, analysis)
 
-    # works through here
-
-    analysis_start_time = datetime(*list(map(int, analysis.start_date.split('-'))))
     solution_route_endpoints = analysis_data_munger.get_endpoint_solution_stops()
-
-    print(solution_route_endpoints)
 
     intuition_best_time = min(data_munger.flatten([first_pass_durations(starting_point, analysis, data_munger, analysis_data_munger) for starting_point in solution_route_endpoints]))
 
-    intuition_start_time = datetime(*list(map(int, analysis.start_date.split('-'))))
-    print(intuition_start_time)
-    while intuition_start_time:
-        intuition_traverser = FirstPassTraverser(
-            transfer_duration_seconds=TRANSFER_DURATION_SECONDS,
-            data_munger=data_munger,
-            analysis=analysis,
-        )
-        intuition_start_time = intuition_traverser.next_worthwhile_departure_time_at_or_after(intuition_start_time)
-        # TODO fill in starting nodes
-        new_solution_duration = intuition_traverser.find_solution([])
-        if new_solution_duration is not None:
-            if not intuition_best_time or new_solution_duration < intuition_best_time:
-                intuition_best_time = new_solution_duration
-
-        intuition_start_time = intuition_start_time + timedelta(seconds=1)
-
-    print(f"Best intuition time: {intuition_best_time}")
-
-    # best_time = intuition_best_time
-    # best_progress_dictionary = None
-    # best_start_time = None
-    # while start_time < end_date_midnight:
-    #     traverser = Traverser(transfer_duration_seconds=TRANSFER_DURATION_SECONDS, data_munger=data_munger, analysis=analysis)
-    #
-    #     start_time = traverser.next_worthwhile_departure_time_at_or_after(start_time)
-    #
-    #     new_solution_duration = traverser.find_solution(start_time)
-    #     print(start_time, new_solution_duration)
-    #     if best_time is None or new_solution_duration < best_time:
-    #         best_time = new_solution_duration
-    #         best_start_time = start_time
-    #
-    #     start_time = start_time + timedelta(seconds=1)
+    traverser = Traverser(transfer_duration_seconds=TRANSFER_DURATION_SECONDS, data_munger=data_munger, analysis=analysis)
+    traverser.find_solution_faster_than_time(traverser_start_points(analysis_data_munger, data_munger), intuition_best_time + timedelta(seconds=1))

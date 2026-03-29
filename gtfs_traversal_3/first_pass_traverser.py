@@ -12,7 +12,7 @@ class FirstPassTraverser(Traverser):
             self._abort()
 
     def _announce_solution(self, new_progress):
-        print(f"First pass solution is {new_progress.duration} seconds")
+        print(f"First pass solution is {new_progress.duration}")
 
     def _create_exp_queue(self, num_levels):
         self._exp_queue = BaseExpansionQueue(max_size=num_levels)

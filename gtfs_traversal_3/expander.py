@@ -301,8 +301,6 @@ class Expander:
             if self._is_solution(new_location):
                 return new_progress.duration < self._best_solution_duration
             if new_progress.duration + new_progress.minimum_remaining_time >= self._best_solution_duration:
-                # if new_progress.duration < self._best_solution_duration:
-                #     print(new_progress.duration, new_progress.minimum_remaining_time, new_progress.duration + new_progress.minimum_remaining_time)
                 return False
 
         return True
