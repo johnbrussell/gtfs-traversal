@@ -6,6 +6,7 @@ from gtfs_traversal_3.expander import Expander
 from gtfs_traversal_3.data_structures import ProgressInfo, TRANSFER_ROUTE
 
 
+# noinspection PyProtectedMember
 class Traverser(Expander):
     def __init__(self, transfer_duration_seconds, data_munger, analysis):
         self._data_munger = data_munger
@@ -15,9 +16,10 @@ class Traverser(Expander):
         self._unvisited_children = dict()
         self._unvisited_parents = dict()
         self._unvisited_lengths = dict()
+        self._unvisited_durations = dict()
         Expander.__init__(self, self._data_munger, transfer_duration_seconds)
 
-    def _add_to_unvisited(self, stop, unvisited):
+    def _add_to_unvisited(self, stop, unvisited, duration):
         remaining_stops = {s for s in self._unvisited[unvisited] if s != stop}
         child_keys = [k for k, v in self._unvisited.items() if remaining_stops == v]
         if child_keys:
@@ -30,6 +32,7 @@ class Traverser(Expander):
             self._unvisited_parents[new_unvisited] = dict()
         self._unvisited_children[unvisited][stop] = new_unvisited
         self._unvisited_parents[new_unvisited][stop] = unvisited
+        self._unvisited_durations[new_unvisited] = min(self._unvisited_durations.get(new_unvisited, duration), duration)
         return new_unvisited
 
     def _announce_solution(self, new_progress):
@@ -42,28 +45,11 @@ class Traverser(Expander):
         unvisited = self._unvisited[location.unvisited]
         minimum_stop_times = self._analysis_data_munger.get_minimum_stop_times()
         return sum([minimum_stop_times[s] for s in unvisited], start=timedelta(seconds=0))
-        # unvisited_stop_minimum_times = {k: v for k, v in self._analysis_data_munger.get_minimum_stop_times().items() if k in unvisited}
-        # minimum_transfers = self._minimum_transfers_to_visit_stops(unvisited, location.arrival_trip, location.location)
-        # max_n_minimum_times = set()
-        # minimum_max_time = 1000000
-        # for v in unvisited_stop_minimum_times.values():
-        #     if len(max_n_minimum_times) < minimum_transfers:
-        #         max_n_minimum_times.add(v)
-        #         if v < minimum_max_time:
-        #             minimum_max_time = v
-        #         continue
-        #     if v > minimum_max_time:
-        #         max_n_minimum_times.remove(minimum_max_time)
-        #         while len(max_n_minimum_times) < minimum_transfers - 1:
-        #             max_n_minimum_times.add(minimum_max_time)
-        #         max_n_minimum_times.add(v)
-        #         minimum_max_time = min(max_n_minimum_times)
-        # return max(0, sum(unvisited_stop_minimum_times.values()) - sum(max_n_minimum_times) + minimum_transfers * self._transfer_duration_seconds)
 
-    def _get_new_unvisited(self, unvisited, origin, destination, trip):
+    def _get_new_unvisited(self, unvisited, origin, destination, trip, duration):
         if trip not in self._analysis_data_munger.get_valid_solution_trips():
             return unvisited
-        return self._remove_stations_from_unvisited(unvisited, self._data_munger.stations_for_stops([origin, destination]))
+        return self._remove_stations_from_unvisited(unvisited, self._data_munger.stations_for_stops([origin, destination]), duration)
 
     def _get_unvisited_count(self, unvisited_key):
         return self._unvisited_lengths[unvisited_key]
@@ -78,6 +64,7 @@ class Traverser(Expander):
             raise ValueError("passed invalid initial unvisited key to traverser")
         self._unvisited = { 0: { self._data_munger.station_for_stop(s) for s in self._analysis_data_munger.get_unique_stops_to_solve() } }
         self._unvisited_children[0] = dict()
+        self._unvisited_durations[0] = 0
         self._unvisited_lengths[0] = len(self._unvisited[0])
         initial_progresses = [
             ProgressInfo(
@@ -108,10 +95,22 @@ class Traverser(Expander):
                 return len(routes) - 1
         return len(routes)
 
+    def _node_is_valid(self, node):
+        if super()._node_is_valid(node):
+            location, progress = node
+
+            if location.unvisited == 0:
+                return False
+
+            if self._unvisited_children_are_faster(node):
+                return False
+
+        return True
+
     def _queue_level(self, location):
         return len(self._unvisited[location.unvisited])
 
-    def _remove_stations_from_unvisited(self, unvisited, stops_to_remove):
+    def _remove_stations_from_unvisited(self, unvisited, stops_to_remove, duration):
         removal_stops_in_children = [s for s in stops_to_remove if s in self._unvisited_children[unvisited]]
         removal_stops_not_in_children = [s for s in stops_to_remove if s not in self._unvisited_children[unvisited]]
         stops_to_remove = removal_stops_in_children + removal_stops_not_in_children
@@ -120,11 +119,23 @@ class Traverser(Expander):
             if stop in self._unvisited_children[unvisited]:
                 unvisited = self._unvisited_children[unvisited][stop]
             else:
-                unvisited = self._add_to_unvisited(stop, unvisited)
+                unvisited = self._add_to_unvisited(stop, unvisited, duration)
 
         if not self._unvisited[unvisited]:
             self._solution_unvisited = unvisited
         return unvisited
 
     def _should_prune(self):
+        return False
+
+    def _unvisited_children_are_faster(self, node):
+        location, progress = node
+
+        unvisited_children = list(self._unvisited_children[location.unvisited].values())
+        while unvisited_children:
+            child = unvisited_children.pop()
+            unvisited_children.extend([c for c in self._unvisited_children.get(child, dict()).values() if self._unvisited_durations[c] < progress.duration])
+            child_progress = self._progress_dict.get(location._replace(unvisited=child))
+            if child_progress and child_progress.duration < progress.duration:
+                return True
         return False

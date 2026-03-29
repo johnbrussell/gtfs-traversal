@@ -93,14 +93,14 @@ class Expander:
 
         return [transfer_node, self._get_next_stop_data_for_trip(location_status)]
 
-    def _get_new_unvisited(self, unvisited, origin, destination, trip):
+    def _get_new_unvisited(self, unvisited, origin, destination, trip, duration):
         raise NotImplementedError("Must be implemented in subclass")
 
     def _get_next_stop_data_for_trip(self, location_status):
         next_stop_no = location_status.trip_stop_no + 1
         next_stop = self._data_munger.get_stop_id_from_trip_stop_number(location_status.arrival_trip, next_stop_no)
-        new_unvisited = self._get_new_unvisited(location_status.unvisited, location_status.location, next_stop, location_status.arrival_trip)
         duration = self._data_munger.get_travel_duration(location_status.arrival_trip, location_status.trip_stop_no, next_stop_no)
+        new_unvisited = self._get_new_unvisited(location_status.unvisited, location_status.location, next_stop, location_status.arrival_trip, duration)
         new_time = self._progress_dict[location_status].time + duration
 
         new_location = LocationStatusInfo(
@@ -201,7 +201,7 @@ class Expander:
                     location=station,
                     arrival_trip=WALK_ROUTE,
                     trip_stop_no=None,
-                    unvisited=self._get_new_unvisited(location_status.unvisited, location_status.location, station, WALK_ROUTE),
+                    unvisited=self._get_new_unvisited(location_status.unvisited, location_status.location, station, WALK_ROUTE, self._progress_dict[location_status].duration + walk_duration),
                 ),
                 ProgressInfo(
                     time=self._progress_dict[location_status].time + walk_duration,
@@ -209,7 +209,7 @@ class Expander:
                     parent=location_status,
                     children=set(),
                     minimum_remaining_time=self._progress_dict[location_status].minimum_remaining_time,
-                    num_unvisited=self._get_unvisited_count(self._get_new_unvisited(location_status.unvisited, location_status.location, station, WALK_ROUTE)),
+                    num_unvisited=self._get_unvisited_count(self._get_new_unvisited(location_status.unvisited, location_status.location, station, WALK_ROUTE, self._progress_dict[location_status].duration + walk_duration)),
                     expanded=False,
                     eliminated=False,
                 )
@@ -309,7 +309,7 @@ class Expander:
     def _queue_level(self, location):
         raise NotImplementedError("must be implemented in subclass")
 
-    def _remove_stations_from_unvisited(self, unvisited, stops_to_remove):
+    def _remove_stations_from_unvisited(self, unvisited, stops_to_remove, duration):
         raise NotImplementedError("must be implemented in subclass")
 
     def _should_prune(self):
