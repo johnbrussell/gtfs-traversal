@@ -36,7 +36,7 @@ class Traverser(Expander):
         return new_unvisited
 
     def _announce_solution(self, new_progress):
-        print(f"New solution found of duration {new_progress.duration} seconds")
+        print(f"New solution found of duration {new_progress.duration}")
 
     def _create_exp_queue(self, num_levels):
         self._exp_queue = BreadthAndDepthExpansionQueue(max_size=num_levels)
