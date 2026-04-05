@@ -30,8 +30,9 @@ class Traverser(Expander):
             self._unvisited_lengths[new_unvisited] = len(remaining_stops)
             self._unvisited_children[new_unvisited] = dict()
             self._unvisited_parents[new_unvisited] = dict()
-        self._unvisited_children[unvisited][stop] = new_unvisited
-        self._unvisited_parents[new_unvisited][stop] = unvisited
+        if unvisited != new_unvisited:
+            self._unvisited_children[unvisited][stop] = new_unvisited
+            self._unvisited_parents[new_unvisited][stop] = unvisited
         self._unvisited_durations[new_unvisited] = min(self._unvisited_durations.get(new_unvisited, duration), duration)
         return new_unvisited
 
@@ -102,8 +103,8 @@ class Traverser(Expander):
             if location.unvisited == 0:
                 return False
 
-            # if self._unvisited_children_are_faster(node):
-            #     return False
+            if self._best_solution_duration is not None and self._unvisited_children_are_faster(node):
+                return False
 
             return True
         return False
