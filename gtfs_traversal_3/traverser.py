@@ -102,10 +102,11 @@ class Traverser(Expander):
             if location.unvisited == 0:
                 return False
 
-            if self._unvisited_children_are_faster(node):
-                return False
+            # if self._unvisited_children_are_faster(node):
+            #     return False
 
-        return True
+            return True
+        return False
 
     def _queue_level(self, location):
         return len(self._unvisited[location.unvisited])

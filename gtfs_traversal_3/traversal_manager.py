@@ -47,13 +47,18 @@ def run():
     # data is returned with trip departures as datetimes! So departures after midnight are shown as very early departures on the next day.
     data = DataAdjuster.filter_and_adjust_data_set_for_date(data, analysis.start_date)
 
+    print("adjusted data set")
+
     data_munger = DataMunger(data, WALK_SPEED_MPH, stops_df)
     analysis_data_munger = AnalysisDataMunger(data_munger, analysis)
 
     solution_route_endpoints = analysis_data_munger.get_endpoint_solution_stops()
 
-    # intuition_best_time = min(data_munger.flatten([first_pass_durations(starting_point, analysis, data_munger, analysis_data_munger) for starting_point in solution_route_endpoints]))
-    intuition_best_time = timedelta(hours=2, minutes=34)
+    intuition_best_time = min(data_munger.flatten([first_pass_durations(starting_point, analysis, data_munger, analysis_data_munger) for starting_point in solution_route_endpoints]))
+    # intuition_best_time = timedelta(hours=2, minutes=34)
+
+    # minimum_stop_times = analysis_data_munger.get_minimum_stop_times()
+    # print(sum([minimum_stop_times[data_munger.station_for_stop(s)] for s in analysis_data_munger.get_unique_stops_to_solve()], start=timedelta(seconds=0)))
 
     traverser = Traverser(transfer_duration_seconds=TRANSFER_DURATION_SECONDS, data_munger=data_munger, analysis=analysis)
     traverser.find_solution_faster_than_time(traverser_start_points(analysis_data_munger, data_munger), intuition_best_time + timedelta(seconds=1))
