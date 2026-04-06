@@ -20,7 +20,6 @@ class BreadthAndDepthExpansionQueue(BaseExpansionQueue):
                 self._breadth_queue = self._queue.get(to_expand, [])[-self._breadth_size:]
                 self._min_expansion -= 1
             self._queue[to_expand] = self._queue[to_expand][:-self._breadth_size]
-            assert (len(self._queue[to_expand]) == len(self._breadth_queue) + len(self._queue[to_expand]))
             if self._num_remaining_stops_to_pop > self._last_expansion_number:
                 self._min_expansion = max(self._queue.keys())
                 print(f"retreated from expanding {self._last_expansion_number}; {len(self._queue[self._min_expansion])} items at max key {self._min_expansion}")

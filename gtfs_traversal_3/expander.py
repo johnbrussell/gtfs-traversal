@@ -76,6 +76,9 @@ class Expander:
 
         self._add_new_nodes_to_progress_dict(new_nodes, location_status)
 
+        if self._should_prune():
+            self._prune()
+
     def _get_new_minimum_remaining_time(self, location):
         raise NotImplementedError("must be implemented in subclass")
 
@@ -231,6 +234,32 @@ class Expander:
     def _is_solution_route(self, route):
         raise NotImplementedError("must be implemented in subclass")
 
+    def _mark_node_as_eliminated_and_find_parent_and_children(self, node_to_eliminate):
+        parent_and_children = []
+
+        # eliminate node
+        self._progress_dict[node_to_eliminate] = self._progress_dict[node_to_eliminate]._replace(eliminated=True)
+
+        # eliminate node's children
+        if self._progress_dict[node_to_eliminate].children is not None:
+            valid_children = [
+                c
+                for c in self._progress_dict[node_to_eliminate].children
+                if self._progress_dict[c].parent == node_to_eliminate
+            ]
+            parent_and_children += valid_children
+            self._progress_dict[node_to_eliminate] = self._progress_dict[node_to_eliminate]._replace(children=set())
+
+        # eliminate node's parent (if it hasn't already been eliminated)
+        parent = self._progress_dict[node_to_eliminate].parent
+        if parent and not self._progress_dict[parent].eliminated:
+            self._progress_dict[node_to_eliminate] = self._progress_dict[node_to_eliminate]._replace(parent=None)
+            self._progress_dict[parent].children.remove(node_to_eliminate)
+            if not self._progress_dict[parent].children:
+                parent_and_children.append(parent)
+
+        return parent_and_children
+
     def _mark_nodes_as_eliminated(self, nodes_to_eliminate):
         while nodes_to_eliminate:
             node_to_eliminate = nodes_to_eliminate.pop()
@@ -239,26 +268,7 @@ class Expander:
             if self._progress_dict[node_to_eliminate].eliminated:
                 continue
 
-            # eliminate node
-            self._progress_dict[node_to_eliminate] = self._progress_dict[node_to_eliminate]._replace(eliminated=True)
-
-            # eliminate node's children
-            if self._progress_dict[node_to_eliminate].children is not None:
-                valid_children = [
-                    c
-                    for c in self._progress_dict[node_to_eliminate].children
-                    if self._progress_dict[c].parent == node_to_eliminate
-                ]
-                nodes_to_eliminate += valid_children
-                self._progress_dict[node_to_eliminate] = self._progress_dict[node_to_eliminate]._replace(children=set())
-
-            # eliminate node's parent (if it hasn't already been eliminated)
-            parent = self._progress_dict[node_to_eliminate].parent
-            if parent and not self._progress_dict[parent].eliminated:
-                self._progress_dict[node_to_eliminate] = self._progress_dict[node_to_eliminate]._replace(parent=None)
-                self._progress_dict[parent].children.remove(node_to_eliminate)
-                if not self._progress_dict[parent].children:
-                    nodes_to_eliminate.append(parent)
+            nodes_to_eliminate.extend(self._mark_node_as_eliminated_and_find_parent_and_children(node_to_eliminate))
 
     def _minimum_possible_duration_within_stops(self, stops, current_time, station_facts,
                                                 arrival_duration, arrival_location, original_location_status,
