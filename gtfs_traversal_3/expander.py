@@ -17,6 +17,8 @@ class Expander:
 
         self._all_station_coordinates = self._data_munger.get_all_stop_coordinates()
 
+        self._num_expansions = 0
+
     def find_solution(self, starting_nodes):
         self._initialize_progress_dict_and_exp_queue(starting_nodes)
         while not self._exp_queue.is_empty():
@@ -45,7 +47,7 @@ class Expander:
         self._exp_queue.add_node(new_location, self._queue_level(new_location))
 
     def _add_new_nodes_to_progress_dict(self, new_nodes_list, parent):
-        valid_nodes = [n for n in new_nodes_list if self._node_is_valid(n)]
+        valid_nodes = self._filter_for_valid_nodes(new_nodes_list)
 
         for node in valid_nodes:
             self._add_new_node_to_progress_dict(node)
@@ -63,6 +65,7 @@ class Expander:
 
     def _expand(self):
         location_status = self._exp_queue.pop()
+        self._num_expansions += 1
 
         if location_status not in self._progress_dict \
                 or self._is_solution(location_status) \
@@ -78,6 +81,9 @@ class Expander:
 
         if self._should_prune():
             self._prune()
+
+    def _filter_for_valid_nodes(self, new_nodes_list):
+        return [n for n in new_nodes_list if self._node_is_valid(n)]
 
     def _get_new_minimum_remaining_time(self, location):
         raise NotImplementedError("must be implemented in subclass")
@@ -308,8 +314,7 @@ class Expander:
         if self._best_solution_duration is not None:
             if self._is_solution(new_location):
                 return new_progress.duration < self._best_solution_duration
-            if (new_progress.duration #+ new_progress.minimum_remaining_time
-                    >= self._best_solution_duration):
+            if new_progress.duration + new_progress.minimum_remaining_time >= self._best_solution_duration:
                 return False
 
         return True
