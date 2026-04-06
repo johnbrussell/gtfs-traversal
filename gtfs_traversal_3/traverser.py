@@ -1,7 +1,7 @@
 from datetime import timedelta
 
 from gtfs_traversal_3.analysis_data_munger import AnalysisDataMunger
-from gtfs_traversal_3.breadth_and_depth_expansion_queue import BreadthAndDepthExpansionQueue
+from gtfs_traversal_3.base_expansion_queue import BaseExpansionQueue
 from gtfs_traversal_3.expander import Expander
 from gtfs_traversal_3.data_structures import ProgressInfo, TRANSFER_ROUTE
 
@@ -40,7 +40,7 @@ class Traverser(Expander):
         print(f"New solution found of duration {new_progress.duration}")
 
     def _create_exp_queue(self, num_levels):
-        self._exp_queue = BreadthAndDepthExpansionQueue(max_size=num_levels)
+        self._exp_queue = BaseExpansionQueue(max_size=num_levels)
 
     def _get_new_minimum_remaining_time(self, location):
         unvisited = self._unvisited[location.unvisited]

@@ -2,12 +2,12 @@ from datetime import datetime, timedelta
 
 import gtfs_parsing.analyses.analyses as gtfs_analyses
 
+from gtfs_traversal_3.all_stations_visitor import AllStationsVisitor
 from gtfs_traversal_3.data_structures import LocationStatusInfo
 from gtfs_traversal_3.analysis_data_munger import AnalysisDataMunger
 from gtfs_traversal_3.data_munger import DataMunger
 from gtfs_traversal_3.data_adjuster import DataAdjuster
 from gtfs_traversal_3.read_data import *
-from gtfs_traversal_3.traverser import Traverser
 from gtfs_traversal_3.first_pass_traverser import FirstPassTraverser
 
 TRANSFER_DURATION_SECONDS = 60
@@ -54,11 +54,11 @@ def run():
 
     solution_route_endpoints = analysis_data_munger.get_endpoint_solution_stops()
 
-    # intuition_best_time = min(data_munger.flatten([first_pass_durations(starting_point, analysis, data_munger, analysis_data_munger) for starting_point in solution_route_endpoints]))
-    intuition_best_time = timedelta(hours=2, minutes=34)
+    intuition_best_time = min(data_munger.flatten([first_pass_durations(starting_point, analysis, data_munger, analysis_data_munger) for starting_point in solution_route_endpoints]))
+    # intuition_best_time = timedelta(hours=2, minutes=34)
 
     # minimum_stop_times = analysis_data_munger.get_minimum_stop_times()
     # print(sum([minimum_stop_times[data_munger.station_for_stop(s)] for s in analysis_data_munger.get_unique_stops_to_solve()], start=timedelta(seconds=0)))
 
-    traverser = Traverser(transfer_duration_seconds=TRANSFER_DURATION_SECONDS, data_munger=data_munger, analysis=analysis)
+    traverser = AllStationsVisitor(transfer_duration_seconds=TRANSFER_DURATION_SECONDS, data_munger=data_munger, analysis=analysis, breadth_size=100, prune_size=50000, prune_threshold=1000000)
     traverser.find_solution_faster_than_time(traverser_start_points(analysis_data_munger, data_munger), intuition_best_time + timedelta(seconds=1))

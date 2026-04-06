@@ -15,6 +15,7 @@ class AnalysisDataMunger:  # Cannot be shared between Expanders
         self._network_speedy_network = dict()
         self._route_types_to_solve = analysis.route_types
         self._speedy_travel_times = dict()
+        self.start_time = datetime(*list(map(int, analysis.start_date.split('-'))))
         self._transfer_stops = None
         self._unexpanded_speedy_travel_stops = dict()
         self._unique_routes_to_solve = None

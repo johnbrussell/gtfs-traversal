@@ -2,9 +2,10 @@ from gtfs_traversal_3.base_expansion_queue import BaseExpansionQueue
 
 
 class BreadthAndDepthExpansionQueue(BaseExpansionQueue):
-    def __init__(self, max_size):
+    def __init__(self, max_size, breadth_size):
         BaseExpansionQueue.__init__(self, max_size)
         self._breadth_queue = list()
+        self._breadth_size = breadth_size
         self._last_expansion_number = 0
         self._min_expansion = 0
 
@@ -16,9 +17,10 @@ class BreadthAndDepthExpansionQueue(BaseExpansionQueue):
             to_expand = None
             while not self._breadth_queue:
                 to_expand = max(self._num_remaining_stops_to_pop, self._min_expansion)
-                self._breadth_queue = self._queue.get(to_expand, [])
+                self._breadth_queue = self._queue.get(to_expand, [])[-self._breadth_size:]
                 self._min_expansion -= 1
-            self._queue[to_expand] = []
+            self._queue[to_expand] = self._queue[to_expand][:-self._breadth_size]
+            assert (len(self._queue[to_expand]) == len(self._breadth_queue) + len(self._queue[to_expand]))
             if self._num_remaining_stops_to_pop > self._last_expansion_number:
                 self._min_expansion = max(self._queue.keys())
                 print(f"retreated from expanding {self._last_expansion_number}; {len(self._queue[self._min_expansion])} items at max key {self._min_expansion}")
