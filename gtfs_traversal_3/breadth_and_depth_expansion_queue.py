@@ -9,8 +9,10 @@ class BreadthAndDepthExpansionQueue(BaseExpansionQueue):
         self._breadth_size = breadth_size
         self._broadest_level = max_size
         self._have_added_to_max_queue_level = True
+        self._interval = 1
         self._last_expansion_number = 0
         self._min_expansion = 0
+        self._num_starting_nodes = max_size
 
     def add_node(self, node, queue_level):
         super().add_node(node, queue_level)
@@ -21,7 +23,7 @@ class BreadthAndDepthExpansionQueue(BaseExpansionQueue):
         return self._deepest_level >= self._one_more_than_max_size and not self._breadth_queue
 
     def _max_queue_level(self):
-        return max(self._queue.keys(), key=lambda x: len(self._queue[x]) if x < self._one_more_than_max_size - 1 else 0.5)
+        return max(self._queue.keys(), key=lambda x: len(self._queue[x]) + (self._num_starting_nodes - x * self._interval) if self._min_expansion <= x < self._one_more_than_max_size - 1 else 0.5 if x == self._one_more_than_max_size - 1 else 0)
 
     def _num_to_pull(self, level):
         if level == self._one_more_than_max_size - 1:
@@ -43,6 +45,7 @@ class BreadthAndDepthExpansionQueue(BaseExpansionQueue):
         return self._breadth_queue.pop()
 
     def _pull_largest_queue_for_expansion(self):
+        self._min_expansion -= 1
         max_level = self._max_queue_level()
         num_to_pull = self._num_to_pull(max_level)
         self._breadth_queue = self._queue.get(max_level, [])[-num_to_pull:]
@@ -65,6 +68,10 @@ class BreadthAndDepthExpansionQueue(BaseExpansionQueue):
 
     def set_breadth_exponent(self, exp):
         self._breadth_exponent = exp
+
+    def set_num_starting_nodes(self):
+        self._num_starting_nodes = sum(len(v) for v in self._queue.values())
+        self._interval = self._num_starting_nodes / self._one_more_than_max_size
 
     def sort(self, sort_fn):
         if self._have_added_to_max_queue_level:
