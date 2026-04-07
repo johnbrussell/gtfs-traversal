@@ -60,6 +60,6 @@ def run():
     # minimum_stop_times = analysis_data_munger.get_minimum_stop_times()
     # print(sum([minimum_stop_times[data_munger.station_for_stop(s)] for s in analysis_data_munger.get_unique_stops_to_solve()], start=timedelta(seconds=0)))
 
-    traverser = AllStationsVisitor(transfer_duration_seconds=TRANSFER_DURATION_SECONDS, data_munger=data_munger, analysis=analysis, breadth_size=0.5, prune_size=15000, prune_threshold=250000)
+    traverser = AllStationsVisitor(transfer_duration_seconds=TRANSFER_DURATION_SECONDS, data_munger=data_munger, analysis=analysis, breadth_size=1000, prune_size=4000, prune_threshold=200000)
     # traverser.find_solution_faster_than_time(traverser_start_points(analysis_data_munger, data_munger), intuition_best_time + timedelta(seconds=1))
     traverser.find_solution_faster_than_time(traverser_start_points(analysis_data_munger, data_munger), None)

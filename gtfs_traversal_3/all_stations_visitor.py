@@ -17,18 +17,21 @@ class AllStationsVisitor(Traverser):
         self._prune_threshold = prune_threshold
         Traverser.__init__(self, data_munger=data_munger, transfer_duration_seconds=transfer_duration_seconds, analysis=analysis)
 
+    # def _add_new_nodes_to_progress_dict(self, nodes_added, location_status):
+    #     self._add_new_nodes_to_progress_dict_and_sort(nodes_added, location_status)
+
     def _create_exp_queue(self, num_levels):
         self._exp_queue = BreadthAndDepthExpansionQueue(max_size=num_levels, breadth_size=self._breadth_size)
 
     def _filter_for_valid_nodes(self, new_nodes_list):
         valid_nodes = super()._filter_for_valid_nodes(new_nodes_list)
         self._avg_num_children = (self._avg_num_children * (self._num_expansions - 1) + len(valid_nodes)) / self._num_expansions
-        self._exp_queue.set_breadth_exponent(self._avg_num_children * 2)
+        self._exp_queue.set_breadth_exponent(max(self._avg_num_children, 1))
         return valid_nodes
 
     def _initialize_exp_queue(self, initial_locations):
         super()._initialize_exp_queue(initial_locations)
-        self._exp_queue.sort_deepest_queue_level(self._sort_queue_fn)
+        self._exp_queue.sort(self._sort_queue_fn)
 
     def _mark_node_as_eliminated_and_find_parent_and_children(self, node_to_eliminate):
         response = super()._mark_node_as_eliminated_and_find_parent_and_children(node_to_eliminate)
@@ -50,7 +53,6 @@ class AllStationsVisitor(Traverser):
             del self._progress_dict[k]
         self._num_eliminated_nodes = len([k for k, v in self._progress_dict.items() if v.eliminated])/2
         print("done pruning!", len(self._progress_dict), self._avg_num_children)
-        # self._exp_queue.sort_deepest_queue_level(self._sort_queue_fn)
 
     def _should_prune(self):
         return self._num_eliminated_nodes > self._prune_threshold

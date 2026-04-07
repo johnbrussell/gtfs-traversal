@@ -331,6 +331,9 @@ class Expander:
     def _should_prune(self):
         raise NotImplementedError("must be implemented in subclass")
 
+    def _sort_queue_fn(self, _):
+        return 0
+
     def _walk_time_between_stations(self, station_1, station_2):
         return self._data_munger.walk_time(
             self._all_station_coordinates[station_1].lat,

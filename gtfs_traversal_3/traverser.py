@@ -19,6 +19,10 @@ class Traverser(Expander):
         self._unvisited_durations = dict()
         Expander.__init__(self, self._data_munger, transfer_duration_seconds)
 
+    def _add_new_nodes_to_progress_dict_and_sort(self, new_nodes_list, parent):
+        super()._add_new_nodes_to_progress_dict(new_nodes_list, parent)
+        self._exp_queue.sort(self._sort_queue_fn)
+
     def _add_to_unvisited(self, stop, unvisited, duration):
         remaining_stops = {s for s in self._unvisited[unvisited] if s != stop}
         child_keys = [k for k, v in self._unvisited.items() if remaining_stops == v]
