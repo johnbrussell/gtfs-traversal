@@ -47,6 +47,7 @@ class Traverser(Expander):
         self._exp_queue = BaseExpansionQueue(max_size=num_levels)
 
     def _get_new_minimum_remaining_time(self, location):
+        # TODO include distance to network
         unvisited = self._unvisited[location.unvisited]
         minimum_stop_times = self._analysis_data_munger.get_minimum_stop_times()
         return sum([minimum_stop_times[s] for s in unvisited], start=timedelta(seconds=0))
@@ -84,7 +85,7 @@ class Traverser(Expander):
             ) for node in starting_locations
         ]
         self._progress_dict = {k: v for k, v in dict(zip(starting_locations, initial_progresses)).items() if self._node_is_valid((k, v))}
-        self._initialize_exp_queue(starting_locations)
+        self._initialize_exp_queue(self._progress_dict.keys())
 
     def _is_solution(self, location):
         return location.unvisited == self._solution_unvisited
@@ -109,7 +110,12 @@ class Traverser(Expander):
         if location.unvisited == 0 and progress.parent is not None:
             return False
 
-        if self._best_solution_duration is not None and self._unvisited_children_are_faster(node):
+        if progress.time > self._analysis_data_munger.get_earliest_last_trip():
+            # TODO can include distance to network in the call below here
+            if min(self._analysis_data_munger.get_last_solution_trip_times_for_stops()[s] for s in self._unvisited[location.unvisited]) < progress.time:
+                return False
+
+        if self._unvisited_children_are_faster(node):
             return False
 
         return True

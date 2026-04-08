@@ -18,9 +18,6 @@ class AllStationsVisitor(Traverser):
         self._prune_eliminations_threshold = prune_eliminations_threshold
         Traverser.__init__(self, data_munger=data_munger, transfer_duration_seconds=transfer_duration_seconds, analysis=analysis)
 
-    # def _add_new_nodes_to_progress_dict(self, nodes_added, location_status):
-    #     self._add_new_nodes_to_progress_dict_and_sort(nodes_added, location_status)
-
     def _create_exp_queue(self, num_levels):
         self._exp_queue = NoisyBaseExpansionQueue(max_size=num_levels)
 

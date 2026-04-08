@@ -13,3 +13,6 @@ class FirstPassTraverser(Traverser):
 
     def _sort_queue_fn(self, location):
         return self._progress_dict[location].time
+
+    def _unvisited_children_are_faster(self, node):
+        return False
