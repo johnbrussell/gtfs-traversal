@@ -11,7 +11,7 @@ class Expander:
         self._transfer_duration_seconds = timedelta(seconds=transfer_duration_seconds)
 
         self._exp_queue = None
-        self._progress_dict = None
+        self._progress_dict = dict()
 
         self._best_solution_duration = timedelta(days=366)
 

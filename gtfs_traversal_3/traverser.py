@@ -64,8 +64,8 @@ class Traverser(Expander):
         self._create_exp_queue(num_solution_stations)
         self._exp_queue.add_nodes(initial_locations, num_solution_stations)
 
-    def _initialize_progress_dict_and_exp_queue(self, starting_nodes):
-        if len({n.unvisited for n in starting_nodes}) > 1 or any(n.unvisited != 0 for n in starting_nodes):
+    def _initialize_progress_dict_and_exp_queue(self, starting_locations):
+        if len({n.unvisited for n in starting_locations}) > 1 or any(n.unvisited != 0 for n in starting_locations):
             raise ValueError("passed invalid initial unvisited key to traverser")
         self._unvisited = { 0: { self._data_munger.station_for_stop(s) for s in self._analysis_data_munger.get_unique_stops_to_solve() } }
         self._unvisited_children[0] = dict()
@@ -81,10 +81,10 @@ class Traverser(Expander):
                 num_unvisited=self._unvisited_lengths[node.unvisited],
                 expanded=False,
                 eliminated=False,
-            ) for node in starting_nodes
+            ) for node in starting_locations
         ]
-        self._progress_dict = dict(zip(starting_nodes, initial_progresses))
-        self._initialize_exp_queue(starting_nodes)
+        self._progress_dict = {k: v for k, v in dict(zip(starting_locations, initial_progresses)).items() if self._node_is_valid((k, v))}
+        self._initialize_exp_queue(starting_locations)
 
     def _is_solution(self, location):
         return location.unvisited == self._solution_unvisited
@@ -101,17 +101,18 @@ class Traverser(Expander):
         return len(routes)
 
     def _node_is_valid(self, node):
-        if super()._node_is_valid(node):
-            location, progress = node
+        if not super()._node_is_valid(node):
+            return False
 
-            if location.unvisited == 0:
-                return False
+        location, progress = node
 
-            if self._best_solution_duration is not None and self._unvisited_children_are_faster(node):
-                return False
+        if location.unvisited == 0 and progress.parent is not None:
+            return False
 
-            return True
-        return False
+        if self._best_solution_duration is not None and self._unvisited_children_are_faster(node):
+            return False
+
+        return True
 
     def _queue_level(self, location):
         return len(self._unvisited[location.unvisited])
