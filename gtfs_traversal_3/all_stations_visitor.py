@@ -18,6 +18,9 @@ class AllStationsVisitor(Traverser):
         self._prune_eliminations_threshold = prune_eliminations_threshold
         Traverser.__init__(self, data_munger=data_munger, transfer_duration_seconds=transfer_duration_seconds, analysis=analysis)
 
+    def _add_new_nodes_to_progress_dict(self, nodes_added, location_status):
+        self._add_new_nodes_to_progress_dict_and_sort(nodes_added, location_status)
+
     def _create_exp_queue(self, num_levels):
         self._exp_queue = NoisyBaseExpansionQueue(max_size=num_levels)
 
@@ -57,5 +60,9 @@ class AllStationsVisitor(Traverser):
         return self._num_eliminated_nodes > self._prune_eliminations_threshold and len(self._progress_dict) > self._prune_dict_threshold
 
     def _sort_queue_fn(self, location):
-        progress = self._progress_dict.get(location, ELIMINATED_PROGRESS_INFO._replace(time=self._analysis_data_munger.start_time))
-        return self._analysis_data_munger.start_time - progress.time - progress.duration
+        return self._progress_dict[location].time
+
+    # start time
+    # def _sort_queue_fn(self, location):
+    #     progress = self._progress_dict.get(location, ELIMINATED_PROGRESS_INFO._replace(time=self._analysis_data_munger.start_time))
+    #     return self._analysis_data_munger.start_time - progress.time - progress.duration
