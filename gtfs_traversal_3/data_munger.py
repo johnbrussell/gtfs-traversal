@@ -12,7 +12,6 @@ class DataMunger:  # Can be shared between Expanders
         self._earliest_last_trip = None
         self._endpoint_solution_stops = None
         self._junction_stations = None
-        self._last_trip_times = None
         self._location_routes = None
         self._location_stations = dict(zip(stops_df['stop_id'], stops_df['stop_name']))
         self._minimum_stop_times = None

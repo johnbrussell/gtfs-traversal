@@ -70,47 +70,19 @@ class AnalysisDataMunger:  # Cannot be shared between Expanders
 
         return self._junction_stations
 
-    #  this function is obviously broken as written; do not use.
-    #  confirmed unused in traversal 3
-    def get_last_solution_trip_times_for_stops(self, start_time):
+    def get_last_solution_trip_times_for_stops(self):
         if self._last_trip_times is not None:
             return self._last_trip_times
 
-        #  This looks unable to support trips leaving after midnight
-        date_at_midnight = datetime(year=start_time.year, month=start_time.month, day=start_time.day)
+        self._last_trip_times = dict()
 
-        self._last_trip_times = {stop: start_time for stop in self.get_unique_stops_to_solve()}
+        for route in self.get_unique_routes_to_solve():
+            last_trip = self._data_munger.get_trips_for_route(route)[-1]
+            last_trip_schedule = self._data_munger.get_trip_schedules()[last_trip]
+            for stop_departure in last_trip_schedule.tripStops.values():
+                station = self._data_munger.station_for_stop(stop_departure.stopId)
+                self._last_trip_times[station] = max(self._last_trip_times.get(station, self.start_time), stop_departure.departureTime)
 
-        have_seen_later_time = True
-        while have_seen_later_time:
-            have_seen_later_time = False
-            for stop in self.get_unique_stops_to_solve():
-                routes_at_stop = self._data_munger.get_routes_at_stop(stop)
-                for route in routes_at_stop:
-                    if route not in self.get_unique_routes_to_solve():
-                        continue
-                    for stop_number in self._data_munger.get_stop_numbers_for_stop_id(stop, route):
-                        # memoization takes care of this, but could microoptimize by using last or any departure after here
-                        best_trip_id, stop_number, best_departure_time  = self._data_munger.first_departures_after(start_time, route, stop_number)[0]
-                        if best_trip_id is None:
-                            continue
-
-                        # first_departure_after is defined to have a next stop, so we should never find that this is not on the route
-                        next_stop_number = str(int(stop_number) + 1)
-                        stops_on_route = self._data_munger.get_stops_for_route(route)
-                        next_stop = stops_on_route[next_stop_number].stopId
-                        next_stop_departure_time = self._data_munger.get_datetime_from_raw_string_time(
-                            date_at_midnight, stops_on_route[next_stop_number].departureTime)
-
-                        self._last_trip_times[stop] = max(self._last_trip_times.get(stop, 0), best_departure_time)
-                        self._last_trip_times[next_stop] = max(self._last_trip_times.get(next_stop, 0), next_stop_departure_time)
-                        have_seen_later_time = True
-                        start_time += timedelta(seconds=1)
-
-        self._earliest_last_trip = min(self._last_trip_times.values())
-        # stops_with_earliest_last_trip = [k for k, v in self._last_trip_times.items() if v == self._earliest_last_trip]
-        # print(self._last_trip_times)
-        # print(stops_with_earliest_last_trip, self._earliest_last_trip)
         return self._last_trip_times
 
     # confirmed unused in traversal 3

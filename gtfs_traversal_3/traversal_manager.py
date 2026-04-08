@@ -52,8 +52,6 @@ def run():
     data_munger = DataMunger(data, WALK_SPEED_MPH, stops_df)
     analysis_data_munger = AnalysisDataMunger(data_munger, analysis)
 
-    solution_route_endpoints = analysis_data_munger.get_endpoint_solution_stops()
-
     # intuition_best_time = min(data_munger.flatten([first_pass_durations(starting_point, analysis, data_munger, analysis_data_munger) for starting_point in solution_route_endpoints]))
     intuition_best_time = timedelta(hours=22, minutes=34)
 
