@@ -1,7 +1,7 @@
 from datetime import timedelta
 
-from gtfs_traversal_3.base_expansion_queue import BaseExpansionQueue
 from gtfs_traversal_3.data_structures import ProgressInfo
+from gtfs_traversal_3.noisy_base_expansion_queue import NoisyBaseExpansionQueue
 from gtfs_traversal_3.traverser import Traverser
 
 
@@ -22,7 +22,7 @@ class AllStationsVisitor(Traverser):
     #     self._add_new_nodes_to_progress_dict_and_sort(nodes_added, location_status)
 
     def _create_exp_queue(self, num_levels):
-        self._exp_queue = BaseExpansionQueue(max_size=num_levels)
+        self._exp_queue = NoisyBaseExpansionQueue(max_size=num_levels)
 
     def _filter_for_valid_nodes(self, new_nodes_list):
         valid_nodes = super()._filter_for_valid_nodes(new_nodes_list)
