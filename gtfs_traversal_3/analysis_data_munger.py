@@ -22,10 +22,9 @@ class AnalysisDataMunger:  # Cannot be shared between Expanders
         self._unique_stops_to_solve = None
         self._valid_solution_trips = None
 
-    # confirmed unused in traversal 3
-    def get_earliest_last_trip(self, start_time):
+    def get_earliest_last_trip(self):
         if self._earliest_last_trip is None:
-            self.get_last_solution_trip_times_for_stops(start_time)
+            self._earliest_last_trip = min(self.get_last_solution_trip_times_for_stops().values())
         return self._earliest_last_trip
 
     def get_endpoint_solution_stops(self):
