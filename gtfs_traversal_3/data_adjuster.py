@@ -9,7 +9,7 @@ class DataAdjuster:
         pass
 
     @classmethod
-    def filter_and_adjust_data_set_for_date(cls, data, analysis_date):
+    def filter_and_adjust_data_set_for_date(cls, data, analysis_date, excluded_stop_ids):
         analysis_date = datetime.date(*list(map(int, analysis_date.split('-'))))
 
         # Filter for only trips on the analysis date
@@ -24,14 +24,15 @@ class DataAdjuster:
 
             # Convert everything to datetime objects because they're more accurate and efficient than strings
             for stop_departure in schedule.tripStops.values():
-                idx += 1
-                h, m, s = map(int, stop_departure.departureTime.split(':'))
-                new_schedule[idx] = ds.stopDeparture(
-                    stop_departure.stopId,
-                    datetime.datetime(analysis_date.year, analysis_date.month, analysis_date.day) +
-                        datetime.timedelta(hours=h, minutes=m, seconds=s)
-                )
-                allowable_stop_locations.add(stop_departure.stopId)
+                if stop_departure.stopId not in excluded_stop_ids:
+                    idx += 1
+                    h, m, s = map(int, stop_departure.departureTime.split(':'))
+                    new_schedule[idx] = ds.stopDeparture(
+                        stop_departure.stopId,
+                        datetime.datetime(analysis_date.year, analysis_date.month, analysis_date.day) +
+                            datetime.timedelta(hours=h, minutes=m, seconds=s)
+                    )
+                    allowable_stop_locations.add(stop_departure.stopId)
 
             # Add seconds so no trip stops at the multiple stops at the same time
             for idx2, stop_departure in new_schedule.items():

@@ -1,11 +1,11 @@
-from datetime import timedelta
+from datetime import datetime, timedelta
 
 from gtfs_traversal_3.data_structures import ProgressInfo
 from gtfs_traversal_3.noisy_base_expansion_queue import NoisyBaseExpansionQueue
 from gtfs_traversal_3.traverser import Traverser
 
 
-ELIMINATED_PROGRESS_INFO = ProgressInfo(time=None, duration=timedelta(seconds=0), parent=None, children=None, minimum_remaining_time=0, num_unvisited=0, expanded=False, eliminated=True)
+ELIMINATED_PROGRESS_INFO = ProgressInfo(time=datetime.now(), duration=timedelta(seconds=0), parent=None, children=None, minimum_remaining_time=0, num_unvisited=0, expanded=False, eliminated=True)
 
 
 class AllStationsVisitor(Traverser):
@@ -13,6 +13,7 @@ class AllStationsVisitor(Traverser):
         self._avg_num_children = 0
         self._breadth_size = breadth_size
         self._num_eliminated_nodes = 0
+        self._num_expansions_with_children = 0
         self._prune_size = prune_size
         self._prune_dict_threshold = prune_dict_threshold
         self._prune_eliminations_threshold = prune_eliminations_threshold
@@ -25,15 +26,16 @@ class AllStationsVisitor(Traverser):
         self._exp_queue = NoisyBaseExpansionQueue(max_size=num_levels)
 
     def _get_new_nodes(self, location_status):
-        if location_status.unvisited == 0:
-            print(location_status, self._data_munger.station_for_stop(location_status.location), self._progress_dict[location_status], self._num_expansions)
-        if self._num_expansions % 10000 == 0:
-            print(self._num_expansions, len(self._progress_dict), len(self._unvisited))
+        # if location_status.unvisited == 0:
+        #     print(location_status, self._data_munger.station_for_stop(location_status.location), self._progress_dict[location_status], self._num_expansions, len(self._progress_dict), self._avg_num_children)
+        # if self._num_expansions % 10000 == 0:
+        #     print(self._num_expansions, len(self._progress_dict), len(self._unvisited), self._avg_num_children)
         return super()._get_new_nodes(location_status)
 
     def _filter_for_valid_nodes(self, new_nodes_list):
         valid_nodes = super()._filter_for_valid_nodes(new_nodes_list)
-        self._avg_num_children = (self._avg_num_children * (self._num_expansions - 1) + len(valid_nodes)) / self._num_expansions
+        self._num_expansions_with_children += 1
+        self._avg_num_children = (self._avg_num_children * (self._num_expansions_with_children - 1) + len(valid_nodes)) / self._num_expansions_with_children
         # self._exp_queue.set_breadth_exponent(max(self._avg_num_children, 1))
         return valid_nodes
 
@@ -67,7 +69,7 @@ class AllStationsVisitor(Traverser):
         return self._num_eliminated_nodes > self._prune_eliminations_threshold and len(self._progress_dict) > self._prune_dict_threshold
 
     # def _sort_queue_fn(self, location):
-    #     return self._progress_dict[location].time
+    #     return self._progress_dict.get(location, ELIMINATED_PROGRESS_INFO._replace(time=self._analysis_data_munger.start_time)).time
 
     # start time
     def _sort_queue_fn(self, location):

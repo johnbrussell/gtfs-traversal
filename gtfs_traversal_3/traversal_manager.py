@@ -46,7 +46,7 @@ def run():
     stops_df = read_stops(analysis, "data")
 
     # data is returned with trip departures as datetimes! So departures after midnight are shown as very early departures on the next day.
-    data = DataAdjuster.filter_and_adjust_data_set_for_date(data, analysis.start_date)
+    data = DataAdjuster.filter_and_adjust_data_set_for_date(data, analysis.start_date, configuration["agencies"]["pittsburgh-port-authority"]["data_sets"]["2018-08-08"]["excluded_stop_ids"])
 
     print("adjusted data set")
 
@@ -116,7 +116,6 @@ def run():
 # ('STEEL PLAZA STATION', datetime.datetime(2018, 10, 14, 1, 9))
 # ('STEVENSON', datetime.datetime(2018, 10, 14, 1, 25))
 # ('TILL ROOM', datetime.datetime(2018, 10, 14, 1, 46))
-# ('VILLAGE AT TERMINAL- NO STOP', datetime.datetime(2018, 10, 14, 1, 52))
 # ('WASHINGTON JUNCTION', datetime.datetime(2018, 10, 14, 1, 39))
 # ('WEST LIBRARY', datetime.datetime(2018, 10, 14, 0, 23))
 # ('WESTFIELD', datetime.datetime(2018, 10, 14, 1, 20))
