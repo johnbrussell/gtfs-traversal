@@ -5,12 +5,13 @@ import math
 
 # Ideally, the DataMunger should be expander-agnostic and should not cache data other than general network data
 class DataMunger:  # Can be shared between Expanders
-    def __init__(self, data, walk_speed_mph, stops_df):
+    def __init__(self, data, walk_speed_mph, stops_df, equivalent_stations_dict):
         self.data = data
 
         self._buffered_analysis_end_time = None
         self._earliest_last_trip = None
         self._endpoint_solution_stops = None
+        self._identical_stations = equivalent_stations_dict
         self._junction_stations = None
         self._location_routes = None
         self._location_stations = dict(zip(stops_df['stop_id'], stops_df['stop_name']))
@@ -150,7 +151,7 @@ class DataMunger:  # Can be shared between Expanders
         return stop_number + 1 not in self.get_stops_for_trip(trip)
 
     def station_for_stop(self, stop):
-        return self._location_stations[stop]
+        return self._identical_stations.get(self._location_stations[stop], self._location_stations[stop])
 
     def stations_for_stops(self, stops):
         return [self.station_for_stop(s) for s in stops]

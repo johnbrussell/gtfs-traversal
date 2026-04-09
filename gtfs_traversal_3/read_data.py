@@ -11,7 +11,6 @@ def load_configuration():
         config = json.load(config_file)
     return config
 
-
 def read_data(config, data_folder_name):
     data_location = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), data_folder_name)
 

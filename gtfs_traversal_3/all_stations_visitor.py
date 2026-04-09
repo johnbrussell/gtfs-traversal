@@ -24,6 +24,13 @@ class AllStationsVisitor(Traverser):
     def _create_exp_queue(self, num_levels):
         self._exp_queue = NoisyBaseExpansionQueue(max_size=num_levels)
 
+    def _get_new_nodes(self, location_status):
+        if location_status.unvisited == 0:
+            print(location_status, self._data_munger.station_for_stop(location_status.location), self._progress_dict[location_status], self._num_expansions)
+        if self._num_expansions % 10000 == 0:
+            print(self._num_expansions, len(self._progress_dict), len(self._unvisited))
+        return super()._get_new_nodes(location_status)
+
     def _filter_for_valid_nodes(self, new_nodes_list):
         valid_nodes = super()._filter_for_valid_nodes(new_nodes_list)
         self._avg_num_children = (self._avg_num_children * (self._num_expansions - 1) + len(valid_nodes)) / self._num_expansions
@@ -59,10 +66,10 @@ class AllStationsVisitor(Traverser):
     def _should_prune(self):
         return self._num_eliminated_nodes > self._prune_eliminations_threshold and len(self._progress_dict) > self._prune_dict_threshold
 
-    def _sort_queue_fn(self, location):
-        return self._progress_dict[location].time
+    # def _sort_queue_fn(self, location):
+    #     return self._progress_dict[location].time
 
     # start time
-    # def _sort_queue_fn(self, location):
-    #     progress = self._progress_dict.get(location, ELIMINATED_PROGRESS_INFO._replace(time=self._analysis_data_munger.start_time))
-    #     return self._analysis_data_munger.start_time - progress.time - progress.duration
+    def _sort_queue_fn(self, location):
+        progress = self._progress_dict.get(location, ELIMINATED_PROGRESS_INFO._replace(time=self._analysis_data_munger.start_time))
+        return self._analysis_data_munger.start_time - progress.time - progress.duration

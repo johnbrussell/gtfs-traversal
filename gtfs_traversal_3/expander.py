@@ -89,12 +89,6 @@ class Expander:
         raise NotImplementedError("must be implemented in subclass")
 
     def _get_new_nodes(self, location_status):
-        if location_status.unvisited == 0:
-            print(self._progress_dict[location_status])
-            print(self._num_expansions)
-        if self._num_expansions % 10000 == 0:
-            print(self._num_expansions)
-
         if location_status.arrival_trip == TRANSFER_ROUTE:
             return self._get_nodes_after_transfer(location_status)
 

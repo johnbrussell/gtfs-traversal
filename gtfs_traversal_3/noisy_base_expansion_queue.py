@@ -1,3 +1,6 @@
+from datetime import datetime
+
+
 class NoisyBaseExpansionQueue:
     def __init__(self, max_size):
         self._one_more_than_max_size = max_size + 1
@@ -30,8 +33,7 @@ class NoisyBaseExpansionQueue:
     def pop(self):
         best = self._queue[self._deepest_level].pop()
         if self._deepest_level == self._one_more_than_max_size - 1:
-            print(f"Popping a starting point. {len(self._queue[self._deepest_level])} remain.")
-            print(best)
+            print(datetime.now(), f"Popping a starting point. {len(self._queue[self._deepest_level])} remain.")
         self._handle_potentially_empty_queue_at_key(self._deepest_level)
         return best
 

@@ -40,7 +40,8 @@ def traverser_start_points(analysis_data_munger, data_munger):
     ]
 
 def run():
-    analysis = gtfs_analyses.determine_analysis_parameters(load_configuration())[1]
+    configuration = load_configuration()
+    analysis = gtfs_analyses.determine_analysis_parameters(configuration)[1]
     data = read_data(analysis, "data")
     stops_df = read_stops(analysis, "data")
 
@@ -49,7 +50,7 @@ def run():
 
     print("adjusted data set")
 
-    data_munger = DataMunger(data, WALK_SPEED_MPH, stops_df)
+    data_munger = DataMunger(data, WALK_SPEED_MPH, stops_df, configuration["agencies"]["pittsburgh-port-authority"]["data_sets"]["2018-08-08"]["station_renamings"])
     analysis_data_munger = AnalysisDataMunger(data_munger, analysis)
 
     # intuition_best_time = min(data_munger.flatten([first_pass_durations(starting_point, analysis, data_munger, analysis_data_munger) for starting_point in solution_route_endpoints]))
@@ -61,67 +62,64 @@ def run():
     # TODO deal with stations that are the same but have different names
     # TODO deal with stations on solution routes that do not serve customers
 
-    traverser = AllStationsVisitor(transfer_duration_seconds=TRANSFER_DURATION_SECONDS, data_munger=data_munger, analysis=analysis, breadth_size=1000, prune_size=200, prune_dict_threshold=100000, prune_eliminations_threshold=10000)
+    traverser = AllStationsVisitor(transfer_duration_seconds=TRANSFER_DURATION_SECONDS, data_munger=data_munger, analysis=analysis, breadth_size=1000, prune_size=2000, prune_dict_threshold=1000000, prune_eliminations_threshold=100000)
     traverser.find_solution_faster_than_time(traverser_start_points(analysis_data_munger, data_munger), intuition_best_time + timedelta(seconds=1))
     # traverser.find_solution_faster_than_time(traverser_start_points(analysis_data_munger, data_munger), None)
 
 # latest trips
 # {
-#  'VILLAGE AT TERMINAL- NO STOP': datetime.datetime(2018, 10, 14, 1, 52),
-#  'SOUTH HILLS VILLAGE STATION': datetime.datetime(2018, 10, 14, 1, 44),
-#  'DORCHESTER': datetime.datetime(2018, 10, 14, 1, 43),
-#  'BETHEL VILLAGE': datetime.datetime(2018, 10, 14, 1, 42),
-#  'HIGHLAND': datetime.datetime(2018, 10, 14, 1, 41),
-#  'CASSWELL': datetime.datetime(2018, 10, 14, 1, 40),
-#  'WASHINGTON JUNCTION': datetime.datetime(2018, 10, 14, 1, 39),
-#  'SMITH ROAD': datetime.datetime(2018, 10, 14, 1, 38),
-#  "ST ANNE'S": datetime.datetime(2018, 10, 14, 1, 37),
-#  'OVERBROOK JUNCTION': datetime.datetime(2018, 10, 14, 1, 35),
-#  'CASTLE SHANNON STATION': datetime.datetime(2018, 10, 14, 1, 34),
-#  'ARLINGTON': datetime.datetime(2018, 10, 14, 1, 33),
-#  'POPLAR': datetime.datetime(2018, 10, 14, 1, 32),
-#  'MOUNT LEBANON STATION': datetime.datetime(2018, 10, 14, 1, 30),
-#  'DORMONT JUNCTION': datetime.datetime(2018, 10, 14, 1, 28),
-#  'POTOMAC STATION': datetime.datetime(2018, 10, 14, 1, 26),
-#  'STEVENSON': datetime.datetime(2018, 10, 14, 1, 25),
-#  'BROADWAY AVE AT SHIRAS': datetime.datetime(2018, 10, 14, 1, 24),
-#  'BROADWAY AVE AT BELASCO': datetime.datetime(2018, 10, 14, 1, 22),
-#  'BROADWAY AVE AT HAMPSHIRE': datetime.datetime(2018, 10, 14, 1, 21, 30),
-#  'FALLOWFIELD STATION': datetime.datetime(2018, 10, 14, 1, 21),
-#  'WESTFIELD': datetime.datetime(2018, 10, 14, 1, 20),
-#  'PENNANT': datetime.datetime(2018, 10, 14, 1, 19),
-#  'DAWN': datetime.datetime(2018, 10, 14, 1, 18),
-#  'PALM GARDEN': datetime.datetime(2018, 10, 14, 1, 17),
-#  'SOUTH HILLS JUNCTION STATION': datetime.datetime(2018, 10, 14, 1, 16),
-#  'STATION SQUARE STATION': datetime.datetime(2018, 10, 14, 1, 13),
-#  'FIRST AVENUE STATION': datetime.datetime(2018, 10, 14, 1, 11),
-#  'STEEL PLAZA STATION': datetime.datetime(2018, 10, 14, 1, 9),
-#  'WOOD STREET STATION': datetime.datetime(2018, 10, 14, 1, 8),
-#  'GATEWAY STATION': datetime.datetime(2018, 10, 14, 1, 6),
-#  'NORTH SIDE STATION': datetime.datetime(2018, 10, 14, 1, 3),
-#  'ALLEGHENY STATION': datetime.datetime(2018, 10, 14, 1, 0),
-#  'WILLOW STATION': datetime.datetime(2018, 10, 14, 1, 15),
-#  'MEMORIAL HALL': datetime.datetime(2018, 10, 14, 0, 12),
-#  'KILLARNEY': datetime.datetime(2018, 10, 14, 0, 14),
-#  'MCNEILLY STATION': datetime.datetime(2018, 10, 14, 1, 10),
-#  'SOUTH BANK STATION': datetime.datetime(2018, 10, 14, 1, 7),
-#  'DENISE STATION': datetime.datetime(2018, 10, 14, 1, 6),
-#  'BON AIR STATION': datetime.datetime(2018, 10, 14, 1, 4),
-#  'BOGGS STATION': datetime.datetime(2018, 10, 14, 1, 2),
-#  'LIBRARY STATION': datetime.datetime(2018, 10, 14, 0, 25),
-#  'WEST LIBRARY': datetime.datetime(2018, 10, 14, 0, 23),
-#  'SANDY CREEK': datetime.datetime(2018, 10, 14, 0, 22),
-#  'BEAGLE': datetime.datetime(2018, 10, 14, 0, 21),
-#  'KINGS SCHOOL ROAD': datetime.datetime(2018, 10, 14, 0, 20),
-#  'LOGAN ROAD': datetime.datetime(2018, 10, 14, 0, 19),
-#  'SARAH': datetime.datetime(2018, 10, 14, 0, 18),
-#  'MUNROE': datetime.datetime(2018, 10, 14, 0, 16),
-#  'SOUTH PARK ROAD': datetime.datetime(2018, 10, 14, 0, 15, 30),
-#  'MESTA': datetime.datetime(2018, 10, 14, 0, 15),
-#  'LYTLE': datetime.datetime(2018, 10, 13, 22, 54),
-#  'LYTLE STATION': datetime.datetime(2018, 10, 14, 0, 14),
-#  'HILLCREST': datetime.datetime(2018, 10, 14, 0, 11),
-#  'KILLARNEY STATION': datetime.datetime(2018, 10, 14, 1, 10, 30),
-#  'MEMORIAL HALL STATION': datetime.datetime(2018, 10, 14, 1, 12),
-#  'TILL ROOM': datetime.datetime(2018, 10, 14, 1, 46),
+# ('ALLEGHENY STATION', datetime.datetime(2018, 10, 14, 1, 0))
+# ('ARLINGTON', datetime.datetime(2018, 10, 14, 1, 33))
+# ('BEAGLE', datetime.datetime(2018, 10, 14, 0, 21))
+# ('BETHEL VILLAGE', datetime.datetime(2018, 10, 14, 1, 42))
+# ('BOGGS STATION', datetime.datetime(2018, 10, 14, 1, 2))
+# ('BON AIR STATION', datetime.datetime(2018, 10, 14, 1, 4))
+# ('BROADWAY AVE AT BELASCO', datetime.datetime(2018, 10, 14, 1, 22))
+# ('BROADWAY AVE AT HAMPSHIRE', datetime.datetime(2018, 10, 14, 1, 21, 30))
+# ('BROADWAY AVE AT SHIRAS', datetime.datetime(2018, 10, 14, 1, 24))
+# ('CASSWELL', datetime.datetime(2018, 10, 14, 1, 40))
+# ('CASTLE SHANNON STATION', datetime.datetime(2018, 10, 14, 1, 34))
+# ('DAWN', datetime.datetime(2018, 10, 14, 1, 18))
+# ('DENISE STATION', datetime.datetime(2018, 10, 14, 1, 6))
+# ('DORCHESTER', datetime.datetime(2018, 10, 14, 1, 43))
+# ('DORMONT JUNCTION', datetime.datetime(2018, 10, 14, 1, 28))
+# ('FALLOWFIELD STATION', datetime.datetime(2018, 10, 14, 1, 21))
+# ('FIRST AVENUE STATION', datetime.datetime(2018, 10, 14, 1, 11))
+# ('GATEWAY STATION', datetime.datetime(2018, 10, 14, 1, 6))
+# ('HIGHLAND', datetime.datetime(2018, 10, 14, 1, 41))
+# ('HILLCREST', datetime.datetime(2018, 10, 14, 0, 11))
+# ('KILLARNEY', datetime.datetime(2018, 10, 14, 1, 10, 30))
+# ('KINGS SCHOOL ROAD', datetime.datetime(2018, 10, 14, 0, 20))
+# ('LIBRARY STATION', datetime.datetime(2018, 10, 14, 0, 25))
+# ('LOGAN ROAD', datetime.datetime(2018, 10, 14, 0, 19))
+# ('LYTLE', datetime.datetime(2018, 10, 14, 0, 14))
+# ('MCNEILLY STATION', datetime.datetime(2018, 10, 14, 1, 10))
+# ('MEMORIAL HALL', datetime.datetime(2018, 10, 14, 1, 12))
+# ('MESTA', datetime.datetime(2018, 10, 14, 0, 15))
+# ('MOUNT LEBANON STATION', datetime.datetime(2018, 10, 14, 1, 30))
+# ('MUNROE', datetime.datetime(2018, 10, 14, 0, 16))
+# ('NORTH SIDE STATION', datetime.datetime(2018, 10, 14, 1, 3))
+# ('OVERBROOK JUNCTION', datetime.datetime(2018, 10, 14, 1, 35))
+# ('PALM GARDEN', datetime.datetime(2018, 10, 14, 1, 17))
+# ('PENNANT', datetime.datetime(2018, 10, 14, 1, 19))
+# ('POPLAR', datetime.datetime(2018, 10, 14, 1, 32))
+# ('POTOMAC STATION', datetime.datetime(2018, 10, 14, 1, 26))
+# ('SANDY CREEK', datetime.datetime(2018, 10, 14, 0, 22))
+# ('SARAH', datetime.datetime(2018, 10, 14, 0, 18))
+# ('SMITH ROAD', datetime.datetime(2018, 10, 14, 1, 38))
+# ('SOUTH BANK STATION', datetime.datetime(2018, 10, 14, 1, 7))
+# ('SOUTH HILLS JUNCTION STATION', datetime.datetime(2018, 10, 14, 1, 16))
+# ('SOUTH HILLS VILLAGE STATION', datetime.datetime(2018, 10, 14, 1, 44))
+# ('SOUTH PARK ROAD', datetime.datetime(2018, 10, 14, 0, 15, 30))
+# ("ST ANNE'S", datetime.datetime(2018, 10, 14, 1, 37))
+# ('STATION SQUARE STATION', datetime.datetime(2018, 10, 14, 1, 13))
+# ('STEEL PLAZA STATION', datetime.datetime(2018, 10, 14, 1, 9))
+# ('STEVENSON', datetime.datetime(2018, 10, 14, 1, 25))
+# ('TILL ROOM', datetime.datetime(2018, 10, 14, 1, 46))
+# ('VILLAGE AT TERMINAL- NO STOP', datetime.datetime(2018, 10, 14, 1, 52))
+# ('WASHINGTON JUNCTION', datetime.datetime(2018, 10, 14, 1, 39))
+# ('WEST LIBRARY', datetime.datetime(2018, 10, 14, 0, 23))
+# ('WESTFIELD', datetime.datetime(2018, 10, 14, 1, 20))
+# ('WILLOW STATION', datetime.datetime(2018, 10, 14, 1, 15))
+# ('WOOD STREET STATION', datetime.datetime(2018, 10, 14, 1, 8))
 #  }
