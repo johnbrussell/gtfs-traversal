@@ -1,13 +1,14 @@
-from datetime import datetime, timedelta
+from datetime import timedelta
 
 from gtfs_traversal_3.data_structures import ProgressInfo
 from gtfs_traversal_3.noisy_base_expansion_queue import NoisyBaseExpansionQueue
 from gtfs_traversal_3.traverser import Traverser
 
 
-ELIMINATED_PROGRESS_INFO = ProgressInfo(time=None, duration=timedelta(seconds=0), parent=None, children=None, minimum_remaining_time=0, num_unvisited=0, expanded=False, eliminated=True)
+ELIMINATED_PROGRESS_INFO = ProgressInfo(time=None, duration=timedelta(seconds=0), parent=None, children=None, minimum_remaining_time=0, time_to_network=0, num_unvisited=0, expanded=False, eliminated=True)
 
 
+# noinspection PyProtectedMember
 class AllStationsVisitor(Traverser):
     def __init__(self, transfer_duration_seconds, data_munger, analysis, breadth_size, prune_size, prune_dict_threshold, prune_eliminations_threshold):
         Traverser.__init__(self, data_munger=data_munger, transfer_duration_seconds=transfer_duration_seconds, analysis=analysis)

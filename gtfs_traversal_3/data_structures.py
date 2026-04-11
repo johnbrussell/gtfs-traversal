@@ -23,6 +23,7 @@ ProgressInfo = namedtuple(
         'parent',
         'children',
         'minimum_remaining_time',
+        'time_to_network',
         'num_unvisited',
         'expanded',
         'eliminated',

@@ -10,7 +10,7 @@ from gtfs_traversal_3.data_structures import ProgressInfo, TRANSFER_ROUTE
 class Traverser(Expander):
     def __init__(self, transfer_duration_seconds, data_munger, analysis):
         self._data_munger = data_munger
-        self._analysis_data_munger = AnalysisDataMunger(data_munger, analysis)
+        self._analysis_data_munger = AnalysisDataMunger(data_munger, analysis, transfer_duration_seconds)
         self._solution_unvisited = None
         self._sort_new_nodes = False
         self._unvisited = dict()
@@ -43,8 +43,12 @@ class Traverser(Expander):
     def _create_exp_queue(self, num_levels):
         self._exp_queue = BaseExpansionQueue(max_size=num_levels)
 
+    def _distance_to_network(self, location):
+        if location.location in self._analysis_data_munger.get_unique_stops_to_solve():
+            return timedelta(seconds=0)  # cannot return > 0 because there could be minimum travel time
+        return min(self._analysis_data_munger.get_speedy_travel_time(location.location, d) for d in self._analysis_data_munger.get_unique_stops_to_solve() if self._data_munger.station_for_stop(d) in self._unvisited[location.unvisited])
+
     def _get_new_minimum_remaining_time(self, location):
-        # TODO include distance to network
         unvisited = self._unvisited[location.unvisited]
         minimum_stop_times = self._analysis_data_munger.get_minimum_stop_times()
         return sum([minimum_stop_times[s] for s in unvisited], start=timedelta(seconds=0))
@@ -76,6 +80,7 @@ class Traverser(Expander):
                 parent=None,
                 children=set(),
                 minimum_remaining_time=self._get_new_minimum_remaining_time(node),
+                time_to_network=self._distance_to_network(node),
                 num_unvisited=self._unvisited_lengths[node.unvisited],
                 expanded=False,
                 eliminated=False,
@@ -109,8 +114,7 @@ class Traverser(Expander):
             return False
 
         if progress.time > self._analysis_data_munger.get_earliest_last_trip():
-            # TODO can include distance to network in the call below here
-            if min(self._analysis_data_munger.get_last_solution_trip_times_for_stops()[s] for s in self._unvisited[location.unvisited]) < progress.time:
+            if min(self._analysis_data_munger.get_last_solution_trip_times_for_stops()[s] for s in self._unvisited[location.unvisited]) < progress.time + progress.time_to_network:
                 return False
 
         if self._unvisited_children_are_faster(node):

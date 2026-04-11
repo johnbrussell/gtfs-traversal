@@ -60,6 +60,9 @@ class Expander:
     def _announce_solution(self, new_progress):
         raise NotImplementedError("must be implemented in subclass")
 
+    def _distance_to_network(self, location):
+        raise NotImplementedError("must be implemented in subclass")
+
     def _eliminate_slow_nodes(self):
         nodes_to_eliminate = [k for k, v in self._progress_dict.items()
                               if v.duration >= self._best_solution_duration]
@@ -123,7 +126,6 @@ class Expander:
             unvisited=new_unvisited,
             trip_stop_no=next_stop_no,
         )
-        new_minimum_remaining_time = self._get_new_minimum_remaining_time(new_location) if not self._is_solution(new_location) else 0
         return (
             new_location,
             ProgressInfo(
@@ -131,7 +133,8 @@ class Expander:
                 duration=self._progress_dict[location_status].duration + duration,
                 parent=location_status,
                 children=set(),
-                minimum_remaining_time=new_minimum_remaining_time,
+                minimum_remaining_time=self._get_new_minimum_remaining_time(new_location) if not self._is_solution(new_location) else 0,
+                time_to_network=self._distance_to_network(new_location) if not self._is_solution(new_location) else 0,
                 num_unvisited=self._get_unvisited_count(new_unvisited),
                 expanded=False,
                 eliminated=False,
@@ -155,6 +158,7 @@ class Expander:
                     parent=old_location_status,
                     children=set(),
                     minimum_remaining_time=old_progress.minimum_remaining_time,
+                    time_to_network=timedelta(seconds=0),
                     num_unvisited=old_progress.num_unvisited,
                     expanded=False,
                     eliminated=False
@@ -197,6 +201,7 @@ class Expander:
                 duration=progress.duration + self._transfer_duration_seconds,
                 parent=location_status,
                 minimum_remaining_time=minimum_remaining_time,
+                time_to_network=timedelta(seconds=0),
                 children=set(),
                 num_unvisited=progress.num_unvisited,
                 expanded=False,
@@ -223,6 +228,7 @@ class Expander:
                     parent=location_status,
                     children=set(),
                     minimum_remaining_time=self._progress_dict[location_status].minimum_remaining_time,
+                    time_to_network=timedelta(seconds=0),
                     num_unvisited=self._get_unvisited_count(self._get_new_unvisited(location_status.unvisited, location_status.location, station, WALK_ROUTE, self._progress_dict[location_status].duration + walk_duration)),
                     expanded=False,
                     eliminated=False,
@@ -316,7 +322,7 @@ class Expander:
         if self._best_solution_duration is not None:
             if self._is_solution(new_location):
                 return new_progress.duration < self._best_solution_duration
-            if new_progress.duration + new_progress.minimum_remaining_time >= self._best_solution_duration:
+            if new_progress.duration + new_progress.minimum_remaining_time + new_progress.time_to_network >= self._best_solution_duration:
                 return False
 
         return True
