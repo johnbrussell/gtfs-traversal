@@ -73,6 +73,8 @@ class Expander:
                 or self._is_solution(location_status) \
                 or self._progress_dict[location_status].expanded \
                 or self._progress_dict[location_status].eliminated:
+            if self._num_expansions % 10000 == 0:
+                print(f"({self._num_expansions})")
             return
 
         self._progress_dict[location_status] = self._progress_dict[location_status]._replace(expanded=True)

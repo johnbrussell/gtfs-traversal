@@ -27,6 +27,7 @@ class AllStationsVisitor(Traverser):
     def _get_new_nodes(self, location_status):
         if self._num_expansions % 10000 == 0:
             print(self._num_expansions, len(self._progress_dict), len(self._unvisited), self._avg_num_children)
+            print("    ", len(self._exp_queue._queue.get(self._exp_queue._one_more_than_max_size - 1, [])), self._progress_dict.get(self._exp_queue._queue.get(self._exp_queue._one_more_than_max_size - 1, [None])[-1], ELIMINATED_PROGRESS_INFO).time)
         new_nodes = super()._get_new_nodes(location_status)
         # new_nodes_print = [n for n in new_nodes if n[0].location in self._analysis_data_munger.get_unique_stops_to_solve()]
         # for n in new_nodes_print:
