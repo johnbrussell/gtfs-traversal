@@ -10,6 +10,7 @@ LocationStatusInfo = namedtuple(
     [
         'location',
         'arrival_trip',
+        'last_trip',
         'trip_stop_no',
         'unvisited',
      ],

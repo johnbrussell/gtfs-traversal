@@ -119,6 +119,7 @@ class Expander:
         new_location = LocationStatusInfo(
             location=next_stop,
             arrival_trip=location_status.arrival_trip,
+            last_trip=location_status.arrival_trip,
             unvisited=new_unvisited,
             trip_stop_no=next_stop_no,
         )
@@ -144,6 +145,7 @@ class Expander:
                 LocationStatusInfo(
                     location=old_location_status.location,
                     arrival_trip=trip_id,
+                    last_trip=trip_id,
                     trip_stop_no=stop_number,
                     unvisited=old_location_status.unvisited,
                 ),
@@ -186,6 +188,7 @@ class Expander:
             LocationStatusInfo(
                 location=location_status.location,
                 arrival_trip=TRANSFER_ROUTE,
+                last_trip=location_status.last_trip,
                 unvisited=location_status.unvisited,
                 trip_stop_no=None,
             ),
@@ -210,6 +213,7 @@ class Expander:
                 LocationStatusInfo(
                     location=station,
                     arrival_trip=WALK_ROUTE,
+                    last_trip=location_status.last_trip,
                     trip_stop_no=None,
                     unvisited=self._get_new_unvisited(location_status.unvisited, location_status.location, station, WALK_ROUTE, self._progress_dict[location_status].duration + walk_duration),
                 ),

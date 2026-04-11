@@ -316,7 +316,7 @@ class AnalysisDataMunger:  # Cannot be shared between Expanders
         assert potential_solution is not None
         return potential_solution
 
-    # TODO a generic implementation could be great
+    # maybe a generic implementation could be great
     def _set_speedy_travel_times_to_destinations_in_solution_set(self, origin, destination):
         if origin not in self._speedy_travel_times:
             self._speedy_travel_times[origin] = dict()

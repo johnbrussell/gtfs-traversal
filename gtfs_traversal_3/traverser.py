@@ -88,6 +88,7 @@ class Traverser(Expander):
         return location.unvisited == self._solution_unvisited
 
     # TODO needs to handle solution locations, not stops
+    # confirmed unused in traversal 3
     def _minimum_transfers_to_visit_stops(self, stops, current_trip, current_stop):
         current_route = self._data_munger.get_trip_routes().get(current_trip, current_trip)
         routes = self._analysis_data_munger.minimum_routes_to_visit_stops(stops, current_route, current_stop)

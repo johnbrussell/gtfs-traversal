@@ -25,14 +25,14 @@ def first_pass_durations(starting_point, analysis, data_munger, analysis_data_mu
     first_trips = data_munger.flatten([[(t, sn) for t, sn, _ in data_munger.first_departures_after(intuition_start_time, route, starting_point) if not data_munger.is_last_stop_on_route(sn, route)] for route in routes])
 
     initial_locations = [
-        LocationStatusInfo(location=starting_point, arrival_trip=trip, trip_stop_no=stop_no, unvisited=0) for trip, stop_no in first_trips
+        LocationStatusInfo(location=starting_point, arrival_trip=trip, last_trip=trip, trip_stop_no=stop_no, unvisited=0) for trip, stop_no in first_trips
     ]
 
     return [FirstPassTraverser(transfer_duration_seconds=TRANSFER_DURATION_SECONDS, data_munger=data_munger, analysis=analysis).find_solution([location]) for location in initial_locations]
 
 def traverser_start_points(analysis_data_munger, data_munger):
     return [
-        LocationStatusInfo(location=stop_id, arrival_trip=trip, trip_stop_no=stop_no, unvisited=0) for trip, stop_no, stop_id in
+        LocationStatusInfo(location=stop_id, arrival_trip=trip, last_trip=trip, trip_stop_no=stop_no, unvisited=0) for trip, stop_no, stop_id in
         data_munger.flatten(
             [(trip, stop_no, stop_departure.stopId) for stop_no, stop_departure in data_munger.get_stops_for_trip(trip).items()
              if not data_munger.is_last_stop_on_trip(stop_no, trip)] for trip in analysis_data_munger.get_valid_solution_trips()

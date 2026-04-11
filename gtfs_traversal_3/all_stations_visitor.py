@@ -25,7 +25,7 @@ class AllStationsVisitor(Traverser):
         self._exp_queue = NoisyBaseExpansionQueue(max_size=num_levels)
 
     def _get_new_nodes(self, location_status):
-        if self._num_expansions % 10000 == 0:
+        if self._num_expansions % 10000 == 0 or self._num_expansions == 1:
             print(self._num_expansions, len(self._progress_dict), len(self._unvisited), self._avg_num_children)
             print("    ", len(self._exp_queue._queue.get(self._exp_queue._one_more_than_max_size - 1, [])), self._progress_dict.get(self._exp_queue._queue.get(self._exp_queue._one_more_than_max_size - 1, [None])[-1], ELIMINATED_PROGRESS_INFO).time)
         new_nodes = super()._get_new_nodes(location_status)
@@ -55,14 +55,17 @@ class AllStationsVisitor(Traverser):
         all_eliminated_keys = sorted([k for k, v in self._progress_dict.items() if v.eliminated], key=lambda k: self._unvisited_lengths[k.unvisited])
         relevance_threshold = None
         if self._best_solution_duration is not None:
-            relevance_threshold = max(v.time for v in self._progress_dict.values() if not v.expanded and not v.eliminated) + self._best_solution_duration
+            relevance_threshold = max(v.time for k, v in self._progress_dict.items() if not v.expanded and not v.eliminated and not self._is_solution(k)) + self._best_solution_duration
         irrelevant = []
         if relevance_threshold:
             irrelevant = [k for k, v in self._progress_dict.items() if v.time > relevance_threshold]
             if irrelevant:
                 print(f"{len(irrelevant)} irrelevant and eliminated!")
-        for k in irrelevant + all_eliminated_keys[-max(1,self._prune_size-len(irrelevant)):]:
+        for k in irrelevant:
             del self._progress_dict[k]
+        for k in all_eliminated_keys[-max(1,self._prune_size-len(irrelevant)):]:
+            if k in self._progress_dict:
+                del self._progress_dict[k]
         self._num_eliminated_nodes = len([k for k, v in self._progress_dict.items() if v.eliminated])/2
         print("done pruning!", len(self._progress_dict), self._avg_num_children)
 
