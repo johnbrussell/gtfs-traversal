@@ -2,8 +2,15 @@ from gtfs_traversal_3.traverser import Traverser
 
 
 class FirstPassTraverser(Traverser):
+    def __init__(self, transfer_duration_seconds, data_munger, analysis):
+        Traverser.__init__(self, transfer_duration_seconds, data_munger, analysis)
+        self._sort_new_nodes = True
+
+    def find_solution(self, starting_nodes):
+        return super().find_solution_faster_than_time(starting_nodes, None)
+
     def _add_new_nodes_to_progress_dict(self, nodes_added, location_status):
-        self._add_new_nodes_to_progress_dict_and_sort(nodes_added, location_status)
+        super()._add_new_nodes_to_progress_dict(nodes_added, location_status)
 
         if any(self._is_solution(location) for location, _ in nodes_added):
             self._abort()

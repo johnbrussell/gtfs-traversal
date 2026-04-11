@@ -1,5 +1,6 @@
 class BaseExpansionQueue:
     def __init__(self, max_size):
+        self._max_size = max_size
         self._one_more_than_max_size = max_size + 1
         self._deepest_level = self._one_more_than_max_size
         self._queue = dict()
@@ -39,4 +40,4 @@ class BaseExpansionQueue:
                 self._deepest_level = queue_level
 
     def sort(self, sort_fn):
-        self._queue[self._deepest_level] = sorted(self._queue[self._deepest_level], key=lambda node: sort_fn(node), reverse=True)
+        self._queue[self._deepest_level] = sorted(self._queue[self._deepest_level], key=lambda node: sort_fn(node), reverse=self._deepest_level < self._max_size)

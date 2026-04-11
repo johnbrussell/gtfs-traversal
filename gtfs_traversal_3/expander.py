@@ -9,6 +9,7 @@ class Expander:
     def __init__(self, data_munger, transfer_duration_seconds):
         self._data_munger = data_munger
         self._transfer_duration_seconds = timedelta(seconds=transfer_duration_seconds)
+        self._sort_new_nodes = False
 
         self._exp_queue = None
         self._progress_dict = dict()
@@ -19,15 +20,13 @@ class Expander:
 
         self._num_expansions = 0
 
-    def find_solution(self, starting_nodes):
+    def find_solution_faster_than_time(self, starting_nodes, max_time):
+        self._best_solution_duration = max_time
         self._initialize_progress_dict_and_exp_queue(starting_nodes)
         while not self._exp_queue.is_empty():
             self._expand()
+        print(f"Best solution is: {self._best_solution_duration}")
         return self._best_solution_duration
-
-    def find_solution_faster_than_time(self, starting_nodes, max_time):
-        self._best_solution_duration = max_time
-        self.find_solution(starting_nodes)
 
     def _abort(self):
         self._exp_queue = BaseExpansionQueue(max_size=1)
@@ -52,7 +51,10 @@ class Expander:
         for node in valid_nodes:
             self._add_new_node_to_progress_dict(node)
 
-        if not valid_nodes:
+        if valid_nodes:
+            if self._sort_new_nodes:
+                self._exp_queue.sort(self._sort_queue_fn)
+        else:
             self._mark_nodes_as_eliminated([parent])
 
     def _announce_solution(self, new_progress):
@@ -174,9 +176,6 @@ class Expander:
 
         return walking_data + new_route_data
 
-    def _get_num_unvisited(self, unvisited):
-        raise NotImplementedError("must be implemented in subclass")
-
     def _get_transfer_data(self, location_status):
         progress = self._progress_dict[location_status]
         minimum_remaining_time = max(timedelta(seconds=0), progress.minimum_remaining_time - self._transfer_duration_seconds)
@@ -231,13 +230,7 @@ class Expander:
     def _initialize_progress_dict_and_exp_queue(self, starting_nodes):
         raise NotImplementedError("must be implemented in subclass")
 
-    def _is_impossible_to_reach_all_stations(self, unvisited, duration):
-        raise NotImplementedError("must be implemented in subclass")
-
     def _is_solution(self, location):
-        raise NotImplementedError("must be implemented in subclass")
-
-    def _is_solution_route(self, route):
         raise NotImplementedError("must be implemented in subclass")
 
     def _mark_node_as_eliminated_and_find_parent_and_children(self, node_to_eliminate):
@@ -276,6 +269,7 @@ class Expander:
 
             nodes_to_eliminate.extend(self._mark_node_as_eliminated_and_find_parent_and_children(node_to_eliminate))
 
+    # confirmed unused in traversal 3
     def _minimum_possible_duration_within_stops(self, stops, current_time, station_facts,
                                                 arrival_duration, arrival_location, original_location_status,
                                                 original_duration, more_searches_allowed):
@@ -308,7 +302,9 @@ class Expander:
             return False
 
         if new_location in self._progress_dict:
-            if self._progress_dict[new_location].duration <= new_progress.duration:
+            if self._progress_dict[new_location].duration < new_progress.duration:
+                return False
+            if new_location.arrival_trip != TRANSFER_ROUTE and new_location.arrival_trip != WALK_ROUTE and self._progress_dict[new_location].duration == new_progress.duration:
                 return False
 
         if self._best_solution_duration is not None:
@@ -323,9 +319,6 @@ class Expander:
         raise NotImplementedError("must be implemented in subclass")
 
     def _queue_level(self, location):
-        raise NotImplementedError("must be implemented in subclass")
-
-    def _remove_stations_from_unvisited(self, unvisited, stops_to_remove, duration):
         raise NotImplementedError("must be implemented in subclass")
 
     def _should_prune(self):

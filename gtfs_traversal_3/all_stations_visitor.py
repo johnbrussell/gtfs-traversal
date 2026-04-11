@@ -5,44 +5,44 @@ from gtfs_traversal_3.noisy_base_expansion_queue import NoisyBaseExpansionQueue
 from gtfs_traversal_3.traverser import Traverser
 
 
-ELIMINATED_PROGRESS_INFO = ProgressInfo(time=datetime.now(), duration=timedelta(seconds=0), parent=None, children=None, minimum_remaining_time=0, num_unvisited=0, expanded=False, eliminated=True)
+ELIMINATED_PROGRESS_INFO = ProgressInfo(time=None, duration=timedelta(seconds=0), parent=None, children=None, minimum_remaining_time=0, num_unvisited=0, expanded=False, eliminated=True)
 
 
 class AllStationsVisitor(Traverser):
     def __init__(self, transfer_duration_seconds, data_munger, analysis, breadth_size, prune_size, prune_dict_threshold, prune_eliminations_threshold):
+        Traverser.__init__(self, data_munger=data_munger, transfer_duration_seconds=transfer_duration_seconds, analysis=analysis)
         self._avg_num_children = 0
         self._breadth_size = breadth_size
+        self._eliminated_progress_info = ELIMINATED_PROGRESS_INFO._replace(time=self._analysis_data_munger.start_time)
         self._num_eliminated_nodes = 0
         self._num_expansions_with_children = 0
         self._prune_size = prune_size
         self._prune_dict_threshold = prune_dict_threshold
         self._prune_eliminations_threshold = prune_eliminations_threshold
-        Traverser.__init__(self, data_munger=data_munger, transfer_duration_seconds=transfer_duration_seconds, analysis=analysis)
-
-    def _add_new_nodes_to_progress_dict(self, nodes_added, location_status):
-        self._add_new_nodes_to_progress_dict_and_sort(nodes_added, location_status)
+        self._sort_new_nodes = True
 
     def _create_exp_queue(self, num_levels):
         self._exp_queue = NoisyBaseExpansionQueue(max_size=num_levels)
 
     def _get_new_nodes(self, location_status):
-        # if location_status.unvisited == 0:
-        #     print(location_status, self._data_munger.station_for_stop(location_status.location), self._progress_dict[location_status], self._num_expansions, len(self._progress_dict), self._avg_num_children)
-        # if self._num_expansions % 10000 == 0:
-        #     print(self._num_expansions, len(self._progress_dict), len(self._unvisited), self._avg_num_children)
-        return super()._get_new_nodes(location_status)
+        if self._num_expansions % 10000 == 0:
+            print(self._num_expansions, len(self._progress_dict), len(self._unvisited), self._avg_num_children)
+        new_nodes = super()._get_new_nodes(location_status)
+        # new_nodes_print = [n for n in new_nodes if n[0].location in self._analysis_data_munger.get_unique_stops_to_solve()]
+        # for n in new_nodes_print:
+        #     print(n[0])
+        #     print(n[1]._replace(eliminated=self._node_is_valid(n) == False))
+        return new_nodes
 
     def _filter_for_valid_nodes(self, new_nodes_list):
         valid_nodes = super()._filter_for_valid_nodes(new_nodes_list)
         self._num_expansions_with_children += 1
         self._avg_num_children = (self._avg_num_children * (self._num_expansions_with_children - 1) + len(valid_nodes)) / self._num_expansions_with_children
-        # self._exp_queue.set_breadth_exponent(max(self._avg_num_children, 1))
         return valid_nodes
 
     def _initialize_exp_queue(self, initial_locations):
         super()._initialize_exp_queue(initial_locations)
         self._exp_queue.sort(self._sort_queue_fn)
-        # self._exp_queue.set_num_starting_nodes()
 
     def _mark_node_as_eliminated_and_find_parent_and_children(self, node_to_eliminate):
         response = super()._mark_node_as_eliminated_and_find_parent_and_children(node_to_eliminate)
@@ -71,7 +71,5 @@ class AllStationsVisitor(Traverser):
     # def _sort_queue_fn(self, location):
     #     return self._progress_dict.get(location, ELIMINATED_PROGRESS_INFO._replace(time=self._analysis_data_munger.start_time)).time
 
-    # start time
     def _sort_queue_fn(self, location):
-        progress = self._progress_dict.get(location, ELIMINATED_PROGRESS_INFO._replace(time=self._analysis_data_munger.start_time))
-        return self._analysis_data_munger.start_time - progress.time - progress.duration
+        return self._progress_dict.get(location, self._eliminated_progress_info).time

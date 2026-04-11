@@ -12,16 +12,13 @@ class Traverser(Expander):
         self._data_munger = data_munger
         self._analysis_data_munger = AnalysisDataMunger(data_munger, analysis)
         self._solution_unvisited = None
+        self._sort_new_nodes = False
         self._unvisited = dict()
         self._unvisited_children = dict()
         self._unvisited_parents = dict()
         self._unvisited_lengths = dict()
         self._unvisited_durations = dict()
         Expander.__init__(self, self._data_munger, transfer_duration_seconds)
-
-    def _add_new_nodes_to_progress_dict_and_sort(self, new_nodes_list, parent):
-        super()._add_new_nodes_to_progress_dict(new_nodes_list, parent)
-        self._exp_queue.sort(self._sort_queue_fn)
 
     def _add_to_unvisited(self, stop, unvisited, duration):
         remaining_stops = {s for s in self._unvisited[unvisited] if s != stop}
@@ -41,7 +38,7 @@ class Traverser(Expander):
         return new_unvisited
 
     def _announce_solution(self, new_progress):
-        print(f"New solution found of duration {new_progress.duration}")
+        print(f"New solution found of duration {new_progress.duration} starting at time {new_progress.time - new_progress.duration}")
 
     def _create_exp_queue(self, num_levels):
         self._exp_queue = BaseExpansionQueue(max_size=num_levels)
