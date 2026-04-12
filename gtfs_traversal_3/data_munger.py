@@ -28,9 +28,9 @@ class DataMunger:  # Can be shared between Expanders
         hours, minutes, seconds = raw_time_string.split(':')
         return 3600 * float(hours) + 60 * float(minutes) + float(seconds)
 
-    def determine_speedy_travel_times(self, unexpanded, travel_time_dict, destination, transfer_penalty_in_use):
+    def determine_speedy_travel_times(self, unexpanded, travel_time_dict, destinations, transfer_penalty_in_use, cutoff):
         stop = None
-        while stop != destination:
+        while stop not in destinations:
             stop = min(unexpanded, key=lambda x: travel_time_dict.get(x, timedelta(seconds=1)))
             unexpanded.remove(stop)
 
@@ -38,7 +38,9 @@ class DataMunger:  # Can be shared between Expanders
             walk_times_from_stop = {k: self.walk_time(self.data.stopLocations[stop].lat, self.data.stopLocations[k].lat, self.data.stopLocations[stop].long, self.data.stopLocations[k].long) + timedelta(seconds=2 * transfer_penalty_in_use) if travel_time_dict.get(k, timedelta(seconds=1)) >= travel_time_dict.get(stop, timedelta(seconds=1)) else timedelta(seconds=0) for k in self.data.stopLocations.keys()}
 
             travel_time_dict = {k: min(travel_time_dict.get(k, v), travel_time_dict.get(stop, v) + min(v, travel_times_from_stop.get(k, v))) for k, v in walk_times_from_stop.items()}
-        return {k: v - timedelta(seconds=2 * transfer_penalty_in_use) for k, v in travel_time_dict.items()} if transfer_penalty_in_use > 0 else travel_time_dict
+            if cutoff and travel_time_dict[stop] > cutoff:
+                break
+        return {k: v - timedelta(seconds=2 * transfer_penalty_in_use) for k, v in travel_time_dict.items()}
 
     def first_departures_after(self, earliest_departure_time, route, origin):
         origin_stop_numbers = self.get_stop_numbers_for_stop_id(origin, route)

@@ -44,9 +44,13 @@ class Traverser(Expander):
         self._exp_queue = BaseExpansionQueue(max_size=num_levels)
 
     def _distance_to_network(self, location):
+        if self._best_solution_duration:
+            return timedelta(seconds=0)
         if location.location in self._analysis_data_munger.get_unique_stops_to_solve():
             return timedelta(seconds=0)  # cannot return > 0 because there could be minimum travel time
-        return min(self._analysis_data_munger.get_speedy_travel_time(location.location, d) for d in self._analysis_data_munger.get_unique_stops_to_solve() if self._data_munger.station_for_stop(d) in self._unvisited[location.unvisited])
+        cutoff = timedelta(seconds=1) # it is safe to hard-code the timedelta. If you try to get the speedy time again, it will perform exactly one expansion.
+        result = self._analysis_data_munger.get_speedy_travel_time(location.location, [d for d in self._analysis_data_munger.get_unique_stops_to_solve() if self._data_munger.station_for_stop(d) in self._unvisited[location.unvisited]], cutoff)
+        return result
 
     def _get_new_minimum_remaining_time(self, location):
         unvisited = self._unvisited[location.unvisited]

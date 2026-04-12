@@ -181,11 +181,13 @@ class AnalysisDataMunger:  # Cannot be shared between Expanders
         routes_at_stop = self._data_munger.get_routes_at_stop(stop_id)
         return {route for route in routes_at_stop if route in self.get_unique_routes_to_solve()}
 
-    def get_speedy_travel_time(self, origin, destination):
-        if origin not in self._speedy_travel_times or destination in self._unexpanded_speedy_travel_stops.get(origin, set()):
-            self._set_speedy_travel_times_to_destinations_in_solution_set(origin, destination)
+    def get_speedy_travel_time(self, origin, destinations, cutoff):
+        if origin not in self._speedy_travel_times or all(d in self._unexpanded_speedy_travel_stops.get(origin, set()) for d in destinations):
+            self._set_speedy_travel_times_to_destinations_in_solution_set(origin, destinations, cutoff)
+            if all(d in self._unexpanded_speedy_travel_stops.get(origin, set()) for d in destinations):
+                return max(v for k, v in self._speedy_travel_times[origin].items() if k not in self._unexpanded_speedy_travel_stops[origin])
 
-        return self._speedy_travel_times[origin].get(destination, 0)
+        return min(self._speedy_travel_times[origin][d] for d in destinations if d in self._speedy_travel_times[origin])
 
     def get_stop_locations_to_solve(self):
         return {s: l for s, l in self._data_munger.get_all_stop_coordinates().items() if s in self.get_unique_stops_to_solve()}
@@ -318,7 +320,7 @@ class AnalysisDataMunger:  # Cannot be shared between Expanders
         return potential_solution
 
     # maybe a generic implementation could be great
-    def _set_speedy_travel_times_to_destinations_in_solution_set(self, origin, destination):
+    def _set_speedy_travel_times_to_destinations_in_solution_set(self, origin, destinations, cutoff):
         if origin not in self._speedy_travel_times:
             self._speedy_travel_times[origin] = dict()
             self._speedy_travel_times[origin][origin] = timedelta(seconds=0)
@@ -328,18 +330,20 @@ class AnalysisDataMunger:  # Cannot be shared between Expanders
         if origin not in self._unexpanded_speedy_travel_stops:
             self._unexpanded_speedy_travel_stops[origin] = set(self._data_munger.get_all_stop_coordinates().keys())
 
-        if destination not in self._unexpanded_speedy_travel_stops[origin]:
-            return self._speedy_travel_times[origin][destination]
+        if any(d not in self._unexpanded_speedy_travel_stops[origin] for d in destinations):
+            return
+        # if destination not in self._unexpanded_speedy_travel_stops[origin]:
+        #     return self._speedy_travel_times[origin][destination]
 
-        if destination not in self.get_unique_stops_to_solve():
-            print("unexpected use of _set_speedy_travel_times: destination should be in solution set. Function may not work properly.")
+        # if destination not in self.get_unique_stops_to_solve():
+        #     print("unexpected use of _set_speedy_travel_times: destination should be in solution set. Function may not work properly.")
 
         unexpanded_wotp = self._unexpanded_speedy_travel_stops[origin].copy()
         unexpanded_wtp = self._unexpanded_speedy_travel_stops[origin].copy()
 
-        result_wotp = self._data_munger.determine_speedy_travel_times(unexpanded_wotp, self._speedy_travel_times[origin].copy(), destination, 0)
+        result_wotp = self._data_munger.determine_speedy_travel_times(unexpanded_wotp, self._speedy_travel_times[origin].copy(), destinations, 0, cutoff)
         # With transfer penalty > 0, calculation can underestimate when using cached data. _in_progress_speedy_travel_dicts is a cache just for the speedy travel times with transfer penalties
-        result_wtp = self._data_munger.determine_speedy_travel_times(unexpanded_wtp, self._in_progress_speedy_travel_dicts[origin], destination, self._transfer_penalty)
+        result_wtp = self._data_munger.determine_speedy_travel_times(unexpanded_wtp, self._in_progress_speedy_travel_dicts[origin], destinations, self._transfer_penalty, cutoff)
 
         self._unexpanded_speedy_travel_stops[origin] = unexpanded_wotp.union(unexpanded_wtp)
         self._speedy_travel_times[origin] = {k: max(result_wtp[k], result_wotp[k]) for k in self._data_munger.get_all_stop_coordinates().keys()}
@@ -349,5 +353,3 @@ class AnalysisDataMunger:  # Cannot be shared between Expanders
             self._unexpanded_speedy_travel_stops[origin] = set()
             self._speedy_travel_times[origin] = {k: v for k, v in self._speedy_travel_times[origin].items() if k in self.get_unique_stops_to_solve()}
             self._in_progress_speedy_travel_dicts[origin] = dict()
-
-        return None
