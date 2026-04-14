@@ -170,3 +170,6 @@ class Traverser(Expander):
             if child_progress and child_progress.duration < progress.duration:
                 return True
         return False
+
+    def _walking_destinations(self, origin):
+        return self._analysis_data_munger.get_relevant_stops(origin)

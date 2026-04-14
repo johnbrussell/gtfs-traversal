@@ -176,6 +176,11 @@ class AnalysisDataMunger:  # Cannot be shared between Expanders
 
         return self._network_speedy_network
 
+    def get_relevant_stops(self, origin):
+        if self._relevant_stops:
+            return self._relevant_stops
+        return self._relevant_stops_by_stop.get(origin, self._data_munger.get_all_stop_coordinates().keys())
+
     def get_route_types_to_solve(self):
         return [str(r) for r in self._route_types_to_solve]
 

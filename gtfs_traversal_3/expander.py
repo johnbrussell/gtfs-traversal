@@ -16,8 +16,6 @@ class Expander:
 
         self._best_solution_duration = timedelta(days=366)
 
-        self._all_station_coordinates = self._data_munger.get_all_stop_coordinates()
-
         self._num_expansions = 0
 
     def find_solution_faster_than_time(self, starting_nodes, max_time):
@@ -235,7 +233,7 @@ class Expander:
                 )
             )
             for station, walk_duration in [
-                (stat, self._walk_time_between_stations(location_status.location, stat)) for stat in self._all_station_coordinates.keys()
+                (stat, self._walk_time_between_stations(location_status.location, stat)) for stat in self._walking_destinations(location_status.location)
             ]
         ]
 
@@ -341,8 +339,11 @@ class Expander:
 
     def _walk_time_between_stations(self, station_1, station_2):
         return self._data_munger.walk_time(
-            self._all_station_coordinates[station_1].lat,
-            self._all_station_coordinates[station_2].lat,
-            self._all_station_coordinates[station_1].long,
-            self._all_station_coordinates[station_2].long,
+            self._data_munger.get_all_stop_coordinates()[station_1].lat,
+            self._data_munger.get_all_stop_coordinates()[station_2].lat,
+            self._data_munger.get_all_stop_coordinates()[station_1].long,
+            self._data_munger.get_all_stop_coordinates()[station_2].long,
         )
+
+    def _walking_destinations(self, _origin):
+        return self._data_munger.get_all_stop_coordinates()
