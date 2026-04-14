@@ -182,7 +182,7 @@ class AnalysisDataMunger:  # Cannot be shared between Expanders
         return {route for route in routes_at_stop if route in self.get_unique_routes_to_solve()}
 
     def get_speedy_travel_time(self, origin, destinations, cutoff):
-        if origin not in self._speedy_travel_times or all(d in self._unexpanded_speedy_travel_stops.get(origin, set()) for d in destinations):
+        if all(d in self._unexpanded_speedy_travel_stops.get(origin, set()) for d in destinations):
             self._set_speedy_travel_times_to_destinations_in_solution_set(origin, destinations, cutoff)
             if all(d in self._unexpanded_speedy_travel_stops.get(origin, set()) for d in destinations):
                 return max(v for k, v in self._speedy_travel_times[origin].items() if k not in self._unexpanded_speedy_travel_stops[origin])
@@ -330,8 +330,6 @@ class AnalysisDataMunger:  # Cannot be shared between Expanders
         if origin not in self._unexpanded_speedy_travel_stops:
             self._unexpanded_speedy_travel_stops[origin] = set(self._data_munger.get_all_stop_coordinates().keys())
 
-        if any(d not in self._unexpanded_speedy_travel_stops[origin] for d in destinations):
-            return
         # if destination not in self._unexpanded_speedy_travel_stops[origin]:
         #     return self._speedy_travel_times[origin][destination]
 
