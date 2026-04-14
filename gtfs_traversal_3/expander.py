@@ -60,7 +60,7 @@ class Expander:
     def _announce_solution(self, new_progress):
         raise NotImplementedError("must be implemented in subclass")
 
-    def _distance_to_network(self, location):
+    def _get_new_distance_to_unvisited(self, location):
         raise NotImplementedError("must be implemented in subclass")
 
     def _eliminate_slow_nodes(self):
@@ -134,7 +134,7 @@ class Expander:
                 parent=location_status,
                 children=set(),
                 minimum_remaining_time=self._get_new_minimum_remaining_time(new_location) if not self._is_solution(new_location) else 0,
-                time_to_network=self._distance_to_network(new_location) if not self._is_solution(new_location) else 0,
+                time_to_network=self._get_new_distance_to_unvisited(new_location) if not self._is_solution(new_location) else 0,
                 num_unvisited=self._get_unvisited_count(new_unvisited),
                 expanded=False,
                 eliminated=False,

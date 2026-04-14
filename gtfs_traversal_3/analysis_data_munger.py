@@ -13,6 +13,8 @@ class AnalysisDataMunger:  # Cannot be shared between Expanders
         self._minimum_remaining_any_path_time_dict = dict()
         self._minimum_stop_times = None
         self._network_speedy_network = dict()
+        self._relevant_stops = None
+        self._relevant_stops_by_stop = dict()
         self._route_types_to_solve = analysis.route_types
         self._speedy_travel_times = dict()
         self.start_time = datetime(*list(map(int, analysis.start_date.split('-'))))
@@ -182,12 +184,12 @@ class AnalysisDataMunger:  # Cannot be shared between Expanders
         return {route for route in routes_at_stop if route in self.get_unique_routes_to_solve()}
 
     def get_speedy_travel_time(self, origin, destinations, cutoff):
-        if all(d in self._unexpanded_speedy_travel_stops.get(origin, set()) for d in destinations):
+        if origin not in self._speedy_travel_times or all(d in self._unexpanded_speedy_travel_stops.get(origin, set()) for d in destinations):
             self._set_speedy_travel_times_to_destinations_in_solution_set(origin, destinations, cutoff)
             if all(d in self._unexpanded_speedy_travel_stops.get(origin, set()) for d in destinations):
                 return max(v for k, v in self._speedy_travel_times[origin].items() if k not in self._unexpanded_speedy_travel_stops[origin])
 
-        return min(self._speedy_travel_times[origin][d] for d in destinations if d in self._speedy_travel_times[origin])
+        return min(self._speedy_travel_times[origin].get(d, timedelta(days=366)) for d in destinations)
 
     def get_stop_locations_to_solve(self):
         return {s: l for s, l in self._data_munger.get_all_stop_coordinates().items() if s in self.get_unique_stops_to_solve()}
@@ -319,6 +321,7 @@ class AnalysisDataMunger:  # Cannot be shared between Expanders
         assert potential_solution is not None
         return potential_solution
 
+    # TODO use the time to all stations info to speed up calculation of walking nodes
     # maybe a generic implementation could be great
     def _set_speedy_travel_times_to_destinations_in_solution_set(self, origin, destinations, cutoff):
         if origin not in self._speedy_travel_times:
@@ -348,6 +351,14 @@ class AnalysisDataMunger:  # Cannot be shared between Expanders
         self._in_progress_speedy_travel_dicts[origin] = {k: result_wtp[k] + timedelta(seconds=2 * self._transfer_penalty) for k in result_wtp.keys()}
 
         if all(stop not in self.get_unique_stops_to_solve() for stop in self._unexpanded_speedy_travel_stops[origin]):
+            print(f"Found time to all stations for {origin}")
             self._unexpanded_speedy_travel_stops[origin] = set()
             self._speedy_travel_times[origin] = {k: v for k, v in self._speedy_travel_times[origin].items() if k in self.get_unique_stops_to_solve()}
             self._in_progress_speedy_travel_dicts[origin] = dict()
+            self._relevant_stops_by_stop[origin] = {s for s in self._speedy_travel_times[origin].keys()}
+            if all(s in self._relevant_stops_by_stop for s in self.get_unique_stops_to_solve()):
+                print(f"Found time to all stations from all stations")
+                self._relevant_stops = set()
+                for stops in self._relevant_stops_by_stop.values():
+                    self._relevant_stops = self._relevant_stops.union(stops)
+                self._relevant_stops_by_stop = dict()

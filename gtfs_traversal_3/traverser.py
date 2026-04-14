@@ -43,19 +43,31 @@ class Traverser(Expander):
     def _create_exp_queue(self, num_levels):
         self._exp_queue = BaseExpansionQueue(max_size=num_levels)
 
-    def _distance_to_network(self, location):
+    def _distance_to_locations(self, origin_stop, destinations, cutoff):
+        return self._analysis_data_munger.get_speedy_travel_time(origin_stop, destinations, cutoff)
+
+    def _get_new_distance_to_unvisited(self, location):
         if self._best_solution_duration:
             return timedelta(seconds=0)
-        if location.location in self._analysis_data_munger.get_unique_stops_to_solve():
-            return timedelta(seconds=0)  # cannot return > 0 because there could be minimum travel time
-        cutoff = timedelta(seconds=1) # it is safe to hard-code the timedelta. If you try to get the speedy time again, it will perform exactly one expansion.
-        result = self._analysis_data_munger.get_speedy_travel_time(location.location, [d for d in self._analysis_data_munger.get_unique_stops_to_solve() if self._data_munger.station_for_stop(d) in self._unvisited[location.unvisited]], cutoff)
-        return result
+        minimum_stop_times = self._analysis_data_munger.get_minimum_stop_times()
+        unvisited = self._unvisited[location.unvisited]
+        subtraction = timedelta(seconds=0) if location.location not in self._analysis_data_munger.get_unique_stops_to_solve() else max(minimum_stop_times[s] for s in unvisited)
+        # it is safe to hard-code the cutoff. If you try to get the speedy time again, it will perform exactly one expansion.
+        return self._distance_to_locations(location.location, [d for d in self._analysis_data_munger.get_unique_stops_to_solve() if self._data_munger.station_for_stop(d) in self._unvisited[location.unvisited]], 5) - subtraction
 
     def _get_new_minimum_remaining_time(self, location):
         unvisited = self._unvisited[location.unvisited]
         minimum_stop_times = self._analysis_data_munger.get_minimum_stop_times()
-        return sum([minimum_stop_times[s] for s in unvisited], start=timedelta(seconds=0))
+        distance_within_network = timedelta(seconds=0)
+        for s1 in self._analysis_data_munger.get_unique_stops_to_solve():
+            if self._data_munger.station_for_stop(s1) not in unvisited:
+                continue
+            for s2 in self._analysis_data_munger.get_unique_stops_to_solve():
+                if self._data_munger.station_for_stop(s2) not in unvisited:
+                    continue
+                distance_within_network = max(distance_within_network, self._analysis_data_munger.get_speedy_travel_time(s1, [s2], 5))
+        # distance_within_network = max(self._distance_to_locations(s1, [s2]) for s1 in self._analysis_data_munger.get_unique_stops_to_solve() for s2 in self._analysis_data_munger.get_unique_stops_to_solve() if s2 in unvisited if s1 in unvisited)
+        return max(sum([minimum_stop_times[s] for s in unvisited], start=timedelta(seconds=0)), distance_within_network)
 
     def _get_new_unvisited(self, unvisited, origin, destination, trip, duration):
         if trip not in self._analysis_data_munger.get_valid_solution_trips():
@@ -84,7 +96,7 @@ class Traverser(Expander):
                 parent=None,
                 children=set(),
                 minimum_remaining_time=self._get_new_minimum_remaining_time(node),
-                time_to_network=self._distance_to_network(node),
+                time_to_network=self._get_new_distance_to_unvisited(node),
                 num_unvisited=self._unvisited_lengths[node.unvisited],
                 expanded=False,
                 eliminated=False,
