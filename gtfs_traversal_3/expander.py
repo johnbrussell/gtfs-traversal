@@ -10,6 +10,7 @@ class Expander:
         self._data_munger = data_munger
         self._transfer_duration_seconds = timedelta(seconds=transfer_duration_seconds)
         self._sort_new_nodes = False
+        self._single_ancestor = False
 
         self._exp_queue = None
         self._progress_dict = dict()
@@ -23,7 +24,7 @@ class Expander:
         self._initialize_progress_dict_and_exp_queue(starting_nodes)
         while not self._exp_queue.is_empty():
             self._expand()
-        print(f"Best solution is: {self._best_solution_duration}")
+        self._announce_best_solution()
         return self._best_solution_duration
 
     def _abort(self):
@@ -54,6 +55,9 @@ class Expander:
                 self._exp_queue.sort(self._sort_queue_fn)
         else:
             self._mark_nodes_as_eliminated([parent])
+
+    def _announce_best_solution(self):
+        raise NotImplementedError("must be implemented in subclass")
 
     def _announce_solution(self, new_progress):
         raise NotImplementedError("must be implemented in subclass")
@@ -190,7 +194,7 @@ class Expander:
             LocationStatusInfo(
                 location=location_status.location,
                 arrival_trip=TRANSFER_ROUTE,
-                last_trip=location_status.last_trip,
+                last_trip=TRANSFER_ROUTE if self._single_ancestor else location_status.last_trip,
                 unvisited=location_status.unvisited,
                 trip_stop_no=None,
             ),
@@ -216,7 +220,7 @@ class Expander:
                 LocationStatusInfo(
                     location=station,
                     arrival_trip=WALK_ROUTE,
-                    last_trip=location_status.last_trip,
+                    last_trip=WALK_ROUTE if self._single_ancestor else location_status.last_trip,
                     trip_stop_no=None,
                     unvisited=self._get_new_unvisited(location_status.unvisited, location_status.location, station, WALK_ROUTE, self._progress_dict[location_status].duration + walk_duration),
                 ),

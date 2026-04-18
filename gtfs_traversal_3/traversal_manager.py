@@ -53,8 +53,9 @@ def run():
     data_munger = DataMunger(data, WALK_SPEED_MPH, stops_df, configuration["agencies"]["pittsburgh-port-authority"]["data_sets"]["2018-08-08"]["station_renamings"])
     analysis_data_munger = AnalysisDataMunger(data_munger, analysis, TRANSFER_DURATION_SECONDS)
 
-    # intuition_best_time = min(data_munger.flatten([first_pass_durations(starting_point, analysis, data_munger, analysis_data_munger) for starting_point in solution_route_endpoints]))
-    intuition_best_time = timedelta(hours=2, minutes=34)
+    solution_route_endpoints = analysis_data_munger.get_endpoint_solution_stops()
+    intuition_best_time = min(data_munger.flatten([first_pass_durations(starting_point, analysis, data_munger, analysis_data_munger) for starting_point in solution_route_endpoints]))
+    # intuition_best_time = timedelta(hours=2, minutes=34)
 
     # minimum_stop_times = analysis_data_munger.get_minimum_stop_times()
     # print(sum([minimum_stop_times[data_munger.station_for_stop(s)] for s in analysis_data_munger.get_unique_stops_to_solve()], start=timedelta(seconds=0)))
